@@ -75,6 +75,7 @@ export const UniversalDocConverter: React.FC = () => {
         try {
             let blob: Blob | null = null;
             let downloadExt = '';
+            const fileExt = file.file.name.split('.').pop()?.toLowerCase() || '';
 
             if (conversionType === 'docx-to-html') {
                 const ab = await file.file.arrayBuffer();
@@ -86,7 +87,7 @@ export const UniversalDocConverter: React.FC = () => {
                 const ab = await file.file.arrayBuffer();
                 const html = await convertDocxToHtml(ab);
                 // Wrap in simple styling for PDF
-                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000;">${html}</div>`;
+                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; color: #000; background: white;">${html}</div>`;
                 const pdfBlob = await generatePdfFromHtml(styledHtml);
                 blob = pdfBlob;
                 downloadExt = 'pdf';
@@ -100,14 +101,15 @@ export const UniversalDocConverter: React.FC = () => {
             else if (conversionType === 'md-to-pdf') {
                 const text = await file.file.text();
                 const html = await marked(text);
-                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000;">${html}</div>`;
+                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; color: #000; background: white;">${html}</div>`;
                 const pdfBlob = await generatePdfFromHtml(styledHtml);
                 blob = pdfBlob;
                 downloadExt = 'pdf';
             }
             else if (conversionType === 'html-to-pdf') {
                 const text = await file.file.text();
-                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 20px; color: #000;">${text}</div>`;
+                // Ensure the HTML has a container
+                const styledHtml = `<div style="font-family: Arial, sans-serif; padding: 40px; color: #000; background: white;">${text}</div>`;
                 const pdfBlob = await generatePdfFromHtml(styledHtml);
                 blob = pdfBlob;
                 downloadExt = 'pdf';
@@ -130,7 +132,9 @@ export const UniversalDocConverter: React.FC = () => {
                 const w = imgProps.width * ratio;
                 const h = imgProps.height * ratio;
 
-                pdf.addImage(imgDataUrl, 'JPEG', (pdfWidth - w) / 2, (pdfHeight - h) / 2, w, h);
+                // Detect format from data URL
+                const format = imgDataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+                pdf.addImage(imgDataUrl, format, (pdfWidth - w) / 2, (pdfHeight - h) / 2, w, h);
                 blob = pdf.output('blob');
                 downloadExt = 'pdf';
             }
@@ -138,11 +142,13 @@ export const UniversalDocConverter: React.FC = () => {
             if (blob) {
                 setResultUrl(URL.createObjectURL(blob));
                 setResultName(file.file.name.replace(/\.[^/.]+$/, "") + '.' + downloadExt);
+            } else {
+                throw new Error("Conversion generated no output.");
             }
 
         } catch (err) {
             console.error(err);
-            setError("Conversion failed. The file format might be complex or corrupted.");
+            setError("Conversion failed. Please check the file content and try again.");
         } finally {
             setIsProcessing(false);
         }
@@ -151,7 +157,7 @@ export const UniversalDocConverter: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
             {/* Hidden Preview Area for Canvas Rendering */}
-            <div className="absolute -left-[9999px] top-0 w-[800px] bg-white text-black" ref={previewRef}></div>
+            <div className="fixed -left-[9999px] top-0 w-[800px] bg-white text-black z-[-1]" ref={previewRef}></div>
 
             <div className="text-center space-y-4">
                 <h2 className="text-3xl font-bold text-white">Universal Doc Converter</h2>
