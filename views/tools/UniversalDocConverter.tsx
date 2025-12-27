@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
@@ -12,12 +12,17 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { marked } from 'marked';
 import ExcelJS from 'exceljs';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set worker source
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 type ConversionType =
     'docx-to-html' | 'docx-to-pdf' |
     'md-to-html' | 'md-to-pdf' |
     'html-to-pdf' | 'img-to-pdf' |
-    'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt';
+    'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt' |
+    'pdf-to-img' | 'pdf-to-txt';
 
 export const UniversalDocConverter: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
@@ -42,7 +47,50 @@ export const UniversalDocConverter: React.FC = () => {
         else if (ext === 'html') setConversionType('html-to-pdf');
         else if (['xlsx', 'xls', 'csv'].includes(ext || '')) setConversionType('excel-to-csv');
         else if (['jpg', 'png', 'jpeg', 'webp'].includes(ext || '')) setConversionType('img-to-pdf');
+        else if (ext === 'pdf') setConversionType('pdf-to-img');
     };
+
+    // ... (lines 47-233)
+
+    {
+        (file.file.name.endsWith('.html')) && (
+            <button
+                onClick={() => setConversionType('html-to-pdf')}
+                className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
+            >
+                PDF Document
+            </button>
+        )
+    }
+    {/* PDF Options */ }
+    {
+        (file.file.name.endsWith('.pdf')) && (
+            <>
+                <button
+                    onClick={() => setConversionType('pdf-to-img')}
+                    className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-img' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
+                >
+                    To JPG (Page 1)
+                </button>
+                <button
+                    onClick={() => setConversionType('pdf-to-txt')}
+                    className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-txt' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
+                >
+                    Extract Text
+                </button>
+            </>
+        )
+    }
+    {
+        (!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv') && !file.file.name.endsWith('.pdf')) && (
+            <button
+                onClick={() => setConversionType('img-to-pdf')}
+                className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
+            >
+                PDF Document
+            </button>
+        )
+    }
 
     const convertDocxToHtml = async (arrayBuffer: ArrayBuffer) => {
         const result = await mammoth.convertToHtml({ arrayBuffer });
@@ -216,6 +264,54 @@ export const UniversalDocConverter: React.FC = () => {
                 blob = pdf.output('blob');
                 downloadExt = 'pdf';
             }
+            else if (conversionType === 'pdf-to-img') {
+                try {
+                    const arrayBuffer = await file.file.arrayBuffer();
+                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                    const pdf = await loadingTask.promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 2 });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    if (context) {
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: viewport
+                        };
+                        await page.render(renderContext).promise;
+
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                        const res = await fetch(dataUrl);
+                        blob = await res.blob();
+                        downloadExt = 'jpg';
+                    } else {
+                        throw new Error("Canvas context is null");
+                    }
+                } catch (e) {
+                    console.error("PDF to Img Error:", e);
+                    throw new Error("Failed to convert PDF to Image.");
+                }
+            }
+            else if (conversionType === 'pdf-to-txt') {
+                // Removed usePdfWorker() call
+                const arrayBuffer = await file.file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                    fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
+                }
+
+                blob = new Blob([fullText], { type: 'text/plain' });
+                downloadExt = 'txt';
+            }
 
             if (blob) {
                 setResultUrl(URL.createObjectURL(blob));
@@ -248,9 +344,9 @@ export const UniversalDocConverter: React.FC = () => {
                 <div className={`p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 ${resultUrl ? 'w-full md:w-1/2' : 'w-full'}`}>
                     <FileUploader
                         onFileSelect={handleFileSelect}
-                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv"
+                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf"
                         label="Upload Document"
-                        description="Supports DOCX, XLSX, HTML, Markdown, Images"
+                        description="Supports DOCX, PDF, XLSX, HTML, Markdown, Images"
                         compact={!!resultUrl}
                     />
 
