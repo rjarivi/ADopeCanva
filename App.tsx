@@ -160,6 +160,9 @@ const App = () => {
 
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
                                 <p>© 2024 ADopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <div className="mt-6 flex justify-center opacity-50 hover:opacity-100 transition-opacity">
+                                    <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8" />
+                                </div>
                             </footer>
                         </div>
                     )}
