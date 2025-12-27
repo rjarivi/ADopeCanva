@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -28,9 +28,19 @@ import { TextCleaner } from './tools/TextCleaner';
 import { UniversalConverter } from './tools/UniversalConverter';
 import { ApngMaker, VideoToApng, GifToApng, ApngToGif, ApngToWebp, ApngToMp4, MngToApng } from './tools/ApngTools';
 import { WebpMaker, VideoToWebp, GifToWebp, JpgToWebp, PngToWebp, AvifToWebp, WebpToGif, WebpToJpg, WebpToPng, WebpToMp4 } from './tools/WebpTools';
+import { SpreadsheetTools } from './tools/SpreadsheetTools';
 import { Tooltip } from '../components/ui/Tooltip';
 
 export const TOOLS: ToolItem[] = [
+    {
+        id: 'spreadsheet-tools',
+        title: 'Spreadsheet Converter',
+        description: 'Convert Excel to CSV, JSON, HTML or vice versa.',
+        category: ToolCategory.DOCS,
+        icon: FileSpreadsheet,
+        component: <SpreadsheetTools />,
+        popular: true
+    },
     {
         id: 'bg-remover',
         title: 'Smart BG Remover',
