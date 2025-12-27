@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
@@ -32,31 +32,71 @@ export const SpreadsheetTools: React.FC = () => {
 
         try {
             const arrayBuffer = await file.file.arrayBuffer();
-            const workbook = XLSX.read(arrayBuffer);
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
+            const workbook = new ExcelJS.Workbook();
+            await workbook.xlsx.load(arrayBuffer);
+            const worksheet = workbook.worksheets[0];
 
             if (mode === 'excel-to-other') {
                 let output: any;
                 let mimeType = 'text/plain';
-                let extension = targetFormat;
 
                 switch (targetFormat) {
                     case 'csv':
-                        output = XLSX.utils.sheet_to_csv(worksheet);
+                        const csvBuffer = await workbook.csv.writeBuffer();
+                        output = new TextDecoder().decode(csvBuffer);
                         mimeType = 'text/csv';
                         break;
                     case 'json':
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                        const jsonData: any[] = [];
+                        let headers: any[] = [];
+                        worksheet.eachRow((row, rowNumber) => {
+                            if (rowNumber === 1) {
+                                // ExcelJS row.values includes an empty first element (index 0) if 1-based, usually it's [empty, col1, col2]
+                                // We filter or slice. Actually let's just take values.
+                                const rawValues = row.values as any[];
+                                headers = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                            } else {
+                                const rowData: any = {};
+                                const rawValues = row.values as any[];
+                                // Adjust if array has empty 0 index
+                                const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+
+                                values.forEach((cell: any, colIdx: number) => {
+                                    if (headers[colIdx]) {
+                                        rowData[headers[colIdx]] = cell;
+                                    }
+                                });
+                                jsonData.push(rowData);
+                            }
+                        });
                         output = JSON.stringify(jsonData, null, 2);
                         mimeType = 'application/json';
                         break;
                     case 'html':
-                        output = XLSX.utils.sheet_to_html(worksheet);
+                        let html = '<table border="1" style="border-collapse: collapse; width: 100%;">';
+                        worksheet.eachRow((row) => {
+                            html += '<tr>';
+                            const rawValues = row.values as any[];
+                            const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+
+                            values.forEach((val: any) => {
+                                const cellValue = val && typeof val === 'object' ? (val.text || val.result || '') : (val || '');
+                                html += `<td style="padding: 8px; border: 1px solid #ddd;">${cellValue}</td>`;
+                            });
+                            html += '</tr>';
+                        });
+                        html += '</table>';
+                        output = html;
                         mimeType = 'text/html';
                         break;
                     case 'txt':
-                        output = XLSX.utils.sheet_to_txt(worksheet);
+                        let txt = '';
+                        worksheet.eachRow((row) => {
+                            const rawValues = row.values as any[];
+                            const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                            txt += values.map((v: any) => v && typeof v === 'object' ? (v.text || '') : v).join('\t') + '\n';
+                        });
+                        output = txt;
                         mimeType = 'text/plain';
                         break;
                 }
@@ -67,7 +107,7 @@ export const SpreadsheetTools: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            setError("Failed to convert file. Please ensure it's a valid spreadsheet.");
+            setError("Failed to convert file. Please ensure it's a valid XLSX/Excel file.");
         } finally {
             setIsProcessing(false);
         }
@@ -80,22 +120,28 @@ export const SpreadsheetTools: React.FC = () => {
 
         try {
             const text = await file.file.text();
-            let workbook = XLSX.utils.book_new();
-            let worksheet;
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Sheet1');
 
             if (file.file.type.includes('json') || file.file.name.endsWith('.json')) {
                 const jsonData = JSON.parse(text);
-                worksheet = XLSX.utils.json_to_sheet(Array.isArray(jsonData) ? jsonData : [jsonData]);
+                const data = Array.isArray(jsonData) ? jsonData : [jsonData];
+
+                if (data.length > 0) {
+                    // Extract columns from first object
+                    const columns = Object.keys(data[0]).map(key => ({ header: key, key: key }));
+                    worksheet.columns = columns;
+                    worksheet.addRows(data);
+                }
             } else if (file.file.type.includes('csv') || file.file.name.endsWith('.csv')) {
-                // Basic CSV parsing
-                const rows = text.split('\n').map(r => r.split(','));
-                worksheet = XLSX.utils.aoa_to_sheet(rows);
+                // Manually parse CSV to rows since we have the text
+                const rows = text.split('\n').map(row => row.split(','));
+                worksheet.addRows(rows);
             } else {
                 throw new Error("Unsupported file type for this mode");
             }
 
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-            const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+            const excelBuffer = await workbook.xlsx.writeBuffer();
 
             const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             setDownloadUrl(URL.createObjectURL(blob));
