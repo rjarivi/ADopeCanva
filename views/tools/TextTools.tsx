@@ -6,6 +6,8 @@ import {
     MessageCircle, ArrowUpDown, RefreshCcw, Syringe, BoxSelect, Circle, Globe, Terminal, Heart, Cross
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { CategoryDropdown } from '../../components/CategoryDropdown';
 
 // --- Types & Data ---
 
@@ -230,6 +232,7 @@ const CATEGORIES = [
 ];
 
 export const TextTools: React.FC = () => {
+    const isMobile = useIsMobile();
     const [text, setText] = useState('Type something...');
     const [activeCategory, setActiveCategory] = useState('all');
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -264,52 +267,88 @@ export const TextTools: React.FC = () => {
         ? STYLES
         : STYLES.filter(s => s.category === activeCategory), [activeCategory]);
 
+    const categoryOptions = useMemo(() => CATEGORIES.map(c => ({ id: c.id, label: c.label })), []);
+
     return (
-        <div className="max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in h-[calc(100vh-100px)]">
-            <div className="flex flex-col lg:flex-row gap-6 h-full">
-
-                {/* Sidebar */}
-                <div className="w-full lg:w-72 flex-shrink-0 bg-surface rounded-2xl border border-zinc-800 p-2 lg:p-4 space-y-1 lg:space-y-2 h-fit lg:h-full overflow-y-auto custom-scrollbar">
-                    <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-3 mb-4 mt-2 hidden lg:block">Categories</h3>
-
-                    {CATEGORIES.map(cat => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setActiveCategory(cat.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeCategory === cat.id
-                                ? 'bg-primary/10 text-primary shadow-sm border border-primary/20'
-                                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
-                                }`}
-                        >
-                            <cat.icon size={16} className={activeCategory === cat.id ? 'text-primary' : 'text-zinc-500'} />
-                            {cat.label}
-                        </button>
-                    ))}
+        <div className={`max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in ${isMobile ? 'h-full flex flex-col' : 'h-[calc(100vh-100px)]'}`}>
+            {isMobile && (
+                <div className="flex flex-col gap-4 mb-4">
+                    <div className="flex justify-center">
+                        <CategoryDropdown
+                            activeCategory={activeCategory}
+                            onCategoryChange={setActiveCategory}
+                            categories={categoryOptions}
+                            direction="down"
+                        />
+                    </div>
+                    <div className="relative group">
+                        <input
+                            type="text"
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Type text here..."
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-center text-xl text-white outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-zinc-700 font-sans"
+                        />
+                        {text !== 'Type something...' && text.length > 0 && (
+                            <button
+                                onClick={() => setText('')}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-xs uppercase font-bold tracking-wider"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
                 </div>
+            )}
+
+            <div className={`flex flex-col lg:flex-row gap-6 ${isMobile ? 'flex-1 overflow-hidden' : 'h-full'}`}>
+
+                {/* Sidebar - Desktop Only */}
+                {!isMobile && (
+                    <div className="w-full lg:w-72 flex-shrink-0 bg-surface rounded-2xl border border-zinc-800 p-2 lg:p-4 space-y-1 lg:space-y-2 h-fit lg:h-full overflow-y-auto custom-scrollbar">
+                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-3 mb-4 mt-2 hidden lg:block">Categories</h3>
+
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeCategory === cat.id
+                                    ? 'bg-primary/10 text-primary shadow-sm border border-primary/20'
+                                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                                    }`}
+                            >
+                                <cat.icon size={16} className={activeCategory === cat.id ? 'text-primary' : 'text-zinc-500'} />
+                                {cat.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {/* Main Content */}
-                <div className="flex-1 flex flex-col min-w-0 bg-zinc-950/30 rounded-3xl border border-zinc-900 overflow-hidden shadow-2xl relative">
+                <div className={`flex-1 flex flex-col min-w-0 bg-zinc-950/30 rounded-3xl border border-zinc-900 overflow-hidden shadow-2xl relative ${isMobile ? 'h-full' : ''}`}>
 
-                    {/* Header / Input */}
-                    <div className="p-6 border-b border-zinc-800 bg-surface/50 backdrop-blur-sm z-10 sticky top-0">
-                        <div className="relative group">
-                            <input
-                                type="text"
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                                placeholder="Type your text here..."
-                                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-5 py-4 text-xl text-white outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-zinc-600 font-sans"
-                            />
-                            {text !== 'Type something...' && text.length > 0 && (
-                                <button
-                                    onClick={() => setText('')}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-xs uppercase font-bold tracking-wider"
-                                >
-                                    Clear
-                                </button>
-                            )}
+                    {/* Header / Input - Desktop Only */}
+                    {!isMobile && (
+                        <div className="p-6 border-b border-zinc-800 bg-surface/50 backdrop-blur-sm z-10 sticky top-0">
+                            <div className="relative group">
+                                <input
+                                    type="text"
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                    placeholder="Type your text here..."
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-5 py-4 text-xl text-white outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-zinc-600 font-sans"
+                                />
+                                {text !== 'Type something...' && text.length > 0 && (
+                                    <button
+                                        onClick={() => setText('')}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white px-2 py-1 rounded hover:bg-zinc-800 transition-colors text-xs uppercase font-bold tracking-wider"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Results List */}
                     <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-3 custom-scrollbar">
@@ -322,35 +361,37 @@ export const TextTools: React.FC = () => {
                                 return (
                                     <div
                                         key={key}
-                                        className="group relative bg-surface border border-zinc-800 hover:border-zinc-600 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-black/50 hover:-translate-y-0.5"
+                                        className="group relative bg-zinc-900/50 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 rounded-2xl p-4 lg:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-lg hover:shadow-black/50 hover:-translate-y-0.5"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xl md:text-2xl text-zinc-200 mb-1 truncate font-medium font-sans">
+                                            <p className={`text-xl md:text-2xl text-zinc-200 mb-1 truncate font-medium font-sans ${isMobile ? 'text-center sm:text-left' : ''}`}>
                                                 {resultText}
                                             </p>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+                                            <div className={`flex items-center gap-2 ${isMobile ? 'justify-center sm:justify-start' : ''}`}>
+                                                <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-900/50 px-1.5 py-0.5 rounded-md border border-zinc-800 group-hover:border-zinc-700 transition-colors">
                                                     {style.name}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            className={`shrink-0 transition-all ${isCopied ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}
-                                            onClick={() => handleCopy(resultText, i)}
-                                        >
-                                            {isCopied ? (
-                                                <>
-                                                    <Check size={16} className="mr-2" /> Copied
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Copy size={16} className="mr-2" /> Copy
-                                                </>
-                                            )}
-                                        </Button>
+                                        <div className={isMobile ? 'flex justify-center w-full sm:w-auto' : ''}>
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                className={`shrink-0 transition-all ${isCopied ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}
+                                                onClick={() => handleCopy(resultText, i)}
+                                            >
+                                                {isCopied ? (
+                                                    <>
+                                                        <Check size={16} className="mr-2" /> Copied
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy size={16} className="mr-2" /> Copy
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                 );
                             })

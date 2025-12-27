@@ -7,7 +7,10 @@ import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
 import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle } from 'lucide-react';
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+
 export const MagicImageEditor: React.FC = () => {
+  const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -140,9 +143,9 @@ export const MagicImageEditor: React.FC = () => {
       {/* Controls Sidebar */}
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-surface p-6 rounded-2xl border border-zinc-800 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold truncate" title={file.file.name}>{file.file.name}</h3>
-            <button onClick={handleReset} className="text-xs text-red-400 hover:underline flex items-center gap-1">
+          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isMobile ? 'text-center' : ''}`}>
+            <h3 className="text-lg font-semibold truncate max-w-[200px] sm:max-w-none" title={file.file.name}>{file.file.name}</h3>
+            <button onClick={handleReset} className={`text-xs text-red-400 hover:underline flex items-center gap-1 ${isMobile ? 'w-full justify-center' : ''}`}>
               <RefreshCcw size={12} /> New Project
             </button>
           </div>
@@ -156,7 +159,7 @@ export const MagicImageEditor: React.FC = () => {
             />
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
+              <label className={`text-sm font-medium text-zinc-300 flex items-center gap-2 ${isMobile ? 'justify-center' : ''}`}>
                 <Wand2 size={16} className="text-purple-400" />
                 Magic Prompt
               </label>
@@ -164,7 +167,7 @@ export const MagicImageEditor: React.FC = () => {
                 value={prompt}
                 onChange={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
                 placeholder='e.g., "Add a retro filter", "Make the sky purple", "Remove the person in background"'
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600"
+                className={`w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600 transition-all ${isMobile ? 'text-center' : ''}`}
                 disabled={isProcessing}
               />
             </div>

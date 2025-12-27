@@ -35,9 +35,13 @@ const ToolRenderer = () => {
     );
 };
 
+import { useIsMobile } from './hooks/useIsMobile';
+import { MobileLayout } from './components/MobileLayout';
+
 const App = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useIsMobile();
     const [isProMode, setIsProMode] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [showBanner, setShowBanner] = useState(true);
@@ -47,11 +51,15 @@ const App = () => {
     // Sync Pro Mode with URL
     useEffect(() => {
         if (location.pathname === '/studio') {
+            if (isMobile) {
+                navigate('/', { replace: true });
+                return;
+            }
             setIsProMode(true);
         } else {
             setIsProMode(false);
         }
-    }, [location.pathname]);
+    }, [location.pathname, isMobile, navigate]);
 
     const goHome = () => {
         navigate('/');
@@ -77,6 +85,76 @@ const App = () => {
             default: return Layers;
         }
     };
+
+    const content = (
+        <div className={`h-full ${!isProMode && location.pathname === '/' ? 'max-w-7xl mx-auto p-6 md:p-10' : 'w-full h-full'}`}>
+            <Routes>
+                <Route path="/" element={
+                    <div className="space-y-8 animate-fade-in">
+                        {/* Hero / Promo */}
+                        {showBanner && !isMobile && (
+                            <div className="relative rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 h-64 flex flex-col justify-center px-10 md:px-16 animate-slide-up group shadow-2xl">
+                                <div className="absolute inset-0 bg-gradient-to-r from-teal-600/20 to-cyan-600/20 group-hover:opacity-110 transition-opacity"></div>
+                                <div className="absolute right-0 top-0 w-96 h-96 bg-teal-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+
+                                <button
+                                    onClick={() => setShowBanner(false)}
+                                    className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors z-20"
+                                >
+                                    <X size={20} />
+                                </button>
+
+                                <div className="relative z-10 max-w-lg">
+                                    <span className="inline-block px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-xs font-bold mb-4 border border-teal-500/20 shadow-sm">NEW FEATURE</span>
+                                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Smart Remove Background</h2>
+                                    <p className="text-zinc-400 mb-6">One click to isolate subjects. Powered by Gemini Vision.</p>
+                                    <button
+                                        onClick={handleHeroClick}
+                                        className="bg-white text-black px-6 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
+                                    >
+                                        Try it out
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tool Grid */}
+                        <div className="flex flex-col gap-4">
+                            <Dashboard activeCategory={activeCategory} />
+                        </div>
+
+                        {!isMobile && (
+                            <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
+                                <p>© 2024 ADopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <div className="mt-6 flex justify-center">
+                                    <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+                                </div>
+                            </footer>
+                        )}
+                    </div>
+                } />
+
+                <Route path="/studio" element={
+                    <div className="h-full w-full">
+                        <ProEditor />
+                    </div>
+                } />
+
+                <Route path="/:toolId" element={<ToolRenderer />} />
+            </Routes>
+        </div>
+    );
+
+    if (isMobile) {
+        return (
+            <MobileLayout
+                activeCategory={activeCategory}
+                setActiveCategory={setActiveCategory}
+            >
+                {content}
+            </MobileLayout>
+        );
+    }
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background text-zinc-100 font-sans selection:bg-primary/30">
@@ -143,60 +221,7 @@ const App = () => {
 
             {/* Main Content */}
             <main className={`flex-1 relative scroll-smooth bg-background ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                <div className={`h-full ${!isProMode && location.pathname === '/' ? 'max-w-7xl mx-auto p-6 md:p-10' : 'w-full h-full'}`}>
-                    <Routes>
-                        <Route path="/" element={
-                            <div className="space-y-8 animate-fade-in">
-                                {/* Hero / Promo */}
-                                {showBanner && (
-                                    <div className="relative rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 h-64 flex flex-col justify-center px-10 md:px-16 animate-slide-up group shadow-2xl">
-                                        <div className="absolute inset-0 bg-gradient-to-r from-teal-600/20 to-cyan-600/20 group-hover:opacity-110 transition-opacity"></div>
-                                        <div className="absolute right-0 top-0 w-96 h-96 bg-teal-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
-
-                                        <button
-                                            onClick={() => setShowBanner(false)}
-                                            className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors z-20"
-                                        >
-                                            <X size={20} />
-                                        </button>
-
-                                        <div className="relative z-10 max-w-lg">
-                                            <span className="inline-block px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-xs font-bold mb-4 border border-teal-500/20 shadow-sm">NEW FEATURE</span>
-                                            <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Smart Remove Background</h2>
-                                            <p className="text-zinc-400 mb-6">One click to isolate subjects. Powered by Gemini Vision.</p>
-                                            <button
-                                                onClick={handleHeroClick}
-                                                className="bg-white text-black px-6 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
-                                            >
-                                                Try it out
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Tool Grid */}
-                                <div className="flex flex-col gap-4">
-                                    <Dashboard activeCategory={activeCategory} />
-                                </div>
-
-                                <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
-                                    <p>© 2024 ADopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
-                                    <div className="mt-6 flex justify-center">
-                                        <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
-                                    </div>
-                                </footer>
-                            </div>
-                        } />
-
-                        <Route path="/studio" element={
-                            <div className="h-full w-full">
-                                <ProEditor />
-                            </div>
-                        } />
-
-                        <Route path="/:toolId" element={<ToolRenderer />} />
-                    </Routes>
-                </div>
+                {content}
             </main>
         </div>
     );
