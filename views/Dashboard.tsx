@@ -356,18 +356,23 @@ import { useNavigate } from 'react-router-dom';
 
 // ... imports ...
 
+import { useIsMobile } from '../hooks/useIsMobile';
+
 interface DashboardProps {
     activeCategory: string;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
     const navigate = useNavigate();
+    const isMobile = useIsMobile();
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredTools = useMemo(() => {
         let tools = activeCategory === 'All'
             ? TOOLS
-            : TOOLS.filter(t => t.category === activeCategory);
+            : activeCategory === 'Media'
+                ? TOOLS.filter(t => [ToolCategory.VIDEO, ToolCategory.AUDIO, ToolCategory.IMAGE].includes(t.category))
+                : TOOLS.filter(t => t.category === activeCategory);
 
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
@@ -391,6 +396,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                     <Search className="h-5 w-5 text-zinc-500" />
                 </div>
                 <input
+                    id="mobile-tool-search"
                     type="text"
                     className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:bg-zinc-900 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
                     placeholder="Search tools..."
@@ -414,7 +420,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                         {/* Content - relative with z-index to sit above glow, NO overflow hidden */}
                         <div className="relative z-10 flex flex-col h-full p-6">
                             <div className="flex items-start justify-between mb-4">
-                                <Tooltip content={tool.category} position="right">
+                                {isMobile ? (
                                     <div className={`p-3 rounded-2xl transition-colors ${tool.category === ToolCategory.VIDEO ? 'bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20' :
                                         tool.category === ToolCategory.IMAGE ? 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20' :
                                             tool.category === ToolCategory.AUDIO ? 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20' :
@@ -424,13 +430,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                                         }`}>
                                         <tool.icon size={24} />
                                     </div>
-                                </Tooltip>
+                                ) : (
+                                    <Tooltip content={tool.category} position="right">
+                                        <div className={`p-3 rounded-2xl transition-colors ${tool.category === ToolCategory.VIDEO ? 'bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20' :
+                                            tool.category === ToolCategory.IMAGE ? 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20' :
+                                                tool.category === ToolCategory.AUDIO ? 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20' :
+                                                    tool.category === ToolCategory.DOCS ? 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20' :
+                                                        tool.category === ToolCategory.TEXT ? 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20' :
+                                                            'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20'
+                                            }`}>
+                                            <tool.icon size={24} />
+                                        </div>
+                                    </Tooltip>
+                                )}
                                 {tool.popular && (
-                                    <Tooltip content="Trending among users">
+                                    isMobile ? (
                                         <span className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full border border-zinc-700 font-medium">
                                             Popular
                                         </span>
-                                    </Tooltip>
+                                    ) : (
+                                        <Tooltip content="Trending among users">
+                                            <span className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full border border-zinc-700 font-medium">
+                                                Popular
+                                            </span>
+                                        </Tooltip>
+                                    )
                                 )}
                             </div>
 

@@ -7,7 +7,10 @@ import { Play, Pause, Scissors, Film, Volume2, RotateCcw, Loader2, AlertCircle, 
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+
 export const VideoTrimmer: React.FC = () => {
+    const isMobile = useIsMobile();
     const [file, setFile] = useState<FileData | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [range, setRange] = useState({ start: 0, end: 100 });
@@ -183,12 +186,12 @@ export const VideoTrimmer: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto space-y-6 animate-slide-up">
             {/* Video Player Header */}
-            <div className="flex items-center justify-between mb-2">
+            <div className={`flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 ${isMobile ? 'text-center' : ''}`}>
                 <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                    <Film className="text-pink-500" />
-                    {file.file.name}
+                    <Film className="text-pink-500" size={20} />
+                    <span className="truncate max-w-[200px] sm:max-w-none">{file.file.name}</span>
                 </h3>
-                <Button variant="ghost" size="sm" onClick={() => setFile(null)}>
+                <Button variant="ghost" size="sm" onClick={() => setFile(null)} className={isMobile ? 'w-full sm:w-auto' : ''}>
                     <RotateCcw size={16} className="mr-2" /> Start Over
                 </Button>
             </div>
@@ -331,14 +334,14 @@ export const VideoTrimmer: React.FC = () => {
 
                 <div className="h-px bg-zinc-800"></div>
 
-                <div className="flex justify-end gap-4 items-center">
+                <div className={`flex ${isMobile ? 'flex-col' : 'justify-end'} gap-4 items-center`}>
                     {trimmedUrl ? (
-                        <Button className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/20 border-none" onClick={downloadTrimmed}>
+                        <Button className={`bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/20 border-none ${isMobile ? 'w-full' : ''}`} onClick={downloadTrimmed}>
                             <Download size={18} className="mr-2" /> Download Trimmed Clip
                         </Button>
                     ) : (
                         <Button
-                            className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 border-none"
+                            className={`bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 border-none ${isMobile ? 'w-full' : ''}`}
                             onClick={handleExport}
                             isLoading={isProcessing}
                             disabled={isProcessing}

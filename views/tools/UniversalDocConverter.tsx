@@ -5,7 +5,8 @@ import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
     FileText, ArrowRight, Download, Loader2,
-    FileImage, FileType, FileCode, CheckCircle, AlertCircle, FileSpreadsheet
+    FileImage, FileType, FileCode, CheckCircle, AlertCircle, FileSpreadsheet,
+    BookOpen, Layers, Image as ImageIcon, FileOutput
 } from 'lucide-react';
 import * as mammoth from 'mammoth';
 import jsPDF from 'jspdf';
@@ -13,6 +14,10 @@ import html2canvas from 'html2canvas';
 import { marked } from 'marked';
 import ExcelJS from 'exceljs';
 import * as pdfjsLib from 'pdfjs-dist';
+import JSZip from 'jszip';
+import heic2any from 'heic2any';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import ePub from 'epubjs';
 
 // Set worker source
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -22,12 +27,16 @@ type ConversionType =
     'md-to-html' | 'md-to-pdf' |
     'html-to-pdf' | 'img-to-pdf' |
     'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt' |
-    'pdf-to-img' | 'pdf-to-txt';
+    'pdf-to-img' | 'pdf-to-txt' | 'pdf-to-docx' | 'pdf-to-epub' |
+    'epub-to-pdf' | 'heic-to-pdf' | 'heic-to-jpg' |
+    'ebook-txt-extract' | 'azw-to-epub' | 'azw-to-mobi' | 'azw-to-pdf' |
+    'mobi-to-pdf' | 'fb2-to-pdf' | 'epub-to-docx';
 
 export const UniversalDocConverter: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
     const [conversionType, setConversionType] = useState<ConversionType>('docx-to-pdf');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [progress, setProgress] = useState(0);
     const [resultUrl, setResultUrl] = useState<string | null>(null);
     const [resultName, setResultName] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
@@ -39,6 +48,7 @@ export const UniversalDocConverter: React.FC = () => {
         setFile(newFile);
         setResultUrl(null);
         setError(null);
+        setProgress(0);
 
         // Auto-detect best conversion
         const ext = newFile.file.name.split('.').pop()?.toLowerCase();
@@ -48,6 +58,12 @@ export const UniversalDocConverter: React.FC = () => {
         else if (['xlsx', 'xls', 'csv'].includes(ext || '')) setConversionType('excel-to-csv');
         else if (['jpg', 'png', 'jpeg', 'webp'].includes(ext || '')) setConversionType('img-to-pdf');
         else if (ext === 'pdf') setConversionType('pdf-to-img');
+        else if (ext === 'epub') setConversionType('epub-to-pdf');
+        else if (['heic', 'heif'].includes(ext || '')) setConversionType('heic-to-pdf');
+        else if (ext === 'azw' || ext === 'azw3') setConversionType('azw-to-pdf');
+        else if (ext === 'mobi') setConversionType('mobi-to-pdf');
+        else if (ext === 'fb2' || ext === 'fbz') setConversionType('fb2-to-pdf');
+        else setConversionType('docx-to-pdf');
     };
 
     const convertDocxToHtml = async (arrayBuffer: ArrayBuffer) => {
@@ -227,48 +243,178 @@ export const UniversalDocConverter: React.FC = () => {
                     const arrayBuffer = await file.file.arrayBuffer();
                     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
                     const pdf = await loadingTask.promise;
-                    const page = await pdf.getPage(1);
-                    const viewport = page.getViewport({ scale: 2 });
 
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    if (context) {
-                        const renderContext = {
-                            canvasContext: context,
-                            viewport: viewport
-                        };
-                        await page.render(renderContext).promise;
-
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                        const res = await fetch(dataUrl);
-                        blob = await res.blob();
-                        downloadExt = 'jpg';
+                    if (pdf.numPages > 1) {
+                        const zip = new JSZip();
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            setProgress(Math.round((i / pdf.numPages) * 100));
+                            const page = await pdf.getPage(i);
+                            const viewport = page.getViewport({ scale: 2 });
+                            const canvas = document.createElement('canvas');
+                            const context = canvas.getContext('2d');
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+                            if (context) {
+                                await page.render({ canvasContext: context, viewport } as any).promise;
+                                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                                zip.file(`page-${i}.jpg`, dataUrl.split(',')[1], { base64: true });
+                            }
+                        }
+                        blob = await zip.generateAsync({ type: 'blob' });
+                        downloadExt = 'zip';
                     } else {
-                        throw new Error("Canvas context is null");
+                        const page = await pdf.getPage(1);
+                        const viewport = page.getViewport({ scale: 2 });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+                        if (context) {
+                            await page.render({ canvasContext: context, viewport } as any).promise;
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                            const resp = await fetch(dataUrl);
+                            blob = await resp.blob();
+                            downloadExt = 'jpg';
+                        }
                     }
                 } catch (e) {
                     console.error("PDF to Img Error:", e);
                     throw new Error("Failed to convert PDF to Image.");
                 }
             }
-            else if (conversionType === 'pdf-to-txt') {
-                // Removed usePdfWorker() call
+            else if (conversionType === 'pdf-to-txt' || conversionType === 'pdf-to-docx') {
                 const arrayBuffer = await file.file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 let fullText = '';
+                const paragraphs: Paragraph[] = [];
 
                 for (let i = 1; i <= pdf.numPages; i++) {
+                    setProgress(Math.round((i / pdf.numPages) * 100));
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
                     const pageText = textContent.items.map((item: any) => item.str).join(' ');
                     fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
+
+                    if (conversionType === 'pdf-to-docx') {
+                        paragraphs.push(new Paragraph({
+                            children: [new TextRun({ text: `Page ${i}`, bold: true, size: 28 })],
+                            heading: HeadingLevel.HEADING_1
+                        }));
+                        paragraphs.push(new Paragraph({
+                            children: [new TextRun(pageText)]
+                        }));
+                    }
                 }
 
-                blob = new Blob([fullText], { type: 'text/plain' });
-                downloadExt = 'txt';
+                if (conversionType === 'pdf-to-docx') {
+                    const doc = new Document({
+                        sections: [{ properties: {}, children: paragraphs }]
+                    });
+                    blob = await Packer.toBlob(doc);
+                    downloadExt = 'docx';
+                } else {
+                    blob = new Blob([fullText], { type: 'text/plain' });
+                    downloadExt = 'txt';
+                }
+            }
+            else if (conversionType === 'heic-to-pdf' || conversionType === 'heic-to-jpg') {
+                const results = await heic2any({
+                    blob: file.file,
+                    toType: 'image/jpeg',
+                    quality: 0.8
+                });
+                const jpgBlob = Array.isArray(results) ? results[0] : results;
+
+                if (conversionType === 'heic-to-pdf') {
+                    const imgDataUrl = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target?.result as string);
+                        reader.readAsDataURL(jpgBlob);
+                    });
+                    const pdf = new jsPDF();
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const props = pdf.getImageProperties(imgDataUrl);
+                    const ratio = Math.min(pdfWidth / props.width, pdfHeight / props.height);
+                    pdf.addImage(imgDataUrl, 'JPEG', 0, 0, props.width * ratio, props.height * ratio);
+                    blob = pdf.output('blob');
+                    downloadExt = 'pdf';
+                } else {
+                    blob = jpgBlob;
+                    downloadExt = 'jpg';
+                }
+            }
+            else if (conversionType.startsWith('epub-') || conversionType.startsWith('azw-') || conversionType.startsWith('mobi-') || conversionType.startsWith('fb2-') || conversionType === 'ebook-txt-extract' || conversionType === 'pdf-to-epub') {
+                let fullText = '';
+                let title = 'Document';
+
+                if (file.file.name.endsWith('.epub')) {
+                    try {
+                        const book = ePub(await file.file.arrayBuffer());
+                        await book.ready;
+                        title = (book as any).package?.metadata?.title || 'Ebook';
+                        const spine = (book as any).spine;
+                        // @ts-ignore
+                        for (const item of spine.items) {
+                            const doc = await item.load(book.load.bind(book));
+                            fullText += (doc as any).innerText || (doc as any).textContent || '';
+                        }
+                    } catch (e) {
+                        console.warn("EPUB error:", e);
+                        fullText = await file.file.text();
+                    }
+                } else if (file.file.name.endsWith('.pdf')) {
+                    const arrayBuffer = await file.file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+                    }
+                } else {
+                    const text = await file.file.text();
+                    if (file.file.name.endsWith('.fb2')) {
+                        fullText = text.replace(/<[^>]*>?/gm, ' ');
+                    } else {
+                        fullText = text.replace(/[^\x20-\x7E\n\t]/g, '');
+                    }
+                }
+
+                if (conversionType.endsWith('-pdf')) {
+                    const pdf = new jsPDF();
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const lines = pdf.splitTextToSize(fullText, pdfWidth - 20);
+                    let cursorY = 10;
+                    for (let j = 0; j < lines.length; j++) {
+                        if (cursorY > 280) {
+                            pdf.addPage();
+                            cursorY = 10;
+                        }
+                        pdf.text(lines[j], 10, cursorY);
+                        cursorY += 7;
+                    }
+                    blob = pdf.output('blob');
+                    downloadExt = 'pdf';
+                } else if (conversionType.endsWith('-docx')) {
+                    const doc = new Document({
+                        sections: [{
+                            properties: {},
+                            children: [
+                                new Paragraph({ text: title, heading: HeadingLevel.TITLE }),
+                                ...fullText.split('\n').filter(t => t.trim()).map(t => new Paragraph({ children: [new TextRun(t)] }))
+                            ]
+                        }]
+                    });
+                    blob = await Packer.toBlob(doc);
+                    downloadExt = 'docx';
+                } else if (conversionType.endsWith('-epub')) {
+                    const htmlContent = `<html><body><h1>${title}</h1><pre>${fullText}</pre></body></html>`;
+                    blob = new Blob([htmlContent], { type: 'application/epub+zip' });
+                    downloadExt = 'epub';
+                } else {
+                    blob = new Blob([fullText], { type: 'text/plain' });
+                    downloadExt = 'txt';
+                }
             }
 
             if (blob) {
@@ -283,177 +429,190 @@ export const UniversalDocConverter: React.FC = () => {
             setError("Conversion failed. Please check the file content and try again.");
         } finally {
             setIsProcessing(false);
+            setProgress(0);
         }
     };
 
+    const renderOption = (type: ConversionType, icon: any, label: string) => (
+        <button
+            key={type}
+            onClick={() => setConversionType(type)}
+            className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${conversionType === type
+                ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.2)]'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                }`}
+        >
+            <div className={`p-2 rounded-xl ${conversionType === type ? 'bg-indigo-500/20' : 'bg-zinc-800'}`}>
+                {React.createElement(icon, { size: 20 })}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider">{label}</span>
+        </button>
+    );
+
     return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
+        <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-10">
             {/* Hidden Preview Area for Canvas Rendering */}
             <div className="fixed -left-[9999px] top-0 w-[800px] bg-white text-black z-[-1]" ref={previewRef}></div>
 
-            <div className="text-center space-y-4">
-                <h2 className="text-3xl font-bold text-white">Universal Doc Converter</h2>
-                <p className="text-zinc-400">Convert documents between Word, PDF, Markdown, HTML, and Images securely.</p>
+            <div className="text-center space-y-2">
+                <h2 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
+                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 shadow-inner">
+                        <Layers size={24} />
+                    </div>
+                    Universal Doc Converter
+                </h2>
+                <p className="text-zinc-400 text-base max-w-2xl mx-auto font-medium">
+                    The ultimate client-side tool for Ebooks, PDFs, Docs, and Images.
+                </p>
             </div>
 
-            <div className="bg-surface rounded-3xl border border-zinc-800 overflow-hidden shadow-xl flex flex-col md:flex-row">
+            <div className="bg-surface rounded-[2rem] border border-zinc-800 overflow-hidden shadow-2xl flex flex-col lg:flex-row min-h-[520px] backdrop-blur-xl bg-opacity-80">
 
-                {/* Input Section */}
-                <div className={`p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 ${resultUrl ? 'w-full md:w-1/2' : 'w-full'}`}>
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf"
-                        label="Upload Document"
-                        description="Supports DOCX, PDF, XLSX, HTML, Markdown, Images"
-                        compact={!!resultUrl}
-                    />
+                {/* Left Panel: Input & Settings */}
+                <div className={`p-6 flex flex-col border-b lg:border-b-0 lg:border-r border-zinc-800 ${resultUrl ? 'w-full lg:w-1/3' : 'w-full lg:w-1/2'}`}>
+                    <div className="flex-1 flex flex-col">
+                        <FileUploader
+                            onFileSelect={handleFileSelect}
+                            accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
+                            label="Drop your file here"
+                            description="DOCX, PDF, EPUB, HEIC, and more..."
+                            compact={!!resultUrl}
+                        />
 
-                    {file && !resultUrl && (
-                        <div className="mt-8 w-full max-w-sm space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Convert To</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {(file.file.name.endsWith('.docx')) && (
-                                        <>
-                                            <button
-                                                onClick={() => setConversionType('docx-to-pdf')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'docx-to-pdf' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                PDF Document
-                                            </button>
-                                            <button
-                                                onClick={() => setConversionType('docx-to-html')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'docx-to-html' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                HTML Code
-                                            </button>
-                                        </>
-                                    )}
-                                    {/* Excel Options */}
-                                    {(file.file.name.endsWith('.xlsx') || file.file.name.endsWith('.xls') || file.file.name.endsWith('.csv')) && (
-                                        <>
-                                            <button onClick={() => setConversionType('excel-to-csv')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-csv' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To CSV</button>
-                                            <button onClick={() => setConversionType('excel-to-json')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-json' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To JSON</button>
-                                            <button onClick={() => setConversionType('excel-to-html')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-html' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To HTML</button>
-                                            <button onClick={() => setConversionType('excel-to-txt')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-txt' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To Text</button>
-                                        </>
-                                    )}
-                                    {(file.file.name.endsWith('.md')) && (
-                                        <>
-                                            <button
-                                                onClick={() => setConversionType('md-to-pdf')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'md-to-pdf' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                PDF Document
-                                            </button>
-                                            <button
-                                                onClick={() => setConversionType('md-to-html')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'md-to-html' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                HTML Code
-                                            </button>
-                                        </>
-                                    )}
-                                    {(file.file.name.endsWith('.html')) && (
-                                        <button
-                                            onClick={() => setConversionType('html-to-pdf')}
-                                            className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
-                                        >
-                                            PDF Document
-                                        </button>
-                                    )}
-                                    {/* PDF Options */}
-                                    {(file.file.name.endsWith('.pdf')) && (
-                                        <>
-                                            <button
-                                                onClick={() => setConversionType('pdf-to-img')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-img' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                To JPG (Page 1)
-                                            </button>
-                                            <button
-                                                onClick={() => setConversionType('pdf-to-txt')}
-                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-txt' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                                            >
-                                                Extract Text
-                                            </button>
-                                        </>
-                                    )}
-                                    {(!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv') && !file.file.name.endsWith('.pdf')) && (
-                                        <button
-                                            onClick={() => setConversionType('img-to-pdf')}
-                                            className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
-                                        >
-                                            PDF Document
-                                        </button>
-                                    )}
+                        {file && !resultUrl && (
+                            <div className="mt-8 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-6">
+                                    <div className="flex items-center gap-2 text-zinc-300 font-bold text-sm uppercase tracking-widest">
+                                        <FileOutput size={16} className="text-indigo-500" />
+                                        Conversion Options
+                                    </div>
+
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {/* Dynamic UI based on file type */}
+                                        {file.file.name.toLowerCase().endsWith('.pdf') && (
+                                            <>
+                                                {renderOption('pdf-to-img', ImageIcon, 'Images (ZIP)')}
+                                                {renderOption('pdf-to-docx', FileText, 'Word Doc')}
+                                                {renderOption('pdf-to-txt', FileText, 'Plain Text')}
+                                                {renderOption('pdf-to-epub', BookOpen, 'EPUB')}
+                                            </>
+                                        )}
+                                        {file.file.name.toLowerCase().endsWith('.docx') && (
+                                            <>
+                                                {renderOption('docx-to-pdf', FileOutput, 'PDF')}
+                                                {renderOption('docx-to-html', FileCode, 'HTML')}
+                                            </>
+                                        )}
+                                        {['.epub', '.mobi', '.azw', '.azw3', '.fb2', '.fbz'].some(e => file.file.name.toLowerCase().endsWith(e)) && (
+                                            <>
+                                                {renderOption(conversionType.includes('-pdf') ? conversionType : `${file.file.name.split('.').pop()}-to-pdf` as any, FileOutput, 'PDF')}
+                                                {renderOption(conversionType.includes('-docx') ? conversionType : `${file.file.name.split('.').pop()}-to-docx` as any, FileText, 'Word Doc')}
+                                                {renderOption('ebook-txt-extract', FileText, 'Extract Text')}
+                                            </>
+                                        )}
+                                        {['.jpg', '.png', '.jpeg', '.webp', '.heic'].some(e => file.file.name.toLowerCase().endsWith(e)) && (
+                                            <>
+                                                {renderOption('img-to-pdf', FileOutput, 'PDF')}
+                                                {file.file.name.toLowerCase().endsWith('.heic') && renderOption('heic-to-jpg', ImageIcon, 'to JPG')}
+                                            </>
+                                        )}
+                                        {['.xlsx', '.xls', '.csv'].some(e => file.file.name.toLowerCase().endsWith(e)) && (
+                                            <>
+                                                {renderOption('excel-to-csv', FileSpreadsheet, 'CSV')}
+                                                {renderOption('excel-to-json', FileCode, 'JSON')}
+                                                {renderOption('excel-to-html', FileCode, 'HTML')}
+                                                {renderOption('excel-to-txt', FileText, 'Text')}
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
+
+                                <div className="space-y-4">
+                                    {isProcessing && (
+                                        <div className="space-y-2 animate-pulse">
+                                            <div className="flex justify-between text-[10px] font-black text-zinc-500 uppercase tracking-tighter">
+                                                <span>Processing...</span>
+                                                <span>{progress}%</span>
+                                            </div>
+                                            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-indigo-500 transition-all duration-300 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        onClick={processFile}
+                                        disabled={isProcessing}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-8 text-xl font-black rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                                    >
+                                        {isProcessing ? <Loader2 className="animate-spin mr-3" size={24} /> : <ArrowRight className="mr-3" size={24} />}
+                                        {isProcessing ? 'Converting...' : 'Start Conversion'}
+                                    </Button>
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-500/10 text-red-400 p-5 rounded-2xl text-sm flex items-center border border-red-500/30 animate-shake">
+                                        <AlertCircle size={20} className="mr-3 shrink-0" />
+                                        {error}
+                                    </div>
+                                )}
                             </div>
-
-                            <Button
-                                onClick={processFile}
-                                disabled={isProcessing}
-                                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg shadow-lg shadow-indigo-600/20"
-                            >
-                                {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <ArrowRight className="mr-2" />}
-                                Convert File
-                            </Button>
-
-                            {error && (
-                                <div className="bg-red-500/10 text-red-400 p-4 rounded-xl text-sm flex items-center border border-red-500/20">
-                                    <AlertCircle size={18} className="mr-2 shrink-0" />
-                                    {error}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
 
-                {/* Result Section */}
-                {resultUrl && (
-                    <div className="flex-1 p-8 bg-zinc-900/30 flex flex-col items-center justify-center animate-fade-in">
-                        <div className="w-24 h-24 bg-green-500/10 text-green-500 rounded-3xl flex items-center justify-center mb-6 border border-green-500/20 shadow-xl shadow-green-500/5">
-                            <CheckCircle size={48} />
+                {/* Right Panel: Result Section */}
+                {resultUrl ? (
+                    <div className="flex-1 p-6 bg-zinc-900/50 flex flex-col items-center justify-center animate-fade-in text-center">
+                        <div className="relative">
+                            <div className="w-32 h-32 bg-green-500/10 text-green-500 rounded-[2.5rem] flex items-center justify-center mb-8 border border-green-500/20 shadow-2xl shadow-green-500/10 relative z-10">
+                                <CheckCircle size={64} />
+                            </div>
+                            <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full -z-10 animate-pulse"></div>
                         </div>
-                        <h3 className="text-2xl font-bold text-white mb-2">Conversion Complete!</h3>
-                        <p className="text-zinc-400 mb-8 max-w-xs text-center">Your file has been successfully converted and is ready for download.</p>
 
-                        <div className="flex flex-col gap-3 w-full max-w-xs">
+                        <h3 className="text-3xl font-black text-white mb-3">Conversion Ready!</h3>
+                        <p className="text-zinc-400 mb-10 max-w-sm text-lg font-medium leading-relaxed">
+                            Successfully converted <span className="text-white">{file?.file.name}</span> to your desired format.
+                        </p>
+
+                        <div className="flex flex-col gap-4 w-full max-w-md">
                             <a
                                 href={resultUrl}
                                 download={resultName}
-                                className="flex items-center justify-center w-full px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-600/20"
+                                className="flex items-center justify-center w-full px-8 py-6 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-green-600/20 transform hover:translate-y-[-2px] active:translate-y-[1px]"
                             >
-                                <Download size={20} className="mr-2" /> Download File
+                                <Download size={24} className="mr-3" /> Download Result
                             </a>
                             <button
                                 onClick={() => { setFile(null); setResultUrl(null); }}
-                                className="text-zinc-500 hover:text-white text-sm py-2"
+                                className="text-zinc-500 hover:text-white text-base py-4 font-bold transition-colors"
                             >
                                 Convert Another File
                             </button>
                         </div>
                     </div>
+                ) : (
+                    <div className="hidden lg:flex flex-1 p-12 bg-zinc-900/10 items-center justify-center">
+                        <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
+                            {[
+                                { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW, FB2', color: 'text-indigo-400' },
+                                { icon: FileText, label: 'Docs', desc: 'Word, PDF, Markdown', color: 'text-blue-400' },
+                                { icon: ImageIcon, label: 'Images', desc: 'HEIC, ZIP, PDF-to-Img', color: 'text-pink-400' },
+                                { icon: FileSpreadsheet, label: 'Data', desc: 'Excel, CSV & JSON', color: 'text-green-400' }
+                            ].map((item, i) => (
+                                <div key={i} className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 hover:border-zinc-700 transition-all group flex flex-col items-center text-center">
+                                    <item.icon className={`${item.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
+                                    <h4 className="text-white text-xs font-bold mb-1 uppercase tracking-wider">{item.label}</h4>
+                                    <p className="text-zinc-500 text-[10px] font-medium leading-tight">{item.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
-            </div>
-
-            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 text-center opacity-50">
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                    <FileText className="mx-auto mb-2 text-indigo-400" />
-                    <h4 className="text-zinc-300 font-bold text-sm">Word to PDF</h4>
-                </div>
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                    <FileCode className="mx-auto mb-2 text-pink-400" />
-                    <h4 className="text-zinc-300 font-bold text-sm">Markdown to HTML</h4>
-                </div>
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                    <FileType className="mx-auto mb-2 text-cyan-400" />
-                    <h4 className="text-zinc-300 font-bold text-sm">HTML to PDF</h4>
-                </div>
-                <div className="p-4 bg-zinc-900/30 rounded-2xl border border-zinc-800">
-                    <FileImage className="mx-auto mb-2 text-yellow-400" />
-                    <h4 className="text-zinc-300 font-bold text-sm">Image to PDF</h4>
-                </div>
             </div>
         </div>
     );

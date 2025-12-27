@@ -7,7 +7,10 @@ import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
 import { Eraser, Download, RefreshCcw, Sliders, AlertCircle, Layers } from 'lucide-react';
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+
 export const BackgroundRemover: React.FC = () => {
+  const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
@@ -140,15 +143,15 @@ export const BackgroundRemover: React.FC = () => {
       {/* Controls Sidebar */}
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-surface p-6 rounded-2xl border border-zinc-800 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold truncate" title={file.file.name}>{file.file.name}</h3>
-            <button onClick={handleReset} className="text-xs text-red-400 hover:underline flex items-center gap-1">
+          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isMobile ? 'text-center' : ''}`}>
+            <h3 className="text-lg font-semibold truncate max-w-[200px] sm:max-w-none" title={file.file.name}>{file.file.name}</h3>
+            <button onClick={handleReset} className={`text-xs text-red-400 hover:underline flex items-center gap-1 ${isMobile ? 'w-full justify-center' : ''}`}>
               <RefreshCcw size={12} /> New Project
             </button>
           </div>
 
           <div className="space-y-4">
-            <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50">
+            <div className={`bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50 ${isMobile ? 'text-center' : ''}`}>
               <p className="text-sm text-zinc-400">
                 This tool uses <strong>Gemini 2.5 Flash</strong> to identify the main subject and regenerate the image without the background context.
               </p>
