@@ -57,8 +57,8 @@ const App = () => {
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 shrink-0">
                         <Command className="text-white" size={20} />
                     </div>
-                    <span className="text-2xl tracking-tight text-white hidden md:block" style={{ fontFamily: '"Jersey 10", sans-serif' }}>
-                        ADopeCanva <span className={`font-sans font-normal text-zinc-400 text-lg transition-opacity ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
+                    <span className="text-3xl tracking-tight text-white hidden md:block" style={{ fontFamily: '"Jersey 10", sans-serif' }}>
+                        ADopeCanva <span className={`font-sans font-normal text-zinc-400 text-xl transition-opacity ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
                     </span>
                 </div>
 
