@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { ToolItem, ToolCategory } from '../types';
 import {
+    Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
     Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo
@@ -337,57 +338,91 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, activeCategory }) => {
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredTools = activeCategory === 'All'
-        ? TOOLS
-        : TOOLS.filter(t => t.category === activeCategory);
+    const filteredTools = useMemo(() => {
+        let tools = activeCategory === 'All'
+            ? TOOLS
+            : TOOLS.filter(t => t.category === activeCategory);
+
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            tools = tools.filter(t =>
+                t.title.toLowerCase().includes(query) ||
+                t.description.toLowerCase().includes(query)
+            );
+        }
+        return tools;
+    }, [activeCategory, searchQuery]);
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in">
-            {filteredTools.map((tool) => (
-                <div
-                    key={tool.id}
-                    onClick={() => onSelectTool(tool)}
-                    className="group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 p-6 rounded-3xl transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 relative overflow-hidden flex flex-col h-full"
-                >
-                    {/* Background Glow Effect */}
-                    <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
-
-                    <div className="flex items-start justify-between mb-4">
-                        <Tooltip content={tool.category} position="right">
-                            <div className={`p-3 rounded-2xl transition-colors ${tool.category === ToolCategory.VIDEO ? 'bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20' :
-                                tool.category === ToolCategory.IMAGE ? 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20' :
-                                    tool.category === ToolCategory.AUDIO ? 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20' :
-                                        tool.category === ToolCategory.PDF ? 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20' :
-                                            tool.category === ToolCategory.TEXT ? 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20' :
-                                                'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20'
-                                }`}>
-                                <tool.icon size={24} />
-                            </div>
-                        </Tooltip>
-                        {tool.popular && (
-                            <Tooltip content="Trending among users">
-                                <span className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full border border-zinc-700 font-medium">
-                                    Popular
-                                </span>
-                            </Tooltip>
-                        )}
-                    </div>
-
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold text-zinc-100 mb-2 group-hover:text-white transition-colors">
-                            {tool.title}
-                        </h3>
-                        <p className="text-sm text-zinc-400 group-hover:text-zinc-300 line-clamp-2">
-                            {tool.description}
-                        </p>
-                    </div>
-
-                    <div className="mt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-primary transition-colors pt-2">
-                        Try now <span className="ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
-                    </div>
+        <div className="space-y-6 animate-fade-in">
+            {/* Search Bar */}
+            <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-zinc-500" />
                 </div>
-            ))}
+                <input
+                    type="text"
+                    className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:bg-zinc-900 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                    placeholder="Search tools..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredTools.map((tool) => (
+                    <div
+                        key={tool.id}
+                        onClick={() => onSelectTool(tool)}
+                        className="group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 p-6 rounded-3xl transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 relative overflow-hidden flex flex-col h-full"
+                    >
+                        {/* Background Glow Effect */}
+                        <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+
+                        <div className="flex items-start justify-between mb-4">
+                            <Tooltip content={tool.category} position="right">
+                                <div className={`p-3 rounded-2xl transition-colors ${tool.category === ToolCategory.VIDEO ? 'bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20' :
+                                    tool.category === ToolCategory.IMAGE ? 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20' :
+                                        tool.category === ToolCategory.AUDIO ? 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20' :
+                                            tool.category === ToolCategory.PDF ? 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20' :
+                                                tool.category === ToolCategory.TEXT ? 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20' :
+                                                    'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20'
+                                    }`}>
+                                    <tool.icon size={24} />
+                                </div>
+                            </Tooltip>
+                            {tool.popular && (
+                                <Tooltip content="Trending among users">
+                                    <span className="bg-zinc-800 text-zinc-300 text-xs px-2 py-1 rounded-full border border-zinc-700 font-medium">
+                                        Popular
+                                    </span>
+                                </Tooltip>
+                            )}
+                        </div>
+
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-zinc-100 mb-2 group-hover:text-white transition-colors">
+                                {tool.title}
+                            </h3>
+                            <p className="text-sm text-zinc-400 group-hover:text-zinc-300 line-clamp-2">
+                                {tool.description}
+                            </p>
+                        </div>
+
+                        <div className="mt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-primary transition-colors pt-2">
+                            Try now <span className="ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                        </div>
+                    </div>
+                ))}
+
+                {filteredTools.length === 0 && (
+                    <div className="col-span-full text-center py-12 text-zinc-500">
+                        <p>No tools found matching "{searchQuery}"</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
