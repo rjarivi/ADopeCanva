@@ -50,48 +50,6 @@ export const UniversalDocConverter: React.FC = () => {
         else if (ext === 'pdf') setConversionType('pdf-to-img');
     };
 
-    // ... (lines 47-233)
-
-    {
-        (file.file.name.endsWith('.html')) && (
-            <button
-                onClick={() => setConversionType('html-to-pdf')}
-                className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
-            >
-                PDF Document
-            </button>
-        )
-    }
-    {/* PDF Options */ }
-    {
-        (file.file.name.endsWith('.pdf')) && (
-            <>
-                <button
-                    onClick={() => setConversionType('pdf-to-img')}
-                    className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-img' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                >
-                    To JPG (Page 1)
-                </button>
-                <button
-                    onClick={() => setConversionType('pdf-to-txt')}
-                    className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-txt' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
-                >
-                    Extract Text
-                </button>
-            </>
-        )
-    }
-    {
-        (!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv') && !file.file.name.endsWith('.pdf')) && (
-            <button
-                onClick={() => setConversionType('img-to-pdf')}
-                className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
-            >
-                PDF Document
-            </button>
-        )
-    }
-
     const convertDocxToHtml = async (arrayBuffer: ArrayBuffer) => {
         const result = await mammoth.convertToHtml({ arrayBuffer });
         return result.value; // The generated HTML
@@ -404,7 +362,24 @@ export const UniversalDocConverter: React.FC = () => {
                                             PDF Document
                                         </button>
                                     )}
-                                    {(!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv')) && (
+                                    {/* PDF Options */}
+                                    {(file.file.name.endsWith('.pdf')) && (
+                                        <>
+                                            <button
+                                                onClick={() => setConversionType('pdf-to-img')}
+                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-img' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
+                                            >
+                                                To JPG (Page 1)
+                                            </button>
+                                            <button
+                                                onClick={() => setConversionType('pdf-to-txt')}
+                                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${conversionType === 'pdf-to-txt' ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800'}`}
+                                            >
+                                                Extract Text
+                                            </button>
+                                        </>
+                                    )}
+                                    {(!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv') && !file.file.name.endsWith('.pdf')) && (
                                         <button
                                             onClick={() => setConversionType('img-to-pdf')}
                                             className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
