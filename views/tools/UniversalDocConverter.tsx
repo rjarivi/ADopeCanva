@@ -158,7 +158,7 @@ export const UniversalDocConverter: React.FC = () => {
                 <p className="text-zinc-400">Convert documents between Word, PDF, Markdown, HTML, and Images securely.</p>
             </div>
 
-            <div className="bg-surface rounded-3xl border border-zinc-800 overflow-hidden shadow-xl min-h-[500px] flex flex-col md:flex-row">
+            <div className="bg-surface rounded-3xl border border-zinc-800 overflow-hidden shadow-xl flex flex-col md:flex-row">
 
                 {/* Input Section */}
                 <div className={`p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 ${resultUrl ? 'w-full md:w-1/2' : 'w-full'}`}>
