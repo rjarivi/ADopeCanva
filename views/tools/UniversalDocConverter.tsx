@@ -4,14 +4,19 @@ import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
     FileText, ArrowRight, Download, Loader2,
-    FileImage, FileType, FileCode, CheckCircle, AlertCircle
+    FileImage, FileType, FileCode, CheckCircle, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 import * as mammoth from 'mammoth';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { marked } from 'marked';
+import ExcelJS from 'exceljs';
 
-type ConversionType = 'docx-to-html' | 'docx-to-pdf' | 'md-to-html' | 'md-to-pdf' | 'html-to-pdf' | 'img-to-pdf';
+type ConversionType =
+    'docx-to-html' | 'docx-to-pdf' |
+    'md-to-html' | 'md-to-pdf' |
+    'html-to-pdf' | 'img-to-pdf' |
+    'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt';
 
 export const UniversalDocConverter: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
@@ -34,6 +39,7 @@ export const UniversalDocConverter: React.FC = () => {
         if (ext === 'docx') setConversionType('docx-to-pdf');
         else if (ext === 'md') setConversionType('md-to-pdf');
         else if (ext === 'html') setConversionType('html-to-pdf');
+        else if (['xlsx', 'xls', 'csv'].includes(ext || '')) setConversionType('excel-to-csv');
         else if (['jpg', 'png', 'jpeg', 'webp'].includes(ext || '')) setConversionType('img-to-pdf');
     };
 
@@ -114,6 +120,65 @@ export const UniversalDocConverter: React.FC = () => {
                 blob = pdfBlob;
                 downloadExt = 'pdf';
             }
+            else if (conversionType.startsWith('excel-to-')) {
+                const arrayBuffer = await file.file.arrayBuffer();
+                const workbook = new ExcelJS.Workbook();
+                await workbook.xlsx.load(arrayBuffer);
+                const worksheet = workbook.worksheets[0];
+
+                if (conversionType === 'excel-to-csv') {
+                    const csvBuffer = await workbook.csv.writeBuffer();
+                    const output = new TextDecoder().decode(csvBuffer);
+                    blob = new Blob([output], { type: 'text/csv' });
+                    downloadExt = 'csv';
+                }
+                else if (conversionType === 'excel-to-json') {
+                    const jsonData: any[] = [];
+                    let headers: any[] = [];
+                    worksheet.eachRow((row, rowNumber) => {
+                        if (rowNumber === 1) {
+                            const rawValues = row.values as any[];
+                            headers = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                        } else {
+                            const rowData: any = {};
+                            const rawValues = row.values as any[];
+                            const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                            values.forEach((cell: any, colIdx: number) => {
+                                if (headers[colIdx]) rowData[headers[colIdx]] = cell;
+                            });
+                            jsonData.push(rowData);
+                        }
+                    });
+                    blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+                    downloadExt = 'json';
+                }
+                else if (conversionType === 'excel-to-html') {
+                    let html = '<table border="1" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">';
+                    worksheet.eachRow((row) => {
+                        html += '<tr>';
+                        const rawValues = row.values as any[];
+                        const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                        values.forEach((val: any) => {
+                            const cellValue = val && typeof val === 'object' ? (val.text || val.result || '') : (val || '');
+                            html += `<td style="padding: 8px; border: 1px solid #ddd;">${cellValue}</td>`;
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</table>';
+                    blob = new Blob([html], { type: 'text/html' });
+                    downloadExt = 'html';
+                }
+                else if (conversionType === 'excel-to-txt') {
+                    let txt = '';
+                    worksheet.eachRow((row) => {
+                        const rawValues = row.values as any[];
+                        const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
+                        txt += values.map((v: any) => v && typeof v === 'object' ? (v.text || '') : v).join('\t') + '\n';
+                    });
+                    blob = new Blob([txt], { type: 'text/plain' });
+                    downloadExt = 'txt';
+                }
+            }
             else if (conversionType === 'img-to-pdf') {
                 const imgDataUrl = await new Promise<string>((resolve) => {
                     const reader = new FileReader();
@@ -170,9 +235,9 @@ export const UniversalDocConverter: React.FC = () => {
                 <div className={`p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 ${resultUrl ? 'w-full md:w-1/2' : 'w-full'}`}>
                     <FileUploader
                         onFileSelect={handleFileSelect}
-                        accept=".docx, .md, .html, .jpg, .png, .webp"
+                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv"
                         label="Upload Document"
-                        description="Supports DOCX, Markdown, HTML, & Images"
+                        description="Supports DOCX, XLSX, HTML, Markdown, Images"
                         compact={!!resultUrl}
                     />
 
@@ -195,6 +260,15 @@ export const UniversalDocConverter: React.FC = () => {
                                             >
                                                 HTML Code
                                             </button>
+                                        </>
+                                    )}
+                                    {/* Excel Options */}
+                                    {(file.file.name.endsWith('.xlsx') || file.file.name.endsWith('.xls') || file.file.name.endsWith('.csv')) && (
+                                        <>
+                                            <button onClick={() => setConversionType('excel-to-csv')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-csv' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To CSV</button>
+                                            <button onClick={() => setConversionType('excel-to-json')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-json' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To JSON</button>
+                                            <button onClick={() => setConversionType('excel-to-html')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-html' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To HTML</button>
+                                            <button onClick={() => setConversionType('excel-to-txt')} className={`p-2 rounded-lg text-xs font-medium border ${conversionType === 'excel-to-txt' ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>To Text</button>
                                         </>
                                     )}
                                     {(file.file.name.endsWith('.md')) && (
@@ -221,7 +295,7 @@ export const UniversalDocConverter: React.FC = () => {
                                             PDF Document
                                         </button>
                                     )}
-                                    {(!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html')) && (
+                                    {(!file.file.name.endsWith('.docx') && !file.file.name.endsWith('.md') && !file.file.name.endsWith('.html') && !file.file.name.endsWith('.xlsx') && !file.file.name.endsWith('.xls') && !file.file.name.endsWith('.csv')) && (
                                         <button
                                             onClick={() => setConversionType('img-to-pdf')}
                                             className={`p-3 rounded-xl border text-sm font-medium transition-all bg-indigo-500/20 border-indigo-500 text-indigo-400`}
