@@ -26,6 +26,7 @@ import { BackgroundRemover } from './tools/BackgroundRemover';
 import { TextTools } from './tools/TextTools';
 import { TextCleaner } from './tools/TextCleaner';
 import { UniversalConverter } from './tools/UniversalConverter';
+import { UniversalDocConverter } from './tools/UniversalDocConverter';
 import { ApngMaker, VideoToApng, GifToApng, ApngToGif, ApngToWebp, ApngToMp4, MngToApng } from './tools/ApngTools';
 import { WebpMaker, VideoToWebp, GifToWebp, JpgToWebp, PngToWebp, AvifToWebp, WebpToGif, WebpToJpg, WebpToPng, WebpToMp4 } from './tools/WebpTools';
 import { SpreadsheetTools } from './tools/SpreadsheetTools';
@@ -39,6 +40,15 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.DOCS,
         icon: FileSpreadsheet,
         component: <SpreadsheetTools />,
+        popular: true
+    },
+    {
+        id: 'universal-doc-converter',
+        title: 'Universal Doc Converter',
+        description: 'Convert Word, Markdown, HTML, and Images to PDF/HTML.',
+        category: ToolCategory.DOCS,
+        icon: ArrowRightLeft,
+        component: <UniversalDocConverter />,
         popular: true
     },
     {
