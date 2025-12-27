@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
@@ -121,10 +122,22 @@ export const UniversalDocConverter: React.FC = () => {
                 downloadExt = 'pdf';
             }
             else if (conversionType.startsWith('excel-to-')) {
-                const arrayBuffer = await file.file.arrayBuffer();
                 const workbook = new ExcelJS.Workbook();
-                await workbook.xlsx.load(arrayBuffer);
-                const worksheet = workbook.worksheets[0];
+                let mainWorksheet: ExcelJS.Worksheet;
+
+                if (file.file.name.endsWith('.csv') || file.file.type === 'text/csv' || fileExt === 'csv') {
+                    const text = await file.file.text();
+                    const parseResult = Papa.parse(text, { header: false });
+                    mainWorksheet = workbook.addWorksheet('Sheet1');
+                    if (parseResult.data && Array.isArray(parseResult.data)) {
+                        mainWorksheet.addRows(parseResult.data as any[][]);
+                    }
+                } else {
+                    const arrayBuffer = await file.file.arrayBuffer();
+                    await workbook.xlsx.load(arrayBuffer);
+                    mainWorksheet = workbook.worksheets[0];
+                }
+                const worksheet = mainWorksheet;
 
                 if (conversionType === 'excel-to-csv') {
                     const csvBuffer = await workbook.csv.writeBuffer();
