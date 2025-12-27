@@ -58,7 +58,7 @@ const App = () => {
                         <Command className="text-white" size={20} />
                     </div>
                     <span className="text-xl font-bold tracking-tight text-white hidden md:block">
-                        EzEdit <span className={`font-normal text-zinc-400 transition-opacity ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
+                        AdopeCanva <span className={`font-normal text-zinc-400 transition-opacity ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
                     </span>
                 </div>
 
@@ -159,7 +159,7 @@ const App = () => {
                             </div>
 
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
-                                <p>© 2024 EzEdit - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <p>© 2024 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
                             </footer>
                         </div>
                     )}
