@@ -12,6 +12,7 @@ interface FileUploaderProps {
   multiple?: boolean;
   className?: string;
   icon?: React.ElementType;
+  compact?: boolean;
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
@@ -22,7 +23,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   description = "Drag & drop or click to browse",
   multiple = false,
   className = "",
-  icon: Icon = Upload
+  icon: Icon = Upload,
+  compact = false
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -130,13 +132,13 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center cursor-pointer h-full">
-          <div className={`p-4 rounded-full mb-4 transition-all duration-300 border border-transparent ${isDragging ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500' : 'bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 group-hover:border-indigo-500 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] group-hover:scale-110'}`}>
-            <Icon size={32} />
+        <div className={`flex flex-col items-center justify-center ${compact ? 'py-4 px-4' : 'py-12 px-4'} text-center cursor-pointer h-full`}>
+          <div className={`${compact ? 'p-2 mb-2' : 'p-4 mb-4'} rounded-full transition-all duration-300 border border-transparent ${isDragging ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500' : 'bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 group-hover:border-indigo-500 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] group-hover:scale-110'}`}>
+            <Icon size={compact ? 20 : 32} />
           </div>
-          <h3 className="text-lg font-semibold text-zinc-100 mb-1">{label}</h3>
-          <p className="text-sm text-zinc-400 max-w-xs">{description}</p>
-          {multiple && <span className="mt-2 text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">Multi-file supported</span>}
+          <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-zinc-100 mb-1`}>{label}</h3>
+          {!compact && <p className="text-sm text-zinc-400 max-w-xs">{description}</p>}
+          {multiple && !compact && <span className="mt-2 text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">Multi-file supported</span>}
 
           {isDragging && (
             <div className="absolute inset-0 flex items-center justify-center bg-primary/90 backdrop-blur-sm transition-opacity">
