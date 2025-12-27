@@ -14,7 +14,7 @@ import { VideoToGif } from './tools/VideoToGif';
 import { AudioMerger } from './tools/AudioMerger';
 import { AudioConverter } from './tools/AudioConverter';
 import { ImageCropper } from './tools/ImageCropper';
-import { PdfSuite } from './tools/PdfSuite';
+import { PdfSuite } from './tools/DocSuite';
 import { JsonFormatter } from './tools/JsonFormatter';
 import { MagicImageEditor } from './tools/MagicImageEditor';
 import { GifSuite } from './tools/GifSuite';
@@ -154,7 +154,7 @@ export const TOOLS: ToolItem[] = [
         id: 'pdf-tools',
         title: 'PDF Suite',
         description: 'Merge, split, or compress PDF documents.',
-        category: ToolCategory.PDF,
+        category: ToolCategory.DOCS,
         icon: FileText,
         component: <PdfSuite />
     },
@@ -398,7 +398,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                                     <div className={`p-3 rounded-2xl transition-colors ${tool.category === ToolCategory.VIDEO ? 'bg-pink-500/10 text-pink-500 group-hover:bg-pink-500/20' :
                                         tool.category === ToolCategory.IMAGE ? 'bg-blue-500/10 text-blue-500 group-hover:bg-blue-500/20' :
                                             tool.category === ToolCategory.AUDIO ? 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20' :
-                                                tool.category === ToolCategory.PDF ? 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20' :
+                                                tool.category === ToolCategory.DOCS ? 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20' :
                                                     tool.category === ToolCategory.TEXT ? 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20' :
                                                         'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20'
                                         }`}>
