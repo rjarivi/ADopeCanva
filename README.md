@@ -2,9 +2,9 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# AdopeCanva - The Ultimate Web-Based Media Toolkit
+# ADopeCanva - The Ultimate Web-Based Media Toolkit
 
-**AdopeCanva** is a powerful, privacy-focused web application offering a comprehensive suite of tools for content creators, developers, and everyday users. Built with the latest web technologies, it runs almost entirely in your browser using WebAssembly.
+**ADopeCanva** is a powerful, privacy-focused web application offering a comprehensive suite of tools for content creators, developers, and everyday users. Built with the latest web technologies, it runs almost entirely in your browser using WebAssembly.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/React-19-blue)
@@ -40,7 +40,7 @@
 *   **Audio Tools**: Merge multiple tracks or convert between MP3, WAV, and AAC.
 
 ## 🔒 Privacy First architecture
-Unlike other online tools, AdopeCanva processes your files **locally in your browser** using **FFmpeg WASM**.
+Unlike other online tools, ADopeCanva processes your files **locally in your browser** using **FFmpeg WASM**.
 *   ✅ No large video files are uploaded to any server.
 *   ✅ Your data stays on your device.
 *   *Note: AI-powered tools (Magic Editor, BG Remover) securely send data to Google's Gemini API for processing.*
