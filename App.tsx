@@ -71,7 +71,7 @@ const App = () => {
             case ToolCategory.VIDEO: return Video;
             case ToolCategory.AUDIO: return Music;
             case ToolCategory.IMAGE: return ImageIcon;
-            case ToolCategory.PDF: return FileText;
+            case ToolCategory.DOCS: return FileText;
             case ToolCategory.TEXT: return Type;
             case ToolCategory.DEV: return Code;
             default: return Layers;
@@ -181,8 +181,8 @@ const App = () => {
 
                                 <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
                                     <p>© 2024 ADopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
-                                    <div className="mt-6 flex justify-center opacity-50 hover:opacity-100 transition-opacity">
-                                        <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8" />
+                                    <div className="mt-6 flex justify-center">
+                                        <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
                                     </div>
                                 </footer>
                             </div>
