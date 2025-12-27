@@ -332,12 +332,16 @@ export const TOOLS: ToolItem[] = [
     },
 ];
 
+import { useNavigate } from 'react-router-dom';
+
+// ... imports ...
+
 interface DashboardProps {
-    onSelectTool: (tool: ToolItem) => void;
     activeCategory: string;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, activeCategory }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
 
     const filteredTools = useMemo(() => {
@@ -354,6 +358,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, activeCatego
         }
         return tools;
     }, [activeCategory, searchQuery]);
+
+    const handleToolClick = (tool: ToolItem) => {
+        navigate(`/${tool.id}`);
+    };
 
     return (
         <div className="space-y-6 animate-fade-in">
@@ -375,7 +383,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectTool, activeCatego
                 {filteredTools.map((tool) => (
                     <div
                         key={tool.id}
-                        onClick={() => onSelectTool(tool)}
+                        onClick={() => handleToolClick(tool)}
                         className="group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 rounded-3xl transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 relative flex flex-col h-full"
                     >
                         {/* Background Glow Effect - Isolated in clipped container */}
