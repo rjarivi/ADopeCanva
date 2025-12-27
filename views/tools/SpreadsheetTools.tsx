@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ExcelJS from 'exceljs';
+import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
@@ -31,10 +32,38 @@ export const SpreadsheetTools: React.FC = () => {
         setError(null);
 
         try {
-            const arrayBuffer = await file.file.arrayBuffer();
             const workbook = new ExcelJS.Workbook();
-            await workbook.xlsx.load(arrayBuffer);
-            const worksheet = workbook.worksheets[0];
+            let mainWorksheet: ExcelJS.Worksheet;
+
+            // Check if input is CSV or Excel
+            if (file.file.name.endsWith('.csv') || file.file.type === 'text/csv' || file.file.type === 'application/vnd.ms-excel') {
+                // Try reading as CSV first if extension matches
+                if (file.file.name.endsWith('.xlsx')) {
+                    const arrayBuffer = await file.file.arrayBuffer();
+                    await workbook.xlsx.load(arrayBuffer);
+                    mainWorksheet = workbook.worksheets[0];
+                } else {
+                    // Parse CSV using PapaParse
+                    const text = await file.file.text();
+                    const parseResult = Papa.parse(text, { header: false }); // Read as arrays
+
+                    if (parseResult.errors.length > 0) {
+                        console.warn('CSV Parse Warnings:', parseResult.errors);
+                    }
+
+                    // Add to new worksheet
+                    mainWorksheet = workbook.addWorksheet('Sheet1');
+                    mainWorksheet.addRows(parseResult.data as any[][]);
+                }
+            } else {
+                // Default to XLSX load
+                const arrayBuffer = await file.file.arrayBuffer();
+                await workbook.xlsx.load(arrayBuffer);
+                mainWorksheet = workbook.worksheets[0];
+            }
+
+            // Use the determined mainWorksheet for further processing
+            const worksheet = mainWorksheet;
 
             if (mode === 'excel-to-other') {
                 let output: any;
@@ -51,14 +80,11 @@ export const SpreadsheetTools: React.FC = () => {
                         let headers: any[] = [];
                         worksheet.eachRow((row, rowNumber) => {
                             if (rowNumber === 1) {
-                                // ExcelJS row.values includes an empty first element (index 0) if 1-based, usually it's [empty, col1, col2]
-                                // We filter or slice. Actually let's just take values.
                                 const rawValues = row.values as any[];
                                 headers = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
                             } else {
                                 const rowData: any = {};
                                 const rawValues = row.values as any[];
-                                // Adjust if array has empty 0 index
                                 const values = rawValues.length > 0 && rawValues[0] === undefined ? rawValues.slice(1) : rawValues;
 
                                 values.forEach((cell: any, colIdx: number) => {
@@ -107,7 +133,7 @@ export const SpreadsheetTools: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
-            setError("Failed to convert file. Please ensure it's a valid XLSX/Excel file.");
+            setError("Failed to convert file. Please ensure it's a valid XLSX or CSV file.");
         } finally {
             setIsProcessing(false);
         }
