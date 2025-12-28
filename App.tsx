@@ -16,11 +16,22 @@ const ToolRenderer = () => {
         return <Navigate to="/" replace />;
     }
 
-    // Set document title for SEO
+    // Set document title and meta description for SEO
     useEffect(() => {
-        document.title = `${tool.title} - AdopeCanva`;
+        const originalTitle = document.title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        const originalDesc = metaDesc?.getAttribute('content') || '';
+
+        document.title = `${tool.title} | AdopeCanva Office Suite`;
+        if (metaDesc) {
+            metaDesc.setAttribute('content', tool.description);
+        }
+
         return () => {
-            document.title = 'AdopeCanva - All-in-One Tools';
+            document.title = originalTitle;
+            if (metaDesc) {
+                metaDesc.setAttribute('content', originalDesc);
+            }
         };
     }, [tool]);
 
@@ -47,6 +58,16 @@ const App = () => {
     const [showBanner, setShowBanner] = useState(true);
 
     const categories = ['All', ...Object.values(ToolCategory)];
+
+    // Google Analytics Page Tracking
+    useEffect(() => {
+        if (typeof window.gtag === 'function') {
+            window.gtag('config', 'G-1ZV3C4L9KF', {
+                page_path: location.pathname + location.search,
+                page_title: document.title
+            });
+        }
+    }, [location]);
 
     // Sync Pro Mode with URL
     useEffect(() => {
