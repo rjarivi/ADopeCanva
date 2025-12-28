@@ -110,6 +110,25 @@ export const ProEditor: React.FC = () => {
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
     const [thumbnails, setThumbnails] = useState<string[]>([]);
 
+    // SEO
+    useEffect(() => {
+        const originalTitle = document.title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        const originalDesc = metaDesc?.getAttribute('content') || '';
+
+        document.title = 'Studio | AdopeCanva - Professional Video Editor';
+        if (metaDesc) {
+            metaDesc.setAttribute('content', 'Advanced browser-based video editor. Trim, split, adjust, and add text to your videos with professional-grade tools.');
+        }
+
+        return () => {
+            document.title = originalTitle;
+            if (metaDesc) {
+                metaDesc.setAttribute('content', originalDesc);
+            }
+        };
+    }, []);
+
     // Auto-switch to Edit tab when clip is selected
     useEffect(() => {
         if (selectedClipId) {

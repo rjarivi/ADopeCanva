@@ -1,6 +1,12 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
+declare global {
+  interface Window {
+    gtag: (command: string, id: string, config?: any) => void;
+  }
+}
+
 export enum ToolCategory {
   VIDEO = 'Video',
   AUDIO = 'Audio',
