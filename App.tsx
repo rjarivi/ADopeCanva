@@ -18,9 +18,9 @@ const ToolRenderer = () => {
 
     // Set document title for SEO
     useEffect(() => {
-        document.title = `${tool.title} - ADopeCanva`;
+        document.title = `${tool.title} - AdopeCanva`;
         return () => {
-            document.title = 'ADopeCanva - All-in-One Tools';
+            document.title = 'AdopeCanva - All-in-One Tools';
         };
     }, [tool]);
 
@@ -125,9 +125,9 @@ const App = () => {
 
                         {!isMobile && (
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
-                                <p>© 2024 ADopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <p>© 2024 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
                                 <div className="mt-6 flex justify-center">
-                                    <img src="/ADC-Footer.png" alt="ADopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+                                    <img src="/ADC-Footer.png" alt="AdopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
                                 </div>
                             </footer>
                         )}
@@ -169,8 +169,8 @@ const App = () => {
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 shrink-0">
                         <Command className="text-white" size={20} />
                     </div>
-                    <span className="text-3xl tracking-tight text-white hidden md:block" style={{ fontFamily: '"Jersey 10", sans-serif' }}>
-                        ADopeCanva <span className={`font-sans font-normal text-zinc-400 text-xl transition-opacity ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
+                    <span className="text-2xl tracking-tight text-white hidden md:block" style={{ fontFamily: '"Comfortaa", sans-serif', fontWeight: 700 }}>
+                        adopecanva<span className={`font-sans font-normal text-zinc-400 text-lg transition-opacity ml-2 ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
                     </span>
                 </div>
 

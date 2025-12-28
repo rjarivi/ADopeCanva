@@ -56,8 +56,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
                         <Command className="text-white" size={18} />
                     </div>
-                    <span className="text-3xl font-bold text-white tracking-[0.1em] uppercase" style={{ fontFamily: '"Jersey 10", sans-serif' }}>
-                        ADopeCanva
+                    <span className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: '"Comfortaa", sans-serif' }}>
+                        adopecanva
                     </span>
                 </div>
             </header>
