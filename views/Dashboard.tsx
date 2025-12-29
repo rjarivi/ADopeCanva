@@ -21,6 +21,7 @@ import { GifSuite } from './tools/GifSuite';
 import { GifMaker } from './tools/GifMaker';
 import { GifEditor } from './tools/GifEditor';
 import { GifCompressor } from './tools/GifCompressor';
+import { ImageEditor } from './tools/ImageEditor';
 import { QrGenerator } from './tools/QrGenerator';
 import { BackgroundRemover } from './tools/BackgroundRemover';
 import { TextTools } from './tools/TextTools';
@@ -34,30 +35,21 @@ import { Tooltip } from '../components/ui/Tooltip';
 
 export const TOOLS: ToolItem[] = [
     {
-        id: 'spreadsheet-tools',
-        title: 'Spreadsheet Converter',
-        description: 'Convert Excel to CSV, JSON, HTML or vice versa.',
-        category: ToolCategory.DOCS,
-        icon: FileSpreadsheet,
-        component: <SpreadsheetTools />,
-        popular: true
-    },
-    {
-        id: 'universal-doc-converter',
-        title: 'Universal Doc Converter',
-        description: 'Convert Word, Markdown, HTML, and Images to PDF/HTML.',
-        category: ToolCategory.DOCS,
-        icon: ArrowRightLeft,
-        component: <UniversalDocConverter />,
-        popular: true
-    },
-    {
-        id: 'bg-remover',
-        title: 'Smart BG Remover',
-        description: 'Instantly remove image backgrounds using AI.',
+        id: 'image-editor',
+        title: 'Image Editor',
+        description: 'Edit images with layers, filters, and text.',
         category: ToolCategory.IMAGE,
-        icon: Eraser,
-        component: <BackgroundRemover />,
+        icon: Edit3,
+        component: <ImageEditor />,
+        popular: true
+    },
+    {
+        id: 'gif-editor',
+        title: 'GIF Editor',
+        description: 'Trim, crop, and add text to GIFs.',
+        category: ToolCategory.IMAGE,
+        icon: Edit3,
+        component: <GifEditor />,
         popular: true
     },
     {
@@ -70,12 +62,47 @@ export const TOOLS: ToolItem[] = [
         popular: true
     },
     {
-        id: 'gif-editor',
-        title: 'GIF Editor',
-        description: 'Trim, crop, and add text to GIFs.',
+        id: 'audio-converter',
+        title: 'Audio Converter',
+        description: 'Convert between MP3, WAV, AAC formats.',
+        category: ToolCategory.AUDIO,
+        icon: Music,
+        component: <AudioConverter />,
+        popular: true
+    },
+    {
+        id: 'text-tools',
+        title: 'Fancy Text Generator',
+        description: 'Generate stylish unicode text for social media.',
+        category: ToolCategory.TEXT,
+        icon: Type,
+        component: <TextTools />,
+        popular: true
+    },
+    {
+        id: 'bg-remover',
+        title: 'Smart BG Remover',
+        description: 'Instantly remove image backgrounds using AI.',
         category: ToolCategory.IMAGE,
-        icon: Edit3,
-        component: <GifEditor />
+        icon: Eraser,
+        component: <BackgroundRemover />,
+        popular: true
+    },
+    {
+        id: 'spreadsheet-tools',
+        title: 'Spreadsheet Converter',
+        description: 'Convert Excel to CSV, JSON, HTML or vice versa.',
+        category: ToolCategory.DOCS,
+        icon: FileSpreadsheet,
+        component: <SpreadsheetTools />
+    },
+    {
+        id: 'universal-doc-converter',
+        title: 'Universal Doc Converter',
+        description: 'Convert Word, Markdown, HTML, and Images to PDF/HTML.',
+        category: ToolCategory.DOCS,
+        icon: ArrowRightLeft,
+        component: <UniversalDocConverter />
     },
     {
         id: 'gif-compressor',
@@ -91,8 +118,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Edit images with text prompts using Gemini AI.',
         category: ToolCategory.IMAGE,
         icon: Wand2,
-        component: <MagicImageEditor />,
-        popular: true
+        component: <MagicImageEditor />
     },
     {
         id: 'video-trimmer',
@@ -100,8 +126,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Cut clips with frame precision and volume control.',
         category: ToolCategory.VIDEO,
         icon: Scissors,
-        component: <VideoTrimmer />,
-        popular: true
+        component: <VideoTrimmer />
     },
     {
         id: 'video-converter',
@@ -109,8 +134,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Convert MP4, MOV, AVI, GIF, MKV instantly.',
         category: ToolCategory.VIDEO,
         icon: ArrowRightLeft,
-        component: <VideoConverter />,
-        popular: true
+        component: <VideoConverter />
     },
     {
         id: 'gif-maker',
@@ -142,8 +166,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Reduce file size without losing visible quality.',
         category: ToolCategory.IMAGE,
         icon: Minimize2,
-        component: <ImageCompressor />,
-        popular: true
+        component: <ImageCompressor />
     },
     {
         id: 'image-cropper',
@@ -159,16 +182,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Join multiple audio files into one track.',
         category: ToolCategory.AUDIO,
         icon: ListMusic,
-        component: <AudioMerger />,
-        popular: true
-    },
-    {
-        id: 'audio-converter',
-        title: 'Audio Converter',
-        description: 'Convert between MP3, WAV, AAC formats.',
-        category: ToolCategory.AUDIO,
-        icon: Music,
-        component: <AudioConverter />
+        component: <AudioMerger />
     },
     {
         id: 'pdf-tools',
@@ -184,8 +198,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Convert between JSON, XML, CSV, and YAML.',
         category: ToolCategory.DEV,
         icon: ArrowRightLeft,
-        component: <UniversalConverter />,
-        popular: true
+        component: <UniversalConverter />
     },
     // APNG Tools
     {
@@ -332,15 +345,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.DEV,
         icon: FileJson,
         component: <JsonFormatter />
-    },
-    {
-        id: 'text-tools',
-        title: 'Fancy Text Generator',
-        description: 'Generate stylish unicode text for social media.',
-        category: ToolCategory.TEXT,
-        icon: Type,
-        component: <TextTools />,
-        popular: true
     },
     {
         id: 'text-cleaner',
