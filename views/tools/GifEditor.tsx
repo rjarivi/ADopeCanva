@@ -3,10 +3,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Settings, Download, RefreshCcw, Scissors, Crop, RotateCw, Play, FastForward, Rewind, Type, Grid, AlertCircle, Loader2 } from 'lucide-react';
+import { Settings, Download, RefreshCcw, Scissors, Crop, RotateCw, Play, FastForward, Rewind, Type, Grid, AlertCircle, Loader2, ArrowLeft, Check } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import ReactCrop, { Crop as CropType } from 'react-image-crop';
+import ReactCrop, { Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
+import Slider from 'rc-slider';
+import 'rc-slider/assets/index.css';
 import 'react-image-crop/dist/ReactCrop.css';
 
 export const GifEditor: React.FC = () => {
@@ -17,7 +19,7 @@ export const GifEditor: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
 
     // Tools
-    const [activeTool, setActiveTool] = useState<'crop' | 'transform' | 'speed' | 'text'>('transform');
+    const [activeTool, setActiveTool] = useState<'crop' | 'transform' | 'text' | 'trim' | 'sprite'>('transform');
 
     // State
     const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
@@ -36,9 +38,18 @@ export const GifEditor: React.FC = () => {
     // Sprite State
     const [isSpriteWorker, setIsSpriteWorker] = useState(false);
 
+    // Trim State
+    const [duration, setDuration] = useState<number>(0);
+    const [trimRange, setTrimRange] = useState<[number, number]>([0, 0]); // [start, end]
+    const [isProbing, setIsProbing] = useState(false);
+
     const ffmpegRef = useRef<FFmpeg | null>(null);
     const imgRef = useRef<HTMLImageElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const sourceImgRef = useRef<HTMLImageElement>(null);
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+
+
 
     useEffect(() => {
         if (videoRef.current) {
@@ -59,6 +70,12 @@ export const GifEditor: React.FC = () => {
             });
     }, []);
 
+    useEffect(() => {
+        if (file && engineStatus === 'ready') {
+            handleProbeDuration(file.file);
+        }
+    }, [file, engineStatus]);
+
     const loadFont = async (ffmpeg: FFmpeg) => {
         try {
             const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf';
@@ -72,7 +89,46 @@ export const GifEditor: React.FC = () => {
         }
     };
 
-    const handleProcess = async (mode: 'gif' | 'sprite' = 'gif') => {
+    const handleProbeDuration = async (fileToProbe: File) => {
+        if (!ffmpegRef.current) return;
+        setIsProbing(true);
+        try {
+            const ffmpeg = ffmpegRef.current;
+            const name = "probe_input";
+            await writeFileToFFmpeg(ffmpeg, name, fileToProbe);
+
+            // Log callback to catch Duration
+            let dur = 0;
+            const logCb = ({ message }: { message: string }) => {
+                // Duration: 00:00:03.21,
+                const match = message.match(/Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})/);
+                if (match) {
+                    const hrs = parseFloat(match[1]);
+                    const mins = parseFloat(match[2]);
+                    const secs = parseFloat(match[3]);
+                    dur = hrs * 3600 + mins * 60 + secs;
+                }
+            };
+
+            ffmpeg.on('log', logCb);
+            await ffmpeg.exec(['-i', name]); // Just input, no output, triggers info logs
+            ffmpeg.off('log', logCb);
+
+            await ffmpeg.deleteFile(name);
+
+            if (dur > 0) {
+                setDuration(dur);
+                setTrimRange([0, dur]);
+                console.log("Detected Duration:", dur);
+            }
+        } catch (e) {
+            console.error("Probe failed", e);
+        } finally {
+            setIsProbing(false);
+        }
+    };
+
+    const handleProcess = async (mode: 'gif' | 'sprite' = 'gif', shouldDownload = true) => {
         if (!file || !ffmpegRef.current) return;
         setIsProcessing(true);
         if (mode === 'sprite') setIsSpriteWorker(true);
@@ -109,16 +165,21 @@ export const GifEditor: React.FC = () => {
             let filters = [];
 
             // 1. Crop
-            if (crop && crop.width && crop.height && imgRef.current) {
-                const img = imgRef.current;
-                const scaleX = img.naturalWidth / img.width;
-                const scaleY = img.naturalHeight / img.height;
+            // Use sourceImgRef (hidden full res) or imgRef (visible preview) as fallback
+            const refImg = sourceImgRef.current || imgRef.current;
+            if (crop && crop.width && crop.height && refImg) {
+                // Crop is in %
+                const scaleX = refImg.naturalWidth / 100;
+                const scaleY = refImg.naturalHeight / 100;
 
                 const realX = Math.round(crop.x * scaleX);
                 const realY = Math.round(crop.y * scaleY);
                 const realW = Math.round(crop.width * scaleX);
                 const realH = Math.round(crop.height * scaleY);
 
+                // Ensure even dimensions for standard video codecs (required by some encoders, safe for others)
+                // Actually crop filter supports odd, but it's good practice. 
+                // Let's just output raw
                 filters.push(`crop=${realW}:${realH}:${realX}:${realY}`);
             }
 
@@ -145,6 +206,8 @@ export const GifEditor: React.FC = () => {
                     filters.push(`drawtext=fontfile=font.ttf:text='${sanitizedText}':fontcolor=${textColor}:fontsize=${textSize}:x=(w-text_w)/2:y=${yPos}`);
                 }
             }
+
+            // 5. Trim (Time-based handled in args construction)
 
             // 5. Sprite Sheet
             if (mode === 'sprite') {
@@ -206,7 +269,12 @@ export const GifEditor: React.FC = () => {
             try { await ffmpeg.deleteFile(outputName); } catch (e) { }
 
             // Build Args
-            const args = ['-y', '-i', inputName];
+            const args = ['-y'];
+            if (duration > 0 && (trimRange[0] > 0 || trimRange[1] < duration)) {
+                args.push('-ss', trimRange[0].toString());
+                args.push('-to', trimRange[1].toString());
+            }
+            args.push('-i', inputName);
 
             // CRITICAL FIX: Force single-threading for Sprite Sheet to prevent WASM heap corruption/deadlocks with 'tile' filter
             if (mode === 'sprite') {
@@ -250,16 +318,18 @@ export const GifEditor: React.FC = () => {
             setResultUrl(url);
 
             // Auto-download for "Realtime" feel
-            if (mode === 'gif') {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `edited_${Date.now()}.gif`;
-                a.click();
-            } else if (mode === 'sprite') {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `sprite_${Date.now()}.png`;
-                a.click();
+            if (shouldDownload) {
+                if (mode === 'gif') {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `edited_${Date.now()}.gif`;
+                    a.click();
+                } else if (mode === 'sprite') {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sprite_${Date.now()}.png`;
+                    a.click();
+                }
             }
 
             await ffmpeg.deleteFile(inputName);
@@ -316,187 +386,352 @@ export const GifEditor: React.FC = () => {
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up h-full">
-            {/* Toolbar */}
-            <div className="lg:col-span-1 space-y-6">
-                <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-white">Edit Tools</h3>
-                        <Button variant="ghost" size="sm" onClick={() => { setFile(null); setResultUrl(null); }}>
-                            <RefreshCcw size={16} /> Reset
-                        </Button>
-                    </div>
+        <div className="flex min-h-[700px] h-[calc(100vh-180px)] bg-[#0c0c0e] border border-zinc-800 rounded-[32px] overflow-hidden animate-slide-up shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative">
+            {/* Left Icon Sidebar */}
+            <div className="w-16 border-r border-zinc-800 flex flex-col items-center py-6 gap-4 bg-[#0c0c0e] shrink-0">
+                <button
+                    onClick={() => setActiveTool('crop')}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'crop' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Crop"
+                >
+                    <Crop size={22} />
+                </button>
+                <button
+                    onClick={() => setActiveTool('transform')}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'transform' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Adjustments"
+                >
+                    <RotateCw size={22} />
+                </button>
+                <button
+                    onClick={() => setActiveTool('text')}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'text' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Text"
+                >
+                    <Type size={22} />
+                </button>
+                <button
+                    onClick={() => setActiveTool('trim')}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'trim' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Trim"
+                >
+                    <Scissors size={22} />
+                </button>
+                <button
+                    onClick={() => setActiveTool('sprite')}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'sprite' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    title="Sprite Sheet"
+                >
+                    <Grid size={22} />
+                </button>
 
-                    <div className="grid grid-cols-4 gap-2 bg-zinc-900 p-1.5 rounded-xl">
-                        <button onClick={() => setActiveTool('transform')} className={`p-2 rounded-lg text-xs font-medium flex flex-col items-center gap-1 ${activeTool === 'transform' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                            <RotateCw size={16} /> Transform
-                        </button>
-                        <button onClick={() => setActiveTool('crop')} className={`p-2 rounded-lg text-xs font-medium flex flex-col items-center gap-1 ${activeTool === 'crop' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                            <Crop size={16} /> Crop
-                        </button>
-                        <button onClick={() => setActiveTool('speed')} className={`p-2 rounded-lg text-xs font-medium flex flex-col items-center gap-1 ${activeTool === 'speed' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                            <FastForward size={16} /> Speed
-                        </button>
-                        <button onClick={() => setActiveTool('text')} className={`p-2 rounded-lg text-xs font-medium flex flex-col items-center gap-1 ${activeTool === 'text' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}>
-                            <Type size={16} /> Text
-                        </button>
+                <div className="mt-auto flex flex-col gap-4 items-center">
+                    <button
+                        onClick={() => { setFile(null); setResultUrl(null); }}
+                        className="p-3 text-zinc-500 hover:text-red-400 transition-colors"
+                        title="Reset"
+                    >
+                        <RefreshCcw size={20} />
+                    </button>
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 mb-2">
+                        <Settings size={20} className="animate-pulse-slow" />
                     </div>
+                </div>
+            </div>
 
-                    {activeTool === 'transform' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <label className="text-sm font-medium text-zinc-400">Rotation & Flip</label>
-                            <div className="grid grid-cols-2 gap-3">
-                                <button onClick={() => setRotation((r) => (r + 90) % 360)} className="bg-zinc-800 p-3 rounded-xl hover:bg-zinc-700 flex items-center justify-center gap-2 text-zinc-300">
-                                    <RotateCw size={18} /> {rotation}°
-                                </button>
-                                <button onClick={() => setFlipH(!flipH)} className={`bg-zinc-800 p-3 rounded-xl hover:bg-zinc-700 text-zinc-300 ${flipH ? 'border border-pink-500 text-pink-500' : ''}`}>
-                                    Flip Horizontal
-                                </button>
+            {/* Settings Side Panel */}
+            <div className="w-80 border-r border-zinc-800 p-6 flex flex-col bg-[#0c0c0e] shrink-0 overflow-y-auto custom-scrollbar">
+                <div className="mb-6 flex items-center justify-between">
+                    <h3 className="font-bold text-white text-lg tracking-tight uppercase text-xs text-zinc-500">
+                        {activeTool}
+                    </h3>
+                </div>
+
+                <div className="flex-1 space-y-6">
+                    {activeTool === 'crop' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Presets</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => {
+                                        const img = sourceImgRef.current || imgRef.current;
+                                        if (!img) return;
+                                        const width = img.naturalWidth || img.width;
+                                        const height = img.naturalHeight || img.height;
+                                        const size = Math.min(width, height) * 0.9;
+                                        setCrop({ unit: '%', width: (size / width) * 100, height: (size / height) * 100, x: ((width - size) / 2 / width) * 100, y: ((height - size) / 2 / height) * 100 });
+                                    }} className="bg-zinc-900 hover:bg-zinc-800 text-white p-3 rounded-xl text-xs font-medium border border-zinc-800 transition-colors">Square (1:1)</button>
+                                    <button onClick={() => {
+                                        const img = sourceImgRef.current || imgRef.current;
+                                        if (!img) return;
+                                        const width = img.naturalWidth || img.width;
+                                        const height = img.naturalHeight || img.height;
+                                        const targetRatio = 16 / 9;
+                                        let w = width * 0.9;
+                                        let h = w / targetRatio;
+                                        if (h > height) { h = height * 0.9; w = h * targetRatio; }
+                                        setCrop({ unit: '%', width: (w / width) * 100, height: (h / height) * 100, x: ((width - w) / 2 / width) * 100, y: ((height - h) / 2 / height) * 100 });
+                                    }} className="bg-zinc-900 hover:bg-zinc-800 text-white p-3 rounded-xl text-xs font-medium border border-zinc-800 transition-colors">Cinema (16:9)</button>
+                                </div>
                             </div>
+                            <button onClick={() => setCrop(undefined)} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 rounded-xl text-xs font-medium border border-zinc-800 transition-colors">
+                                Reset Crop
+                            </button>
                         </div>
                     )}
 
-
-
-                    {activeTool === 'speed' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <label className="text-sm font-medium text-zinc-400">Playback Speed</label>
-                            <input
-                                type="range" min="0.5" max="3" step="0.5"
-                                value={speed}
-                                onChange={(e) => setSpeed(Number(e.target.value))}
-                                className="w-full h-2 bg-zinc-700 rounded-lg accent-pink-500"
-                            />
-                            <div className="flex justify-between text-xs text-zinc-500 font-mono">
-                                <span>0.5x</span>
-                                <span className="text-white">{speed}x</span>
-                                <span>3.0x</span>
-                            </div>
-
-                            {!file.type.startsWith('video') && speed !== 1 && (
-                                <div className="text-xs text-yellow-500 bg-yellow-500/10 p-2 rounded border border-yellow-500/20 mt-2">
-                                    Note: Speed changes for GIFs are applied on Export, not visually previewed here.
+                    {activeTool === 'transform' && (
+                        <div className="space-y-8 animate-fade-in">
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Orientation</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={() => setRotation((r) => (r + 90) % 360)} className="bg-zinc-900 hover:bg-zinc-800 text-white p-4 rounded-xl flex flex-col items-center gap-2 border border-zinc-800 transition-all">
+                                        <RotateCw size={18} />
+                                        <span className="text-[10px]">Rotate 90°</span>
+                                    </button>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button onClick={() => setFlipH(!flipH)} className={`p-4 rounded-xl border flex items-center justify-center transition-all ${flipH ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
+                                            H-Flip
+                                        </button>
+                                        <button onClick={() => setFlipV(!flipV)} className={`p-4 rounded-xl border flex items-center justify-center transition-all ${flipV ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
+                                            V-Flip
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
-
-                            <div className="flex items-center gap-3 pt-4 border-t border-zinc-800">
-                                <input type="checkbox" checked={reverse} onChange={(e) => setReverse(e.target.checked)} className="rounded border-zinc-700 bg-zinc-800 text-pink-500" />
-                                <span className="text-sm text-zinc-300">Reverse Playback {file.type.startsWith('video') ? '(Export Only)' : ''}</span>
+                            </div>
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Playback</label>
+                                <div className="space-y-4">
+                                    <div className="flex gap-2">
+                                        {[0.5, 1, 2].map(v => (
+                                            <button key={v} onClick={() => setSpeed(v)} className={`flex-1 py-3 rounded-xl text-xs font-bold border transition-all ${speed === v ? 'bg-indigo-500 border-none text-white shadow-lg shadow-indigo-500/30' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>
+                                                {v}x
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setReverse(!reverse)} className={`w-full py-3 rounded-xl text-xs font-bold border transition-all ${reverse ? 'bg-indigo-500 border-none text-white shadow-lg shadow-indigo-500/30' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}>
+                                        Reverse Playback
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {activeTool === 'text' && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="space-y-2">
-                                <label className="text-xs text-zinc-500 uppercase font-bold">Caption Text</label>
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Overlay Text</label>
                                 <input
                                     type="text"
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:border-pink-500 outline-none"
-                                    placeholder="Enter caption..."
+                                    placeholder="Add caption..."
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-white text-sm outline-none focus:border-indigo-500"
                                 />
                             </div>
-                            <div className="flex gap-4">
-                                <div>
-                                    <label className="text-xs text-zinc-500 uppercase font-bold block mb-1">Color</label>
-                                    <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="h-10 w-10 rounded cursor-pointer bg-transparent" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Color</label>
+                                    <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl p-1 cursor-pointer" />
                                 </div>
-                                <div className="flex-1">
-                                    <label className="text-xs text-zinc-500 uppercase font-bold block mb-1">Size ({textSize}px)</label>
-                                    <input type="range" min="12" max="72" value={textSize} onChange={(e) => setTextSize(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg accent-pink-500" />
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Size</label>
+                                    <input type="number" value={textSize} onChange={(e) => setTextSize(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white text-sm" />
                                 </div>
                             </div>
-                            <div>
-                                <label className="text-xs text-zinc-500 uppercase font-bold block mb-1">Vertical Position ({textY}%)</label>
-                                <input type="range" min="0" max="100" value={textY} onChange={(e) => setTextY(Number(e.target.value))} className="w-full h-2 bg-zinc-700 rounded-lg accent-pink-500" />
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Position (Y%)</label>
+                                <Slider min={0} max={90} value={textY} onChange={(v) => setTextY(v as number)} trackStyle={[{ backgroundColor: '#6366f1' }]} handleStyle={[{ borderColor: '#6366f1', backgroundColor: '#fff' }]} railStyle={{ backgroundColor: '#18181b' }} />
                             </div>
                         </div>
                     )}
 
-                    {activeTool === 'crop' && (
-                        <div className="text-center p-8 text-zinc-500 text-sm space-y-4">
-                            <p>Drag on the image to crop.</p>
-                            <Button size="sm" variant="secondary" onClick={() => setActiveTool('transform')} className="w-full">
-                                Done
-                            </Button>
+                    {activeTool === 'trim' && (
+                        <div className="space-y-6 animate-fade-in">
+                            <div className="flex justify-between items-center bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
+                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Duration</span>
+                                <span className="text-xs text-white font-mono bg-black px-2 py-1 rounded-md">
+                                    {(trimRange[1] - trimRange[0]).toFixed(1)}s
+                                </span>
+                            </div>
+
+                            {isProbing ? (
+                                <div className="flex flex-col items-center py-12 gap-3">
+                                    <Loader2 className="animate-spin text-zinc-500" />
+                                    <span className="text-xs text-zinc-500">Detecting sequence...</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-8">
+                                    <div className="px-1 pt-4">
+                                        <Slider
+                                            range min={0} max={duration} step={0.1} value={trimRange}
+                                            onChange={(val) => setTrimRange(val as [number, number])}
+                                            trackStyle={[{ backgroundColor: '#6366f1' }]}
+                                            handleStyle={[{ backgroundColor: '#fff', border: 'none', boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }, { backgroundColor: '#fff', border: 'none', boxShadow: '0 0 10px rgba(99, 102, 241, 0.4)' }]}
+                                            railStyle={{ backgroundColor: '#18181b', height: 6 }}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Start</label>
+                                            <input type="number" step="0.1" value={trimRange[0].toFixed(1)} onChange={(e) => setTrimRange([Number(e.target.value), trimRange[1]])} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white text-xs" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">End</label>
+                                            <input type="number" step="0.1" value={trimRange[1].toFixed(1)} onChange={(e) => setTrimRange([trimRange[0], Number(e.target.value)])} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white text-xs" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
+                    {activeTool === 'sprite' && (
+                        <div className="space-y-6 animate-fade-in text-center p-4">
+                            <div className="w-16 h-16 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400 mx-auto mb-4 border border-indigo-500/20">
+                                <Grid size={32} />
+                            </div>
+                            <h4 className="text-white font-bold text-sm">Convert to Sprite Sheet</h4>
+                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                Stitches up to 100 frames into a single PNG grid. Perfect for game development and web animations.
+                            </p>
+                            <button
+                                onClick={() => handleProcess('sprite', true)}
+                                disabled={isProcessing}
+                                className="w-full py-4 bg-white text-black rounded-2xl font-bold text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group"
+                            >
+                                <Grid size={18} className="group-hover:rotate-12 transition-transform" />
+                                {isProcessing && isSpriteWorker ? 'Generating...' : 'Export Sprite Sheet'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className="mt-auto pt-6 border-t border-zinc-800 space-y-3">
                     {errorMessage && (
-                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center space-y-1 animate-fade-in mb-4">
-                            <p className="text-red-400 text-sm font-medium">{errorMessage}</p>
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-[10px] text-red-400 font-mono text-center">
+                            {errorMessage}
                         </div>
                     )}
-
-                    <div className="space-y-3 mt-4">
-                        <Button onClick={() => { setErrorMessage(''); handleProcess('gif'); }} isLoading={isProcessing && !isSpriteWorker} className="w-full bg-pink-600 hover:bg-pink-700 border-none h-12">
-                            <Download size={18} className="mr-2" /> Download GIF
-                        </Button>
-                        <Button onClick={() => { setErrorMessage(''); handleProcess('sprite'); }} isLoading={isProcessing && isSpriteWorker} variant="secondary" className="w-full h-10 text-sm">
-                            <Grid size={16} className="mr-2" /> Export as Sprite Sheet
-                        </Button>
-                    </div>
+                    <button
+                        onClick={() => handleProcess('gif', false)}
+                        disabled={isProcessing}
+                        className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-white rounded-xl font-bold text-sm border border-zinc-800 transition-all flex items-center justify-center gap-2"
+                    >
+                        <Play size={16} />
+                        Preview Changes
+                    </button>
+                    <button
+                        onClick={() => handleProcess('gif', true)}
+                        disabled={isProcessing}
+                        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                        <Download size={18} />
+                        {isProcessing && !isSpriteWorker ? 'Exporting...' : 'Export & Download'}
+                    </button>
                 </div>
             </div>
 
-            {/* Preview */}
-            <div className="lg:col-span-2 bg-black/50 rounded-3xl border border-zinc-800 relative flex items-center justify-center p-8 overflow-hidden">
+            {/* Main Preview Area */}
+            <div className="flex-1 bg-[#09090b] relative overflow-hidden flex items-center justify-center p-12">
+                {/* Dotted Background for the Workspace Area */}
+                <div className="absolute inset-0 opacity-25 pointer-events-none"
+                    style={{ backgroundImage: 'radial-gradient(#4b5563 1px, transparent 1px)', backgroundSize: '20px 20px' }}
+                ></div>
+
                 {!resultUrl ? (
-                    <div className="relative max-w-full max-h-full">
+                    <div className="relative z-10 max-w-full max-h-full drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                         {file.type.startsWith('video') ? (
-                            <video ref={videoRef} src={file.previewUrl} controls className="max-w-full max-h-[500px] rounded-lg shadow-2xl" />
+                            <div className="relative group">
+                                <video ref={videoRef} src={file.previewUrl} controls className="max-w-full max-h-[600px] rounded-2xl relative z-10" />
+                                <div className="absolute inset-0 border-2 border-dashed border-zinc-500/30 rounded-2xl pointer-events-none z-20" />
+                            </div>
                         ) : (
-                            <div className="relative inline-block">
-                                {/* Text Overlay */}
+                            <div className="relative inline-block border border-zinc-800 rounded-2xl overflow-hidden bg-black group">
+                                <div className="absolute inset-0 border-2 border-dashed border-zinc-500/20 pointer-events-none z-30" />
                                 {text && (
                                     <div
-                                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none z-20 font-bold"
+                                        className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none z-20 font-bold drop-shadow-lg"
                                         style={{
                                             bottom: `${textY}%`,
                                             color: textColor,
                                             fontSize: `${textSize}px`,
-                                            textShadow: '2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000',
-                                            fontFamily: 'Arial, sans-serif'
+                                            textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.4)',
+                                            fontFamily: 'Unbounded, sans-serif'
                                         }}
                                     >
                                         {text}
                                     </div>
                                 )}
 
+                                <img ref={sourceImgRef} src={file.previewUrl} className="hidden" />
+
                                 {activeTool === 'crop' ? (
-                                    <ReactCrop crop={crop} onChange={c => setCrop(c)}>
-                                        <img ref={imgRef} src={file.previewUrl} className="max-w-full max-h-[500px] rounded-lg shadow-2xl" />
+                                    <ReactCrop crop={crop} onChange={(_, percentCrop) => setCrop(percentCrop)}>
+                                        <img ref={imgRef} src={file.previewUrl} className="max-w-full max-h-[600px]" />
                                     </ReactCrop>
                                 ) : (
-                                    <img
-                                        src={file.previewUrl}
-                                        className="max-w-full max-h-[500px] rounded-lg shadow-2xl transition-transform duration-300"
-                                        style={{
-                                            transform: `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})`
-                                        }}
-                                    />
+                                    crop && crop.width && crop.height ? (
+                                        <div className="overflow-hidden relative max-h-[600px] inline-block">
+                                            <div style={{
+                                                width: `${100 / crop.width * 100}%`,
+                                                height: `${100 / crop.height * 100}%`,
+                                                marginLeft: `-${crop.x / crop.width * 100}%`,
+                                                marginTop: `-${crop.y / crop.height * 100}%`,
+                                                display: 'flex'
+                                            }}>
+                                                <img
+                                                    src={file.previewUrl}
+                                                    className="w-full h-full object-contain"
+                                                    style={{ transform: `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src={file.previewUrl}
+                                            className="max-w-full max-h-[600px] transition-transform duration-500"
+                                            style={{ transform: `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1})` }}
+                                        />
+                                    )
                                 )}
                             </div>
                         )}
                     </div>
                 ) : (
-                    <div className="text-center space-y-4 animate-fade-in">
-                        <img src={resultUrl} className="max-w-full max-h-[500px] rounded-lg shadow-2xl border-4 border-green-500/20" />
-                        <Button className="bg-white text-black" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
-                            <Download size={18} className="mr-2" /> Download
-                        </Button>
+                    <div className="relative z-10 text-center space-y-8 animate-fade-in flex flex-col items-center max-w-4xl">
+                        <div className="bg-indigo-500/10 text-indigo-400 px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-widest border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+                            Process Complete
+                        </div>
+                        <div className="relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+                            <img src={resultUrl} className="relative max-w-full max-h-[550px] rounded-2xl shadow-2xl bg-black border border-zinc-800" />
+                        </div>
+                        <div className="flex gap-4">
+                            <button onClick={() => setResultUrl(null)} className="px-8 py-4 bg-zinc-900 text-white rounded-2xl font-bold flex items-center gap-2 hover:bg-zinc-800 transition-all border border-zinc-800">
+                                <ArrowLeft size={18} />
+                                Edit More
+                            </button>
+                            <button className="px-8 py-4 bg-white text-black rounded-2xl font-extrabold flex items-center gap-2 hover:bg-zinc-200 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
+                                <Download size={18} />
+                                Download Final
+                            </button>
+                        </div>
                     </div>
                 )}
 
                 {isProcessing && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-50">
-                        <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-pink-400 font-bold">{isSpriteWorker ? 'Generating Sprites...' : 'Applying Magic...'}</p>
+                    <div className="absolute inset-0 bg-[#0c0c0e]/90 backdrop-blur-md flex flex-col items-center justify-center z-50 animate-fade-in">
+                        <div className="relative">
+                            <div className="w-16 h-16 border-4 border-indigo-500/20 rounded-full"></div>
+                            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                        </div>
+                        <p className="mt-6 text-white font-bold tracking-widest uppercase text-[10px]">
+                            {isSpriteWorker ? 'Generating Grid...' : 'Processing GIF...'}
+                        </p>
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     );
 };
