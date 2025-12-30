@@ -3,7 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Settings, Download, RefreshCcw, Film, Scissors, Type, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Settings, Download, RefreshCcw, Film, Scissors, Type, Clock, CheckCircle, AlertCircle, Loader2, ArrowRightLeft, FileVideo } from 'lucide-react';
+import { SectionLabel } from '../../components/EditorControls';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
@@ -89,7 +90,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       // Use a reliable URL for Roboto-Bold
       const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/Roboto-Bold.ttf';
       const fontBlob = await fetch(fontUrl).then(r => {
-        if (!r.ok) throw new Error(`Font fetch failed: ${r.statusText}`);
+        if (!r.ok) throw new Error(`Font fetch failed: ${r.statusText} `);
         return r.blob();
       });
       const fontData = await fontBlob.arrayBuffer();
@@ -109,7 +110,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     setLogs([]);
     const ffmpeg = ffmpegRef.current;
     const inputName = 'input.mp4';
-    const outputName = `output.${outputFormat}`;
+    const outputName = `output.${outputFormat} `;
 
     // Progress Handler
     const onProgress = ({ progress }: { progress: number }) => {
@@ -125,18 +126,18 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       let filters = [];
 
       // Trimming
-      filters.push(`trim=start=${trimRange[0]}:end=${trimRange[1]}`);
+      filters.push(`trim = start = ${trimRange[0]}: end = ${trimRange[1]} `);
       filters.push('setpts=PTS-STARTPTS');
 
       // Scaling
-      filters.push(`fps=${fps},scale=${width}:-1:flags=lanczos`);
+      filters.push(`fps = ${fps}, scale = ${width}: -1: flags = lanczos`);
 
       // Text Overlay
       if (text) {
         const fontLoaded = await loadFont(ffmpeg);
         if (fontLoaded) {
           const sanitizedText = text.replace(/:/g, '\\:').replace(/'/g, '');
-          const yPos = `h-h*${textY}/100`;
+          const yPos = `h - h * ${textY}/100`;
           filters.push(`drawtext=fontfile=font.ttf:text='${sanitizedText}':fontcolor=${textColor}:fontsize=${textSize}:x=(w-text_w)/2:y=${yPos}`);
         }
       }
@@ -250,8 +251,8 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-500">
-            Video to {outputFormat.toUpperCase()}
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
+            GIF Generator
           </h2>
           <p className="text-zinc-400">Convert videos to high-quality {outputFormat.toUpperCase()}s with trim and text capabilities.</p>
         </div>
@@ -271,7 +272,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
           <h3 className="flex items-center gap-2 font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
-            <Film size={14} className="text-green-500" /> {outputFormat.toUpperCase()} Generator
+            <Film size={14} className="text-indigo-500" /> {outputFormat.toUpperCase()} Generator
           </h3>
           <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); setGifUrl(null); }}>
             <RefreshCcw size={14} />
@@ -281,41 +282,99 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Trimming */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center justify-between">
                 <span className="flex items-center gap-2"><Scissors size={14} /> Trim Range</span>
-                <span className="font-mono text-green-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
+                <span className="font-mono text-indigo-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
               </label>
+
               <div className="px-2 py-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
                 <Slider
                   range min={0} max={duration || 10} step={0.1} value={trimRange}
                   onChange={(val) => { setTrimRange(val as [number, number]); setIsDone(false); setGifUrl(null); }}
-                  trackStyle={[{ backgroundColor: '#10b981' }]}
-                  handleStyle={[{ borderColor: '#10b981', backgroundColor: '#064e3b' }, { borderColor: '#10b981', backgroundColor: '#064e3b' }]}
+                  trackStyle={[{ backgroundColor: '#6366f1' }]}
+                  handleStyle={[{ borderColor: '#6366f1', backgroundColor: '#312e81' }, { borderColor: '#6366f1', backgroundColor: '#312e81' }]}
                   railStyle={{ backgroundColor: '#27272a' }}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-zinc-500 font-bold uppercase">Start (s)</span>
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) {
+                          setTrimRange([videoRef.current.currentTime, trimRange[1]]);
+                          setIsDone(false);
+                          setGifUrl(null);
+                        }
+                      }}
+                      className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                    >
+                      Set Current
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={trimRange[0].toFixed(2)}
+                    onChange={(e) => {
+                      const val = Math.max(0, Math.min(Number(e.target.value), trimRange[1] - 0.1));
+                      setTrimRange([val, trimRange[1]]);
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[9px] text-zinc-500 font-bold uppercase">End (s)</span>
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) {
+                          setTrimRange([trimRange[0], videoRef.current.currentTime]);
+                          setIsDone(false);
+                          setGifUrl(null);
+                        }
+                      }}
+                      className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                    >
+                      Set Current
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={trimRange[1].toFixed(2)}
+                    onChange={(e) => {
+                      const val = Math.min(duration || 10, Math.max(Number(e.target.value), trimRange[0] + 0.1));
+                      setTrimRange([trimRange[0], val]);
+                    }}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Quality & Size */}
             <div className="space-y-4 pt-4 border-t border-zinc-900">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Quality Mode</label>
+                <SectionLabel>Quality Mode</SectionLabel>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => { setQuality('standard'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
-                  <button onClick={() => { setQuality('high'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'high' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
+                  <button onClick={() => { setQuality('standard'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
+                  <button onClick={() => { setQuality('high'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'high' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FPS</label>
+                  <SectionLabel>FPS</SectionLabel>
                   <select value={fps} onChange={(e) => { setFps(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
                     {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Width</label>
+                  <SectionLabel>Width</SectionLabel>
                   <select value={width} onChange={(e) => { setWidth(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
                     {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
                   </select>
@@ -325,13 +384,13 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
 
             {/* Text Overlay */}
             <div className="space-y-4 pt-4 border-t border-zinc-900">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Type size={14} /> Caption Overlay</label>
+              <SectionLabel className="mb-3 flex items-center gap-2"><Type size={14} /> Caption Overlay</SectionLabel>
               <input
                 type="text"
                 placeholder="Enter caption..."
                 value={text}
                 onChange={(e) => { setText(e.target.value); setIsDone(false); setGifUrl(null); }}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-green-500"
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-indigo-500"
               />
             </div>
 
@@ -339,7 +398,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
               {!isDone ? (
                 <Button
                   onClick={handleConvert}
-                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 border-none shadow-lg shadow-green-900/20 font-black uppercase text-[10px] tracking-[0.1em]"
+                  className="w-full h-12 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-900/20"
                   isLoading={isProcessing}
                   disabled={isProcessing}
                 >
@@ -354,13 +413,13 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                 <div className="space-y-3 animate-slide-up">
                   <Button
                     onClick={handleDownload}
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest border-none shadow-lg"
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
                   >
                     <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
                   </Button>
                   <Button
                     variant="secondary"
-                    className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
+                    className="w-full h-12 border-zinc-800"
                     onClick={() => {
                       setIsDone(false);
                       setGifUrl(null);
@@ -399,14 +458,14 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                 ) : (
                   <div className="text-center space-y-4 animate-in fade-in">
                     <div className="relative w-16 h-16 flex items-center justify-center mx-auto">
-                      <div className="absolute inset-0 border-2 border-green-500/20 rounded-full"></div>
+                      <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full"></div>
                       <div
-                        className="absolute inset-0 border-2 border-green-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.3)]"
                         style={{ animationDuration: '0.8s' }}
                       ></div>
                       <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
                     </div>
-                    <p className="text-[10px] text-green-400 font-bold uppercase tracking-[0.2em] animate-pulse">
+                    <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] animate-pulse">
                       {progress < 100 ? 'Encoding Buffer' : 'Finalizing'}
                     </p>
                   </div>

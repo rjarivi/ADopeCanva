@@ -1,8 +1,8 @@
 import React from 'react';
 import { Minus, Plus } from 'lucide-react';
 
-export const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <label className="text-[10px] md:text-[11px] font-bold text-zinc-500 uppercase tracking-wider mb-2 md:mb-3 block">
+export const SectionLabel: React.FC<{ children: React.ReactNode, className?: string }> = ({ children, className = "" }) => (
+    <label className={`text-[10px] md:text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 md:mb-4 block ${className}`}>
         {children}
     </label>
 );

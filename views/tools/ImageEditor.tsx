@@ -76,7 +76,7 @@ interface Layer {
 }
 
 const FONTS = [
-    'Arial', 'Verdana', 'Times New Roman', 'Courier New',
+    'Plus Jakarta Sans', 'Unbounded', 'Arial', 'Verdana', 'Times New Roman', 'Courier New',
     'Georgia', 'Palatino', 'Garamond', 'Bookman',
     'Comic Sans MS', 'Trebuchet MS', 'Arial Black', 'Impact'
 ];
@@ -91,7 +91,7 @@ const BLEND_MODES: GlobalCompositeOperation[] = [
 const SectionLabel = ({ children }: { children: React.ReactNode }) => {
     const isMobile = useIsMobile();
     return (
-        <label className={`${isMobile ? 'text-[10px] mb-1.5' : 'text-[11px] mb-3'} font-bold text-zinc-500 uppercase tracking-wider block`}>
+        <label className={`${isMobile ? 'text-[10px] mb-2' : 'text-[10px] mb-4'} font-bold text-zinc-500 uppercase tracking-widest block`}>
             {children}
         </label>
     );
@@ -1245,7 +1245,7 @@ export const ImageEditor: React.FC = () => {
                                                     onClick={tool.action}
                                                     className="flex flex-col items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white hover:border-zinc-600 transition-all active:scale-95 group"
                                                 >
-                                                    <div className="text-zinc-500 group-hover:text-blue-400 transition-colors">
+                                                    <div className="text-zinc-500 group-hover:text-indigo-400 transition-colors">
                                                         {tool.icon}
                                                     </div>
                                                     <span className="text-[10px] font-bold uppercase tracking-tight">{tool.label}</span>
@@ -1544,7 +1544,7 @@ export const ImageEditor: React.FC = () => {
                                             <div className="p-1 px-1.5 rounded-md bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
                                                 <Plus size={14} strokeWidth={3} />
                                             </div>
-                                            <span className="text-[11px] font-black text-zinc-300 group-hover:text-white transition-colors uppercase tracking-[0.2em] ml-1">Add New Text</span>
+                                            <span className="text-[11px] font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-widest ml-1">Add New Text</span>
                                         </div>
                                     </button>
 
@@ -1559,7 +1559,7 @@ export const ImageEditor: React.FC = () => {
                                                 <textarea
                                                     value={activeLayer.text}
                                                     onChange={(e) => updateLayer(activeLayer.id, { text: e.target.value })}
-                                                    className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-blue-500/50 rounded-lg p-3 text-sm text-zinc-200 outline-none resize-none h-20 transition-all placeholder:text-zinc-700"
+                                                    className="w-full bg-zinc-900/50 border border-zinc-800 focus:border-indigo-500/50 rounded-lg p-3 text-sm text-zinc-200 outline-none resize-none h-20 transition-all placeholder:text-zinc-700"
                                                     placeholder="Enter text..."
                                                 />
                                             </div>
@@ -1570,7 +1570,7 @@ export const ImageEditor: React.FC = () => {
                                                     <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Typography</span>
                                                     <button
                                                         onClick={() => fontInputRef.current?.click()}
-                                                        className="text-[10px] text-blue-500 hover:text-blue-400 font-bold uppercase tracking-widest flex items-center gap-1 transition-colors"
+                                                        className="text-[10px] text-indigo-500 hover:text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1 transition-colors"
                                                     >
                                                         <Plus size={10} /> Upload
                                                     </button>
@@ -1602,7 +1602,7 @@ export const ImageEditor: React.FC = () => {
 
                                                 {/* Size & Color Mixed Row */}
                                                 <div className="grid grid-cols-2 gap-3 pb-2 border-b border-zinc-800/30">
-                                                    <div className="bg-zinc-950/30 rounded-lg border border-zinc-800/50 p-2 group focus-within:border-blue-500/30 transition-colors">
+                                                    <div className="bg-zinc-950/30 rounded-lg border border-zinc-800/50 p-2 group focus-within:border-indigo-500/30 transition-colors">
                                                         <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider mb-1 block">Font Size</span>
                                                         <div className="flex items-center gap-1">
                                                             <input
@@ -2355,7 +2355,7 @@ export const ImageEditor: React.FC = () => {
 
                                         {/* Rotation Handle (extra) */}
                                         <div
-                                            className="absolute w-6 h-6 bg-white border border-blue-500 rounded-full flex items-center justify-center cursor-grab left-1/2 -top-8 -ml-3 pointer-events-auto shadow-sm text-blue-500 hover:text-blue-600"
+                                            className="absolute w-6 h-6 bg-white border border-indigo-500 rounded-full flex items-center justify-center cursor-grab left-1/2 -top-8 -ml-3 pointer-events-auto shadow-sm text-indigo-500 hover:text-indigo-600"
                                         >
                                             <RotateCw size={12} />
                                         </div>
@@ -2373,9 +2373,9 @@ export const ImageEditor: React.FC = () => {
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="p-6 bg-zinc-900/80 backdrop-blur-sm border-2 border-dashed border-zinc-600 rounded-xl hover:border-blue-500 hover:bg-zinc-800/90 transition-all group flex flex-col items-center gap-3"
+                                    className="p-6 bg-zinc-900/80 backdrop-blur-sm border-2 border-dashed border-zinc-600 rounded-xl hover:border-indigo-500 hover:bg-zinc-800/90 transition-all group flex flex-col items-center gap-3"
                                 >
-                                    <div className="p-3 rounded-full bg-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+                                    <div className="p-3 rounded-full bg-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform">
                                         <Upload size={24} />
                                     </div>
                                     <div className="text-center">
@@ -2415,16 +2415,16 @@ export const ImageEditor: React.FC = () => {
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab as any)}
-                            className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab ? 'text-blue-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab ? 'text-indigo-500' : 'text-zinc-500 hover:text-zinc-300'}`}
                         >
-                            <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab ? 'bg-blue-500/10 scale-110' : ''}`}>
+                            <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab ? 'bg-indigo-500/10 scale-110' : ''}`}>
                                 {tab === 'canvas' && <Crop size={22} strokeWidth={2.5} />}
                                 {tab === 'edit' && <Sliders size={22} strokeWidth={2.5} />}
                                 {tab === 'text' && <Type size={22} strokeWidth={2.5} />}
                                 {tab === 'shapes' && <Shapes size={22} strokeWidth={2.5} />}
                                 {tab === 'layers' && <Layers size={22} strokeWidth={2.5} />}
                             </div>
-                            <span className="text-[9px] font-bold uppercase tracking-wider">{tab}</span>
+                            <span className="text-[9px] font-bold uppercase tracking-widest">{tab}</span>
                         </button>
                     ))}
                 </div>

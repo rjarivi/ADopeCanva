@@ -270,7 +270,15 @@ export const TextTools: React.FC = () => {
     const categoryOptions = useMemo(() => CATEGORIES.map(c => ({ id: c.id, label: c.label })), []);
 
     return (
-        <div className={`max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in ${isMobile ? 'h-full flex flex-col' : 'h-[calc(100vh-100px)]'}`}>
+        <div className={`max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in ${isMobile ? 'h-full flex flex-col' : 'h-[calc(100vh-100px)]'} space-y-6`}>
+            {!isMobile && (
+                <div className="text-center space-y-2 mb-4">
+                    <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
+                        Fancy Text Tools
+                    </h2>
+                    <p className="text-zinc-400">Transform your text into stylish unicode formats.</p>
+                </div>
+            )}
             {isMobile && (
                 <div className="flex flex-col gap-4 mb-4">
                     <div className="flex justify-center">
@@ -314,7 +322,7 @@ export const TextTools: React.FC = () => {
                                 onClick={() => setActiveCategory(cat.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeCategory === cat.id
                                     ? 'bg-primary/10 text-primary shadow-sm border border-primary/20'
-                                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
                                     }`}
                             >
                                 <cat.icon size={16} className={activeCategory === cat.id ? 'text-primary' : 'text-zinc-500'} />
@@ -368,7 +376,7 @@ export const TextTools: React.FC = () => {
                                                 {resultText}
                                             </p>
                                             <div className={`flex items-center gap-2 ${isMobile ? 'justify-center sm:justify-start' : ''}`}>
-                                                <span className="text-[6px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900/40 px-1 py-0 rounded border border-zinc-800 transition-colors">
+                                                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-900/40 px-1.5 py-0.5 rounded border border-zinc-800 transition-colors">
                                                     {style.name}
                                                 </span>
                                             </div>

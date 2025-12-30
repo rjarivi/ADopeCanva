@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
+import { SectionLabel } from '../../components/EditorControls';
 import { FileData } from '../../types';
 import {
     FileText, ArrowRight, Download, Loader2,
@@ -455,7 +456,7 @@ export const UniversalDocConverter: React.FC = () => {
             <div className="fixed -left-[9999px] top-0 w-[800px] bg-white text-black z-[-1]" ref={previewRef}></div>
 
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
+                <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-3">
                     <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 shadow-inner">
                         <Layers size={24} />
                     </div>
@@ -482,10 +483,10 @@ export const UniversalDocConverter: React.FC = () => {
                         {file && !resultUrl && (
                             <div className="mt-8 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
                                 <div className="space-y-6">
-                                    <div className="flex items-center gap-2 text-zinc-300 font-bold text-sm uppercase tracking-widest">
+                                    <SectionLabel className="flex items-center gap-2">
                                         <FileOutput size={16} className="text-indigo-500" />
                                         Conversion Options
-                                    </div>
+                                    </SectionLabel>
 
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                         {/* Dynamic UI based on file type */}
@@ -530,7 +531,7 @@ export const UniversalDocConverter: React.FC = () => {
                                 <div className="space-y-4">
                                     {isProcessing && (
                                         <div className="space-y-2 animate-pulse">
-                                            <div className="flex justify-between text-[10px] font-black text-zinc-500 uppercase tracking-tighter">
+                                            <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
                                                 <span>Processing...</span>
                                                 <span>{progress}%</span>
                                             </div>
@@ -546,7 +547,7 @@ export const UniversalDocConverter: React.FC = () => {
                                     <Button
                                         onClick={processFile}
                                         disabled={isProcessing}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-8 text-xl font-black rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]"
                                     >
                                         {isProcessing ? <Loader2 className="animate-spin mr-3" size={24} /> : <ArrowRight className="mr-3" size={24} />}
                                         {isProcessing ? 'Converting...' : 'Start Conversion'}
@@ -574,7 +575,7 @@ export const UniversalDocConverter: React.FC = () => {
                             <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full -z-10 animate-pulse"></div>
                         </div>
 
-                        <h3 className="text-3xl font-black text-white mb-3">Conversion Ready!</h3>
+                        <h3 className="text-2xl font-bold text-white mb-3">Conversion Ready!</h3>
                         <p className="text-zinc-400 mb-10 max-w-sm text-lg font-medium leading-relaxed">
                             Successfully converted <span className="text-white">{file?.file.name}</span> to your desired format.
                         </p>
@@ -583,7 +584,7 @@ export const UniversalDocConverter: React.FC = () => {
                             <a
                                 href={resultUrl}
                                 download={resultName}
-                                className="flex items-center justify-center w-full px-8 py-6 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-green-600/20 transform hover:translate-y-[-2px] active:translate-y-[1px]"
+                                className="flex items-center justify-center w-full px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-green-600/20 transform hover:translate-y-[-2px] active:translate-y-[1px]"
                             >
                                 <Download size={24} className="mr-3" /> Download Result
                             </a>

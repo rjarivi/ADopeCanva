@@ -7,8 +7,7 @@ import { FileData } from '../../types';
 import {
     Crop, RotateCw, RotateCcw, Check, Undo2, Download, Maximize,
     Square, RectangleHorizontal, RectangleVertical, MousePointer2,
-    Instagram, Youtube, Twitter, Facebook, Smartphone,
-    ZoomIn, ZoomOut, Move, Hand, Settings, Share2, Trash2
+    ZoomIn, ZoomOut, Move, Hand, Settings, Share2, Trash2, RefreshCw, Image
 } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 
@@ -27,7 +26,6 @@ export const ImageCropper: React.FC = () => {
     const [rotation, setRotation] = useState(0);
     const [croppedImage, setCroppedImage] = useState<string | null>(null);
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
-    const [activeTab, setActiveTab] = useState<'canvas' | 'resize' | 'presets'>('canvas');
 
     // Crop state in percentages
     const [crop, setCrop] = useState<CropArea>({ x: 10, y: 10, width: 80, height: 80 });
@@ -44,10 +42,12 @@ export const ImageCropper: React.FC = () => {
     // Custom Dimension Inputs
     const [customW, setCustomW] = useState<number>(0);
     const [customH, setCustomH] = useState<number>(0);
+    const [imageDimensions, setImageDimensions] = useState({ w: 0, h: 0 });
 
     const containerRef = useRef<HTMLDivElement>(null); // The Rotated Wrapper
     const imageRef = useRef<HTMLImageElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Refs for drag operations
     const startMouseRef = useRef({ x: 0, y: 0 });
@@ -458,171 +458,147 @@ export const ImageCropper: React.FC = () => {
     return (
         <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-blue-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-            {/* 1. Navigation */}
-            <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
-                <button
-                    onClick={() => setActiveTab('canvas')}
-                    className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'canvas' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-                >
-                    <Crop size={isMobile ? 22 : 20} />
-                    <span className="text-[10px] font-medium uppercase tracking-wider">Canvas</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('presets')}
-                    className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'presets' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-                >
-                    <Instagram size={isMobile ? 22 : 20} />
-                    <span className="text-[10px] font-medium uppercase tracking-wider">Presets</span>
-                </button>
-                <button
-                    onClick={() => setActiveTab('resize')}
-                    className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'resize' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-                >
-                    <Maximize size={isMobile ? 22 : 20} />
-                    <span className="text-[10px] font-medium uppercase tracking-wider">Resize</span>
-                </button>
-            </nav>
 
-            {/* 2. Settings Panel */}
-            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+            <aside className={`${isMobile ? 'order-2 w-full h-[55vh]' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-                        {activeTab === 'canvas' && <><Crop size={16} className="text-blue-400" /> Frame Control</>}
-                        {activeTab === 'presets' && <><Instagram size={16} className="text-pink-400" /> Web Ready</>}
-                        {activeTab === 'resize' && <><Settings size={16} className="text-zinc-400" /> Precision</>}
+                    <h2 className="font-bold text-xs text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                        <Settings size={16} className="text-blue-400" /> Cropper Settings
                     </h2>
-                    <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors">
-                        <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="text-[10px] font-bold text-zinc-500 hover:text-blue-400 uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                            title="Replace Image"
+                        >
+                            <RefreshCw size={14} /> Replace
+                        </button>
+                        <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors" title="Close">
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                    {activeTab === 'canvas' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <section>
-                                <SectionLabel>Rotation</SectionLabel>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
-                                        onClick={() => setRotation(r => r - 45)}
-                                        className="flex flex-col items-center gap-2 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
-                                    >
-                                        <RotateCcw size={20} />
-                                        <span className="text-[10px] font-bold uppercase">-45°</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setRotation(r => r + 45)}
-                                        className="flex flex-col items-center gap-2 p-4 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
-                                    >
-                                        <RotateCw size={20} />
-                                        <span className="text-[10px] font-bold uppercase">+45°</span>
-                                    </button>
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        {/* 1. Precise Dimensions */}
+                        <section className="space-y-4">
+                            <SectionLabel>Precise Dimensions</SectionLabel>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                                    <label className="text-[8px] text-zinc-600 font-bold uppercase mb-1 block tracking-widest">Width (px)</label>
+                                    <input
+                                        type="number"
+                                        value={customW}
+                                        onChange={(e) => handleCustomDimensionChange('w', parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent text-sm font-mono text-white outline-none"
+                                    />
                                 </div>
-                            </section>
-
-                            <section>
-                                <SectionLabel>Quick Ratios</SectionLabel>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { id: 'free', icon: MousePointer2, label: 'Free' },
-                                        { id: '1:1', icon: Square, label: '1:1' },
-                                        { id: '16:9', icon: RectangleHorizontal, label: '16:9' },
-                                        { id: '4:3', icon: RectangleHorizontal, label: '4:3' },
-                                        { id: '9:16', icon: RectangleVertical, label: '9:16' },
-                                        { id: '2:1', icon: RectangleHorizontal, label: '2:1' },
-                                    ].map((ratio) => (
-                                        <button
-                                            key={ratio.id}
-                                            onClick={() => applyAspectRatio(ratio.id as AspectRatio)}
-                                            className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all ${aspectRatio === ratio.id ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                        >
-                                            <ratio.icon size={16} />
-                                            <span className="text-[10px] font-bold">{ratio.label}</span>
-                                        </button>
-                                    ))}
+                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                                    <label className="text-[8px] text-zinc-600 font-bold uppercase mb-1 block tracking-widest">Height (px)</label>
+                                    <input
+                                        type="number"
+                                        value={customH}
+                                        onChange={(e) => handleCustomDimensionChange('h', parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent text-sm font-mono text-white outline-none"
+                                    />
                                 </div>
-                            </section>
+                            </div>
+                        </section>
 
+                        {/* 2. Orientation */}
+                        <section>
+                            <SectionLabel>Orientation</SectionLabel>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setRotation(r => r - 45)}
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                >
+                                    <RotateCcw size={16} />
+                                    <span className="text-[10px] font-bold uppercase">-45°</span>
+                                </button>
+                                <button
+                                    onClick={() => setRotation(r => r + 45)}
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                >
+                                    <RotateCw size={16} />
+                                    <span className="text-[10px] font-bold uppercase">+45°</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        {/* 3. Aspect Ratios & Presets */}
+                        <section className="space-y-4">
+                            <SectionLabel>Aspect Ratios</SectionLabel>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { id: 'free', icon: MousePointer2, label: 'Free' },
+                                    { id: '1:1', icon: Square, label: '1:1' },
+                                    { id: '16:9', icon: RectangleHorizontal, label: '16:9' },
+                                    { id: '4:3', icon: RectangleHorizontal, label: '4:3' },
+                                    { id: '9:16', icon: RectangleVertical, label: '9:16' },
+                                    { id: '2:1', icon: RectangleHorizontal, label: '2:1' },
+                                ].map((ratio) => (
+                                    <button
+                                        key={ratio.id}
+                                        onClick={() => applyAspectRatio(ratio.id as AspectRatio)}
+                                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all ${aspectRatio === ratio.id ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        <ratio.icon size={14} />
+                                        <span className="text-[9px] font-bold">{ratio.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <div className="pt-4 space-y-3">
                             <Button
-                                className="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none shadow-lg shadow-blue-500/20 font-bold"
+                                className="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none shadow-lg shadow-blue-500/20 font-bold text-xs tracking-widest uppercase"
                                 onClick={handleCropImage}
                             >
-                                <Check size={18} className="mr-2" /> Apply Transformation
+                                <Check size={18} className="mr-2" /> Apply Changes
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                className="w-full h-12 border-zinc-800 font-bold text-xs tracking-widest uppercase"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <RefreshCw size={16} className="mr-2" /> New Image
                             </Button>
                         </div>
-                    )}
-
-                    {activeTab === 'presets' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <section className="space-y-3">
-                                <SectionLabel>Instagram</SectionLabel>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => applyAspectRatio('1:1')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-pink-500/50 transition-all">
-                                        <Instagram size={14} className="text-pink-500" /> Square Post
-                                    </button>
-                                    <button onClick={() => applyAspectRatio('4:5')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-pink-500/50 transition-all">
-                                        <Instagram size={14} className="text-pink-500" /> Portrait Post
-                                    </button>
-                                    <button onClick={() => applyAspectRatio('9:16')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white hover:border-pink-500/50 transition-all">
-                                        <Smartphone size={14} className="text-pink-500" /> Story / Reel
-                                    </button>
-                                </div>
-                            </section>
-
-                            <section className="space-y-3">
-                                <SectionLabel>Video & Others</SectionLabel>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => applyAspectRatio('16:9')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-all">
-                                        <Youtube size={14} className="text-red-500" /> HD Video
-                                    </button>
-                                    <button onClick={() => applyAspectRatio('2:1')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-all">
-                                        <Twitter size={14} className="text-blue-400" /> X Banner
-                                    </button>
-                                    <button onClick={() => applyAspectRatio('3:2')} className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-all">
-                                        <Facebook size={14} className="text-blue-600" /> Shared Link
-                                    </button>
-                                </div>
-                            </section>
-                        </div>
-                    )}
-
-                    {activeTab === 'resize' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            <section className="space-y-4">
-                                <SectionLabel>Manual Dimensions</SectionLabel>
-                                <div className="space-y-4">
-                                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                                        <label className="text-[10px] text-zinc-600 font-bold uppercase mb-2 block tracking-widest">Width (px)</label>
-                                        <input
-                                            type="number"
-                                            value={customW}
-                                            onChange={(e) => handleCustomDimensionChange('w', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-transparent text-xl font-mono text-white outline-none"
-                                        />
-                                    </div>
-                                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-                                        <label className="text-[10px] text-zinc-600 font-bold uppercase mb-2 block tracking-widest">Height (px)</label>
-                                        <input
-                                            type="number"
-                                            value={customH}
-                                            onChange={(e) => handleCustomDimensionChange('h', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-transparent text-xl font-mono text-white outline-none"
-                                        />
-                                    </div>
-                                </div>
-                            </section>
-                        </div>
-                    )}
+                    </div>
                 </div>
+
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                        const uploadedFile = e.target.files?.[0];
+                        if (uploadedFile) {
+                            const reader = new FileReader();
+                            reader.onload = (re) => {
+                                setFile({
+                                    file: uploadedFile,
+                                    previewUrl: re.target?.result as string,
+                                    size: uploadedFile.size.toString(),
+                                    type: uploadedFile.type
+                                });
+                            };
+                            reader.readAsDataURL(uploadedFile);
+                        }
+                    }}
+                />
             </aside>
 
             {/* 3. Preview Area */}
-            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner min-w-0 min-h-0`}>
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                 <div
                     ref={viewportRef}
-                    className={`relative w-full h-full bg-black shadow-2xl overflow-hidden flex items-center justify-center ${isHand ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                    className={`relative w-full h-full overflow-hidden flex items-center justify-center ${isHand ? 'cursor-grab active:cursor-grabbing' : ''}`}
                     onWheel={handleWheel}
                     onMouseDown={(e) => handleMouseDown(e, 'bg')}
                 >
@@ -651,10 +627,32 @@ export const ImageCropper: React.FC = () => {
                     >
                         <div
                             ref={containerRef}
-                            className="relative shadow-2xl origin-center transition-transform duration-200"
+                            className="relative shadow-2xl origin-center transition-transform duration-200 border border-dashed border-zinc-700/50"
                             style={{ transform: `rotate(${rotation}deg)` }}
                         >
-                            <img ref={imageRef} src={file.previewUrl} alt="Crop target" className="max-w-none max-h-none block object-contain pointer-events-none" draggable={false} />
+                            {/* Image Dimensions Indicator */}
+                            {imageDimensions.w > 0 && (
+                                <div className="absolute -top-6 left-0 text-[10px] font-mono text-zinc-500 font-bold tracking-widest pointer-events-none uppercase">
+                                    {imageDimensions.w} x {imageDimensions.h}px
+                                </div>
+                            )}
+                            <img
+                                ref={imageRef}
+                                src={file.previewUrl}
+                                alt="Crop target"
+                                className="max-w-[90vw] max-h-[70vh] block object-contain pointer-events-none"
+                                draggable={false}
+                                onLoad={(e) => {
+                                    if (viewportRef.current) {
+                                        const img = e.currentTarget;
+                                        setImageDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+                                        const vw = viewportRef.current.offsetWidth * 0.85;
+                                        const vh = viewportRef.current.offsetHeight * 0.85;
+                                        const scale = Math.min(vw / img.naturalWidth, vh / img.naturalHeight, 1);
+                                        setZoom(scale);
+                                    }
+                                }}
+                            />
 
                             {/* Crop UI */}
                             <div className="absolute inset-0 bg-black/60">
@@ -685,10 +683,6 @@ export const ImageCropper: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md rounded-lg px-3 py-1.5 text-[10px] text-zinc-400 pointer-events-none font-mono flex gap-4 uppercase tracking-widest border border-white/5">
-                        <span className="text-blue-400">{customW}x{customH}px</span>
-                        <span>{rotation}° Rotation</span>
-                    </div>
                 </div>
             </main>
         </div>
