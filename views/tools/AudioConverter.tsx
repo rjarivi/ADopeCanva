@@ -7,10 +7,13 @@ import { Music, Mic2, Download, CheckCircle, RefreshCcw, Settings2, AlertCircle,
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
+import { useIsMobile } from '../../hooks/useIsMobile';
+
 const AUDIO_FORMATS = ['MP3', 'WAV', 'AAC', 'FLAC', 'M4A', 'OGG'];
 const BITRATES = ['128k', '192k', '256k', '320k'];
 
 export const AudioConverter: React.FC = () => {
+  const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
   const [format, setFormat] = useState('MP3');
   const [bitrate, setBitrate] = useState('192k');
@@ -210,7 +213,7 @@ export const AudioConverter: React.FC = () => {
 
               <div className="space-y-3">
                 <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Format</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {AUDIO_FORMATS.map(fmt => (
                     <button
                       key={fmt}

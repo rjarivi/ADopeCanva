@@ -5,7 +5,8 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
-import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle } from 'lucide-react';
+import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, Settings, Share2, Trash2 } from 'lucide-react';
+import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -18,6 +19,7 @@ export const MagicImageEditor: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [apiKey, setApiKey] = useState('');
+  const [activeTab, setActiveTab] = useState<'ai' | 'settings' | 'export'>('ai');
 
   const handleReset = () => {
     setFile(null);
@@ -139,101 +141,162 @@ export const MagicImageEditor: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
-      {/* Controls Sidebar */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="bg-surface p-6 rounded-2xl border border-zinc-800 space-y-6">
-          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isMobile ? 'text-center' : ''}`}>
-            <h3 className="text-lg font-semibold truncate max-w-[200px] sm:max-w-none" title={file.file.name}>{file.file.name}</h3>
-            <button onClick={handleReset} className={`text-xs text-red-400 hover:underline flex items-center gap-1 ${isMobile ? 'w-full justify-center' : ''}`}>
-              <RefreshCcw size={12} /> New Project
-            </button>
-          </div>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-purple-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-          <div className="space-y-4">
-            <ApiKeyInput
-              serviceName="Gemini"
-              localStorageKey="gemini_api_key"
-              onKeyChange={setApiKey}
-              description="Required for AI image editing"
-            />
+      {/* 1. Navigation (Desktop Rail / Mobile Bottom Bar) */}
+      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
+        <button
+          onClick={() => setActiveTab('ai')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'ai' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Wand2 size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">AI Edit</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Settings size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Config</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('export')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
+        >
+          <Download size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Export</span>
+        </button>
+      </nav>
 
-            <div className="space-y-2">
-              <label className={`text-sm font-medium text-zinc-300 flex items-center gap-2 ${isMobile ? 'justify-center' : ''}`}>
-                <Wand2 size={16} className="text-purple-400" />
-                Magic Prompt
-              </label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
-                placeholder='e.g., "Add a retro filter", "Make the sky purple", "Remove the person in background"'
-                className={`w-full bg-zinc-900 border border-zinc-700 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-2 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600 transition-all ${isMobile ? 'text-center' : ''}`}
-                disabled={isProcessing}
-              />
-            </div>
-
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-400 text-sm">
-                <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                <p>{error}</p>
-              </div>
-            )}
-
-            <Button
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-none shadow-lg shadow-purple-500/20"
-              onClick={handleGenerate}
-              isLoading={isProcessing}
-              disabled={!prompt.trim() || isProcessing || !apiKey}
-            >
-              {isProcessing ? 'Generating...' : 'Generate Edit'}
-            </Button>
-
-            {resultImage && (
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => {
-                  const link = document.createElement('a');
-                  link.href = resultImage;
-                  link.download = `magic-edited-${file.file.name}`;
-                  link.click();
-                }}
-              >
-                <Download size={18} className="mr-2" /> Download Result
-              </Button>
-            )}
-          </div>
+      {/* 2. Settings Panel (Middle) */}
+      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden transition-all' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+        <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+            {activeTab === 'ai' && <><Sparkles size={16} className="text-purple-400" /> AI Generator</>}
+            {activeTab === 'settings' && <><Settings size={16} className="text-zinc-400" /> Settings</>}
+            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Export Options</>}
+          </h2>
+          <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
+            <RefreshCcw size={14} />
+          </button>
         </div>
 
-        <div className="bg-surface p-6 rounded-2xl border border-zinc-800">
-          <h4 className="font-semibold text-zinc-200 mb-2 flex items-center gap-2">
-            <Sparkles size={16} className="text-yellow-400" /> Tips
-          </h4>
-          <ul className="text-sm text-zinc-400 list-disc list-inside space-y-1">
-            <li>Be specific about what you want to change.</li>
-            <li>Mention styles (e.g., "watercolor style", "cyberpunk").</li>
-            <li>You can ask to add or remove objects.</li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Preview Area */}
-      <div className="lg:col-span-2">
-        <div className="bg-surface rounded-3xl p-2 border border-zinc-800 h-[600px] relative select-none shadow-2xl overflow-hidden group">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center bg-black/50">
-
-            {/* Image Rendering */}
-            {resultImage ? (
-              // Comparison View
-              <div className="relative w-full h-full">
-                {/* Result Image (Bottom/Right Layer) - Full Width */}
-                <img
-                  src={resultImage}
-                  alt="Edited"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          {activeTab === 'ai' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="space-y-4">
+                <ApiKeyInput
+                  serviceName="Gemini"
+                  localStorageKey="gemini_api_key"
+                  onKeyChange={setApiKey}
+                  description="Required for AI editing"
                 />
 
-                {/* Original Image (Top/Left Layer) - Clipped */}
+                <section>
+                  <SectionLabel>Magic Prompt</SectionLabel>
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
+                    placeholder='e.g., "Add a retro filter", "Change sky to sunset"'
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600 transition-all"
+                    disabled={isProcessing}
+                  />
+                </section>
+
+                <Button
+                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-none shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all"
+                  onClick={handleGenerate}
+                  isLoading={isProcessing}
+                  disabled={!prompt.trim() || isProcessing || !apiKey}
+                >
+                  <Sparkles size={18} className="mr-2" />
+                  {isProcessing ? 'Processing...' : 'Apply Magic'}
+                </Button>
+
+                {error && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs">
+                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                    <p>{error}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              <section>
+                <SliderControl
+                  label="Before/After Slider"
+                  value={sliderPosition}
+                  min={0}
+                  max={100}
+                  onChange={setSliderPosition}
+                  unit="%"
+                />
+              </section>
+              <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
+                <h4 className="font-semibold text-zinc-200 mb-2 text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles size={14} className="text-yellow-400" /> AI Tips
+                </h4>
+                <ul className="text-[11px] text-zinc-500 list-disc list-inside space-y-2">
+                  <li>Be specific about locations and styles.</li>
+                  <li>Mention colors: "Turn the red car to blue".</li>
+                  <li>Style requests: "Make it look like a oil painting".</li>
+                </ul>
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'export' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {resultImage ? (
+                <div className="space-y-4">
+                  <div className="aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-black">
+                    <img src={resultImage} className="w-full h-full object-contain" alt="Preview" />
+                  </div>
+                  <Button
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none"
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = resultImage;
+                      link.download = `magic-edited-${file.file.name}`;
+                      link.click();
+                    }}
+                  >
+                    <Download size={18} className="mr-2" /> Download PNG
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
+                      <Share2 size={16} className="mr-2" /> Share
+                    </Button>
+                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={handleReset}>
+                      <Trash2 size={16} className="mr-2" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <AlertCircle size={32} className="mx-auto text-zinc-800 mb-4" />
+                  <p className="text-sm text-zinc-500">Generate an edit first to export.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* 3. Preview Area (Top on Mobile) */}
+      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
+          <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
+            {resultImage ? (
+              <div className="relative w-full h-full group">
+                <img src={resultImage} alt="Edited" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
                 <img
                   src={file.previewUrl}
                   alt="Original"
@@ -242,66 +305,54 @@ export const MagicImageEditor: React.FC = () => {
                 />
 
                 {/* Labels */}
-                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 font-bold pointer-events-none">
-                  Original
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold pointer-events-none tracking-widest uppercase">
+                  Before
                 </div>
-                <div className="absolute top-4 right-4 bg-purple-600/90 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 font-bold shadow-lg shadow-purple-500/20 pointer-events-none">
-                  Magic Edit
+                <div className="absolute top-4 right-4 bg-purple-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold shadow-lg shadow-purple-500/20 pointer-events-none tracking-widest uppercase">
+                  After
                 </div>
 
-                {/* Slider Handle & Line */}
-                <div
-                  className="absolute inset-y-0"
-                  style={{ left: `${sliderPosition}%` }}
-                >
-                  <div className="absolute inset-y-0 -left-px w-0.5 bg-white shadow-[0_0_15px_rgba(0,0,0,0.5)]"></div>
-                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg -ml-0.5 text-purple-600">
-                    <Sliders size={16} className="rotate-90" />
+                {/* Slider UI */}
+                <div className="absolute inset-y-0" style={{ left: `${sliderPosition}%` }}>
+                  <div className="absolute inset-y-0 -left-px w-0.5 bg-white shadow-xl"></div>
+                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-black/20 text-purple-600">
+                    <Sliders size={14} className="rotate-90" />
                   </div>
                 </div>
 
-                {/* Invisible Range Input */}
                 <input
                   type="range"
                   min="0"
                   max="100"
                   value={sliderPosition}
-                  onChange={(e) => setSliderPosition(parseInt((e.target as HTMLInputElement).value))}
+                  onChange={(e) => setSliderPosition(parseInt(e.target.value))}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
                 />
               </div>
             ) : (
-              // Single Preview View
               <div className="relative w-full h-full">
-                <img
-                  src={file.previewUrl}
-                  alt="Original"
-                  className="w-full h-full object-contain"
-                />
+                <img src={file.previewUrl} alt="Original" className="w-full h-full object-contain" />
                 {isProcessing && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-fade-in">
                     <div className="w-16 h-16 relative">
-                      <div className="absolute inset-0 border-4 border-zinc-700 rounded-full"></div>
+                      <div className="absolute inset-0 border-4 border-zinc-700/30 rounded-full"></div>
                       <div className="absolute inset-0 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                    <p className="text-white font-bold mt-4 text-lg">Thinking...</p>
-                    <p className="text-purple-300 text-sm">Gemini is applying your changes</p>
+                    <p className="text-white font-bold mt-6 tracking-widest uppercase text-xs">Transforming...</p>
                   </div>
                 )}
-                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 font-bold">
-                  Original
-                </div>
               </div>
             )}
           </div>
         </div>
 
-        {resultImage && (
-          <p className="text-center text-zinc-500 text-sm mt-4 animate-fade-in">
-            Drag the slider to compare original vs edited version
-          </p>
+        {isMobile && !resultImage && (
+          <div className="absolute bottom-2 right-4 text-[10px] text-zinc-600 font-medium tracking-widest uppercase">
+            Preview Stage
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
+
 };

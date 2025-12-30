@@ -368,7 +368,7 @@ export const TextTools: React.FC = () => {
                                                 {resultText}
                                             </p>
                                             <div className={`flex items-center gap-2 ${isMobile ? 'justify-center sm:justify-start' : ''}`}>
-                                                <span className="text-[7px] font-bold text-zinc-500 uppercase tracking-wider bg-zinc-900/50 px-1.5 py-0.5 rounded-md border border-zinc-800 group-hover:border-zinc-700 transition-colors">
+                                                <span className="text-[6px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900/40 px-1 py-0 rounded border border-zinc-800 transition-colors">
                                                     {style.name}
                                                 </span>
                                             </div>

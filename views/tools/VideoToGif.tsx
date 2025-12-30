@@ -8,6 +8,7 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 const FRAME_RATES = [10, 15, 20, 24, 30];
 const WIDTHS = [320, 480, 640, 800];
@@ -17,7 +18,9 @@ interface VideoToGifProps {
 }
 
 export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) => {
+  const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
+  const [activeTab, setActiveTab] = useState<'settings' | 'export'>('settings');
   const [fps, setFps] = useState(15);
   const [width, setWidth] = useState(480);
   const [quality, setQuality] = useState<'high' | 'standard'>('high');
@@ -250,131 +253,170 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   }
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
-      {/* Settings Panel */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="flex items-center gap-2 font-bold text-white"><Settings size={18} /> Settings</h3>
-            <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); }}>
-              <RefreshCcw size={16} /> Reset
-            </Button>
-          </div>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-green-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-          {/* Trimming */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-zinc-400 flex items-center justify-between">
-              <span className="flex items-center gap-2"><Scissors size={14} /> Trim Video</span>
-              <span className="font-mono text-green-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
-            </label>
-            <div className="px-2">
-              <Slider
-                range
-                min={0}
-                max={duration || 10}
-                step={0.1}
-                value={trimRange}
-                onChange={(val) => setTrimRange(val as [number, number])}
-                trackStyle={[{ backgroundColor: '#10b981' }]}
-                handleStyle={[{ borderColor: '#10b981', backgroundColor: '#064e3b' }, { borderColor: '#10b981', backgroundColor: '#064e3b' }]}
-                railStyle={{ backgroundColor: '#27272a' }}
-              />
-            </div>
-          </div>
+      {/* 1. Navigation Rail (Mobile Bottom / Desktop Rail) */}
+      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-green-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Settings size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Params</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('export')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-green-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
+        >
+          <Download size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Done</span>
+        </button>
+      </nav>
 
-          {/* Quality & Size */}
-          <div className="space-y-4 pt-4 border-t border-zinc-800">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-zinc-400">Quality Mode</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setQuality('standard')} className={`p-2 rounded-lg text-sm border transition-all ${quality === 'standard' ? 'bg-zinc-700 border-zinc-600 text-white' : 'border-transparent text-zinc-500 hover:bg-zinc-800'}`}>Standard (Fast)</button>
-                <button onClick={() => setQuality('high')} className={`p-2 rounded-lg text-sm border transition-all ${quality === 'high' ? 'bg-green-500/20 border-green-500 text-green-400' : 'border-transparent text-zinc-500 hover:bg-zinc-800'}`}>High Quality</button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400">FPS</label>
-                <select value={fps} onChange={(e) => setFps(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm">
-                  {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-zinc-400">Width</label>
-                <select value={width} onChange={(e) => setWidth(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white text-sm">
-                  {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Text Overlay */}
-          <div className="space-y-4 pt-4 border-t border-zinc-800">
-            <label className="text-sm font-medium text-zinc-400 flex items-center gap-2"><Type size={14} /> Add Text Overlay</label>
-            <input
-              type="text"
-              placeholder="Enter caption..."
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-white"
-            />
-            {text && (
-              <div className="grid grid-cols-2 gap-4">
-                <input type="color" value={textColor} onChange={(e) => setTextColor(e.target.value)} className="w-full h-8 bg-transparent cursor-pointer" />
-                <input
-                  type="range" min="10" max="72" value={textSize}
-                  onChange={(e) => setTextSize(Number(e.target.value))}
-                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-green-500 mt-3"
-                />
-              </div>
-            )}
-          </div>
-
-          <Button
-            onClick={handleConvert}
-            className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 border-none shadow-lg shadow-green-500/20"
-            isLoading={isProcessing}
-            disabled={isProcessing || isDone}
-          >
-            {isProcessing ? `Rendering ${outputFormat.toUpperCase()}...` : 'Convert Video'}
+      {/* 2. Settings Panel */}
+      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+        <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+          <h3 className="flex items-center gap-2 font-bold text-white text-xs uppercase tracking-widest">
+            {activeTab === 'settings' ? <><Settings size={14} /> Generator</> : <><Download size={14} /> Export</>}
+          </h3>
+          <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); }}>
+            <RefreshCcw size={14} />
           </Button>
         </div>
-      </div>
 
-      {/* Preview Panel */}
-      <div className="lg:col-span-2">
-        <div className="bg-black/50 rounded-3xl border border-zinc-800 h-[600px] flex flex-col relative overflow-hidden">
-          {isDone && gifUrl ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6 animate-fade-in">
-              <img src={gifUrl} alt={`${outputFormat} Result`} className="max-h-[400px] max-w-full object-contain rounded-lg shadow-2xl" />
-              <Button onClick={handleDownload} className="bg-white text-black hover:bg-zinc-200 min-w-[200px]">
-                <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          {activeTab === 'settings' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {/* Trimming */}
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Scissors size={14} /> Trim Range</span>
+                  <span className="font-mono text-green-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
+                </label>
+                <div className="px-2 py-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                  <Slider
+                    range
+                    min={0}
+                    max={duration || 10}
+                    step={0.1}
+                    value={trimRange}
+                    onChange={(val) => setTrimRange(val as [number, number])}
+                    trackStyle={[{ backgroundColor: '#10b981' }]}
+                    handleStyle={[{ borderColor: '#10b981', backgroundColor: '#064e3b' }, { borderColor: '#10b981', backgroundColor: '#064e3b' }]}
+                    railStyle={{ backgroundColor: '#27272a' }}
+                  />
+                </div>
+              </div>
+
+              {/* Quality & Size */}
+              <div className="space-y-4 pt-4 border-t border-zinc-900">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Quality Mode</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setQuality('standard')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
+                    <button onClick={() => setQuality('high')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'high' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FPS</label>
+                    <select value={fps} onChange={(e) => setFps(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                      {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Width</label>
+                    <select value={width} onChange={(e) => setWidth(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                      {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Overlay */}
+              <div className="space-y-4 pt-4 border-t border-zinc-900">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Type size={14} /> Caption Overlay</label>
+                <input
+                  type="text"
+                  placeholder="Enter caption..."
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-green-500"
+                />
+              </div>
+
+              <Button
+                onClick={handleConvert}
+                className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 border-none shadow-lg shadow-green-900/20 font-bold uppercase text-[10px] tracking-[0.1em]"
+                isLoading={isProcessing}
+                disabled={isProcessing || isDone}
+              >
+                {isProcessing ? `Stitching Frames...` : 'Run Conversion'}
               </Button>
             </div>
-          ) : (
-            <div className="flex-1 flex items-center justify-center p-8">
-              {!isProcessing && (
-                <video
-                  ref={videoRef}
-                  src={file.previewUrl}
-                  controls
-                  className="max-h-full max-w-full rounded-lg shadow-lg"
-                  onLoadedMetadata={handleMetadata}
-                />
-              )}
-              {isProcessing && (
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">Generating High Quality {outputFormat.toUpperCase()}</h3>
-                    <p className="text-zinc-400 text-sm mt-2">Analyzing colors and generating palette...</p>
+          )}
+
+          {activeTab === 'export' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {isDone && gifUrl ? (
+                <div className="space-y-4">
+                  <div className="aspect-square bg-black rounded-2xl border border-zinc-800 overflow-hidden flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
+                    <img src={gifUrl} alt={`${outputFormat} Result`} className="max-h-full max-w-full object-contain" />
                   </div>
+                  <Button onClick={handleDownload} className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-bold uppercase text-xs tracking-widest border-none">
+                    <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center py-12 flex flex-col items-center">
+                  <Loader2 size={32} className={`text-zinc-800 mb-4 ${isProcessing ? 'animate-spin text-green-500' : ''}`} />
+                  <p className="text-sm text-zinc-500">
+                    {isProcessing ? 'Rendering sequence...' : 'Convert a clip to export.'}
+                  </p>
                 </div>
               )}
             </div>
           )}
         </div>
-      </div>
+      </aside>
+
+      {/* 3. Preview Area */}
+      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-video'}`}>
+          <div className="relative w-full h-full flex items-center justify-center">
+            {!isProcessing && !isDone && (
+              <video
+                ref={videoRef}
+                src={file.previewUrl}
+                controls
+                className="max-h-full max-w-full block"
+                onLoadedMetadata={handleMetadata}
+              />
+            )}
+            {(isProcessing || isDone) && (
+              <div className="relative w-full h-full flex items-center justify-center bg-black/60 group">
+                {gifUrl ? (
+                  <img src={gifUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <div className="text-center space-y-4 animate-in fade-in">
+                    <div className="w-12 h-12 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto shadow-lg shadow-green-500/20"></div>
+                    <p className="text-[10px] text-green-400 font-bold uppercase tracking-[0.2em] animate-pulse">Encoding Buffer</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        {isMobile && (
+          <div className="absolute bottom-2 right-4 text-[10px] text-zinc-700 font-bold tracking-widest uppercase">
+            {isDone ? 'Render Complete' : 'Live Preview'}
+          </div>
+        )}
+      </main>
     </div>
   );
 };
