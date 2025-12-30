@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Settings, Download, RefreshCcw, Scissors, Crop, RotateCw, Play, FastForward, Rewind, Type, Grid, AlertCircle, Loader2, ArrowLeft, Check } from 'lucide-react';
+import { Settings, Download, RefreshCcw, Scissors, Crop, RotateCw, Play, FastForward, Rewind, Type, Grid, AlertCircle, Loader2, ArrowLeft, Check, FlipHorizontal, FlipVertical } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import ReactCrop, { Crop as CropType, centerCrop, makeAspectCrop } from 'react-image-crop';
@@ -12,6 +13,7 @@ import 'rc-slider/assets/index.css';
 import 'react-image-crop/dist/ReactCrop.css';
 
 export const GifEditor: React.FC = () => {
+    const isMobile = useIsMobile();
     const [file, setFile] = useState<FileData | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -386,9 +388,9 @@ export const GifEditor: React.FC = () => {
     }
 
     return (
-        <div className="flex min-h-[700px] h-[calc(100vh-180px)] bg-[#0c0c0e] border border-zinc-800 rounded-[32px] overflow-hidden animate-slide-up shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative">
-            {/* Left Icon Sidebar */}
-            <div className="w-16 border-r border-zinc-800 flex flex-col items-center py-6 gap-4 bg-[#0c0c0e] shrink-0">
+        <div className={`flex bg-[#0c0c0e] border border-zinc-800 rounded-[28px] md:rounded-[32px] overflow-hidden animate-slide-up shadow-[0_30px_100px_rgba(0,0,0,0.5)] relative ${isMobile ? 'flex-col h-[calc(100vh-140px)]' : 'h-full min-h-[600px]'}`}>
+            {/* Tool Sidebar */}
+            <div className={`${isMobile ? 'order-3 w-full border-t flex-row justify-around py-3 px-2 overflow-x-auto' : 'w-16 border-r flex-col items-center py-6'} border-zinc-800 flex gap-4 bg-[#0c0c0e] shrink-0 custom-scrollbar`}>
                 <button
                     onClick={() => setActiveTool('crop')}
                     className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'crop' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -425,22 +427,24 @@ export const GifEditor: React.FC = () => {
                     <Grid size={22} />
                 </button>
 
-                <div className="mt-auto flex flex-col gap-4 items-center">
-                    <button
-                        onClick={() => { setFile(null); setResultUrl(null); }}
-                        className="p-3 text-zinc-500 hover:text-red-400 transition-colors"
-                        title="Reset"
-                    >
-                        <RefreshCcw size={20} />
-                    </button>
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 mb-2">
-                        <Settings size={20} className="animate-pulse-slow" />
+                {!isMobile && (
+                    <div className="mt-auto flex flex-col gap-4 items-center">
+                        <button
+                            onClick={() => { setFile(null); setResultUrl(null); }}
+                            className="p-3 text-zinc-500 hover:text-red-400 transition-colors"
+                            title="Reset"
+                        >
+                            <RefreshCcw size={20} />
+                        </button>
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 mb-2">
+                            <Settings size={20} className="animate-pulse-slow" />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Settings Side Panel */}
-            <div className="w-80 border-r border-zinc-800 p-6 flex flex-col bg-[#0c0c0e] shrink-0 overflow-y-auto custom-scrollbar">
+            <div className={`${isMobile ? 'order-2 w-full border-b max-h-[400px]' : 'w-80 border-r h-full'} border-zinc-800 p-6 flex flex-col bg-[#0c0c0e] shrink-0 overflow-y-auto custom-scrollbar`}>
                 <div className="mb-6 flex items-center justify-between">
                     <h3 className="font-bold text-white text-lg tracking-tight uppercase text-xs text-zinc-500">
                         {activeTool}
@@ -485,16 +489,16 @@ export const GifEditor: React.FC = () => {
                             <div className="space-y-4">
                                 <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Orientation</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button onClick={() => setRotation((r) => (r + 90) % 360)} className="bg-zinc-900 hover:bg-zinc-800 text-white p-4 rounded-xl flex flex-col items-center gap-2 border border-zinc-800 transition-all">
-                                        <RotateCw size={18} />
-                                        <span className="text-[10px]">Rotate 90°</span>
+                                    <button onClick={() => setRotation((r) => (r + 90) % 360)} className="bg-zinc-900 hover:bg-zinc-800 text-white py-2.5 px-4 rounded-xl flex items-center justify-center gap-3 border border-zinc-800 transition-all">
+                                        <RotateCw size={16} />
+                                        <span className="text-[10px] font-bold">Rotate 90°</span>
                                     </button>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <button onClick={() => setFlipH(!flipH)} className={`p-4 rounded-xl border flex items-center justify-center transition-all ${flipH ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
-                                            H-Flip
+                                        <button onClick={() => setFlipH(!flipH)} className={`py-2.5 rounded-xl border flex items-center justify-center transition-all ${flipH ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
+                                            <FlipHorizontal size={16} />
                                         </button>
-                                        <button onClick={() => setFlipV(!flipV)} className={`p-4 rounded-xl border flex items-center justify-center transition-all ${flipV ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
-                                            V-Flip
+                                        <button onClick={() => setFlipV(!flipV)} className={`py-2.5 rounded-xl border flex items-center justify-center transition-all ${flipV ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800'}`}>
+                                            <FlipVertical size={16} />
                                         </button>
                                     </div>
                                 </div>
@@ -621,19 +625,30 @@ export const GifEditor: React.FC = () => {
                         <Play size={16} />
                         Preview Changes
                     </button>
-                    <button
-                        onClick={() => handleProcess('gif', true)}
-                        disabled={isProcessing}
-                        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                    >
-                        <Download size={18} />
-                        {isProcessing && !isSpriteWorker ? 'Exporting...' : 'Export & Download'}
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleProcess('gif', true)}
+                            disabled={isProcessing}
+                            className="flex-1 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        >
+                            <Download size={18} />
+                            {isProcessing && !isSpriteWorker ? 'Processing...' : 'Download'}
+                        </button>
+                        {isMobile && (
+                            <button
+                                onClick={() => { setFile(null); setResultUrl(null); }}
+                                className="p-4 bg-zinc-900 text-zinc-400 hover:text-red-400 border border-zinc-800 rounded-2xl transition-all flex items-center justify-center"
+                                title="Reset"
+                            >
+                                <RefreshCcw size={20} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
             {/* Main Preview Area */}
-            <div className="flex-1 bg-[#09090b] relative overflow-hidden flex items-center justify-center p-12">
+            <div className={`${isMobile ? 'order-1 w-full flex-1 min-h-0' : 'flex-1 p-12'} bg-[#09090b] relative overflow-hidden flex items-center justify-center`}>
                 {/* Dotted Background for the Workspace Area */}
                 <div className="absolute inset-0 opacity-25 pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#4b5563 1px, transparent 1px)', backgroundSize: '20px 20px' }}

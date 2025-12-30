@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Download, Sliders, Zap, Image as ImageIcon, RefreshCcw } from 'lucide-react';
+import { Download, Sliders, Zap, Image as ImageIcon, RefreshCcw, Settings, Share2, Trash2, Maximize } from 'lucide-react';
+import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -16,6 +17,7 @@ export const ImageCompressor: React.FC = () => {
   const [compressedSize, setCompressedSize] = useState<string>('');
   const [sliderPosition, setSliderPosition] = useState(50);
   const [originalImageSrc, setOriginalImageSrc] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'compress' | 'resize' | 'export'>('compress');
 
   useEffect(() => {
     if (file) {
@@ -107,78 +109,154 @@ export const ImageCompressor: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 animate-slide-up">
-      {/* Sidebar Controls */}
-      <div className="lg:col-span-1 space-y-6">
-        <div className="bg-surface p-6 rounded-2xl border border-zinc-800 space-y-6">
-          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 ${isMobile ? 'text-center' : ''}`}>
-            <h3 className="text-lg font-semibold truncate max-w-[200px] sm:max-w-none" title={file.file.name}>{file.file.name}</h3>
-            <button onClick={handleReset} className={`text-xs text-red-400 hover:underline flex items-center gap-1 ${isMobile ? 'w-full justify-center' : ''}`}>
-              <RefreshCcw size={12} /> New Project
-            </button>
-          </div>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-blue-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-          <div className="space-y-4">
-            <div className={`flex justify-between items-center text-sm text-zinc-400 ${isMobile ? 'flex-col gap-2' : ''}`}>
-              <span className="flex items-center gap-2"><Zap size={14} className="text-yellow-500" /> Quality</span>
-              <span className="text-white font-mono">{compressionLevel}%</span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="100"
-              value={compressionLevel}
-              onChange={(e) => setCompressionLevel(parseInt((e.target as HTMLInputElement).value))}
-              className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-primary"
-            />
-            <div className="flex justify-between text-xs text-zinc-500 font-mono">
-              <span>Low Quality</span>
-              <span>High Quality</span>
-            </div>
-          </div>
+      {/* 1. Navigation */}
+      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
+        <button
+          onClick={() => setActiveTab('compress')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'compress' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Zap size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Compress</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('resize')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'resize' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Maximize size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Resize</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('export')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-blue-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
+        >
+          <Download size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Export</span>
+        </button>
+      </nav>
 
-          <div className="p-4 bg-zinc-900 rounded-xl space-y-2 border border-zinc-800/50">
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Original</span>
-              <span className="text-zinc-300">{file.size}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-zinc-500">Compressed</span>
-              <span className="text-primary font-bold">
-                {isProcessing ? 'Calculating...' : compressedSize}
-              </span>
-            </div>
-            {!isProcessing && compressedSize && (
-              <div className="text-xs text-green-500 text-right">
-                saved {((file.file.size - (parseFloat(compressedSize) * 1024 * 1024)) / file.file.size * 100).toFixed(0)}%
-              </div>
-            )}
-          </div>
-
-          <Button
-            className={`w-full ${isMobile ? 'h-12' : ''}`}
-            onClick={handleDownload}
-            disabled={!compressedImage || isProcessing}
-          >
-            <Download size={18} className="mr-2" /> Download
-          </Button>
+      {/* 2. Settings Panel */}
+      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+        <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+            {activeTab === 'compress' && <><Zap size={16} className="text-blue-400" /> Optimization</>}
+            {activeTab === 'resize' && <><Settings size={16} className="text-zinc-400" /> Image Config</>}
+            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Save Result</>}
+          </h2>
+          <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
+            <RefreshCcw size={14} />
+          </button>
         </div>
-      </div>
 
-      {/* Main Preview Area */}
-      <div className="lg:col-span-2">
-        <div className="bg-surface rounded-3xl p-2 border border-zinc-800 h-[500px] relative select-none shadow-2xl overflow-hidden group">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-zinc-900 flex items-center justify-center">
-            {originalImageSrc ? (
-              <div className="relative w-full h-full">
-                {/* Original Image Layer (Bottom/Right) - Full Width */}
-                <img
-                  src={originalImageSrc}
-                  alt="Original"
-                  className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          {activeTab === 'compress' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              <section>
+                <SliderControl
+                  label="Compression Quality"
+                  value={compressionLevel}
+                  min={10}
+                  max={100}
+                  onChange={setCompressionLevel}
+                  unit="%"
                 />
+                <div className="flex justify-between mt-2 text-[10px] text-zinc-600 uppercase font-bold tracking-tighter">
+                  <span>Smaller File</span>
+                  <span>Better Quality</span>
+                </div>
+              </section>
 
-                {/* Compressed Image Layer (Top/Left) - Clipped */}
+              <section className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-900/50 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-zinc-500 font-medium">Original Size</span>
+                  <span className="text-xs text-zinc-300 font-mono">{file.size}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-zinc-500 font-medium">Predicted Size</span>
+                  <span className="text-xs text-blue-400 font-mono font-bold">
+                    {isProcessing ? '???' : compressedSize}
+                  </span>
+                </div>
+                {!isProcessing && compressedSize && (
+                  <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
+                    <span className="text-[10px] text-zinc-500 font-bold uppercase">Reduction</span>
+                    <span className="text-xs text-green-500 font-bold bg-green-500/10 px-2 py-0.5 rounded-full">
+                      -{((file.file.size - (parseFloat(compressedSize) * 1024 * 1024)) / file.file.size * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'resize' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <section>
+                <SliderControl
+                  label="Preview Comparison"
+                  value={sliderPosition}
+                  min={0}
+                  max={100}
+                  onChange={setSliderPosition}
+                  unit="%"
+                />
+              </section>
+              <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
+                <SectionLabel>Optimization Info</SectionLabel>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  Compression is applied using client-side canvas rendering. No images are uploaded to any server.
+                  Best for web use and social media.
+                </p>
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'export' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {compressedImage ? (
+                <div className="space-y-4">
+                  <div className="aspect-video rounded-xl overflow-hidden border border-zinc-800 bg-black flex items-center justify-center">
+                    <img src={compressedImage} className="max-w-full max-h-full object-contain" alt="Compressed Preview" />
+                  </div>
+                  <Button
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-sm font-bold"
+                    onClick={handleDownload}
+                  >
+                    <Download size={18} className="mr-2" /> Download Result
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
+                      <Share2 size={16} className="mr-2" /> Share
+                    </Button>
+                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={handleReset}>
+                      <Trash2 size={16} className="mr-2" /> Reset
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 flex flex-col items-center">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
+                    <ImageIcon size={20} className="text-zinc-700" />
+                  </div>
+                  <p className="text-sm text-zinc-500">Wait for compression to finish.</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* 3. Preview Area */}
+      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
+          <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
+            {originalImageSrc ? (
+              <div className="relative w-full h-full group">
+                <img src={originalImageSrc} alt="Original" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
                 {compressedImage && (
                   <img
                     src={compressedImage}
@@ -188,44 +266,31 @@ export const ImageCompressor: React.FC = () => {
                   />
                 )}
 
-                {/* Labels */}
-                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 font-bold shadow-lg pointer-events-none">
-                  Compressed
-                </div>
-                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur text-white text-xs px-2 py-1 rounded border border-white/10 font-bold shadow-lg pointer-events-none">
-                  Original
-                </div>
+                <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest shadow-xl">Optimized</div>
+                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest">Original</div>
 
-                {/* Slider Handle & Line */}
-                <div
-                  className="absolute inset-y-0"
-                  style={{ left: `${sliderPosition}%` }}
-                >
-                  <div className="absolute inset-y-0 -left-px w-0.5 bg-white shadow-[0_0_10px_rgba(0,0,0,0.5)]"></div>
-                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg -ml-0.5 text-primary">
-                    <Sliders size={16} className="rotate-90" />
+                <div className="absolute inset-y-0" style={{ left: `${sliderPosition}%` }}>
+                  <div className="absolute inset-y-0 -left-px w-0.5 bg-white/30 backdrop-blur-md"></div>
+                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl text-blue-600 ring-2 ring-black/10">
+                    <Sliders size={14} className="rotate-90" />
                   </div>
                 </div>
 
-                {/* Invisible Range Input */}
                 <input
                   type="range"
-                  min="0"
-                  max="100"
-                  value={sliderPosition}
-                  onChange={(e) => setSliderPosition(parseInt((e.target as HTMLInputElement).value))}
+                  min="0" max="100" value={sliderPosition}
+                  onChange={(e) => setSliderPosition(parseInt(e.target.value))}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-20"
                 />
               </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-zinc-500">
-                <ImageIcon size={48} className="opacity-50" />
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon size={48} className="text-zinc-800 animate-pulse" />
               </div>
             )}
           </div>
         </div>
-        <p className="text-center text-zinc-500 text-sm mt-4">Drag slider to compare quality</p>
-      </div>
+      </main>
     </div>
   );
 };

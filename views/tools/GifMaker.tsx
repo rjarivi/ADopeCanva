@@ -1,11 +1,13 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Image as ImageIcon, Film, Download, Trash2, Clock, Settings, RefreshCcw, Play, Loader2, AlertCircle, Maximize, Minimize, MoveHorizontal, ChevronDown, ChevronUp, Layers, Wand2 } from 'lucide-react';
+import { Image as ImageIcon, Film, Download, Trash2, Clock, Settings, RefreshCcw, Play, Loader2, AlertCircle, Maximize, Minimize, MoveHorizontal, ChevronDown, ChevronUp, Layers, Wand2, Share2 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 // Helper function for drawing images (used in both preview and generation)
 const drawImageToCanvas = (img: HTMLImageElement, ctx: CanvasRenderingContext2D, tW: number, tH: number, mode: 'fit' | 'zoom' | 'stretch') => {
@@ -27,6 +29,7 @@ interface GifMakerProps {
 }
 
 export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
+  const isMobile = useIsMobile();
   const [files, setFiles] = useState<FileData[]>([]);
   const [interval, setInterval] = useState(0.5); // Seconds per frame
   const [width, setWidth] = useState(400);
@@ -41,6 +44,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [logs, setLogs] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'photos' | 'settings' | 'export'>('photos');
 
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -386,281 +390,234 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
   }
 
   return (
-    <div className="w-[98%] max-w-[1800px] mx-auto p-4 lg:p-6 space-y-6 animate-slide-up pb-24">
-      {/* Main Workspace: Settings & Stage */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-auto lg:h-[50vh]">
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-pink-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-        {/* Left Sidebar: Controls */}
-        <div className="lg:col-span-3 flex flex-col h-full bg-surface rounded-3xl border border-zinc-800 p-6 overflow-y-auto custom-scrollbar">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <Settings size={18} className="text-pink-500" /> Settings
-            </h3>
-            <Button variant="ghost" size="sm" onClick={() => { setFiles([]); setResultGif(null); }}>
-              <RefreshCcw size={16} className="mr-2" /> Reset
-            </Button>
-          </div>
+      {/* 1. Navigation Rail / Bottom Bar */}
+      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
+        <button
+          onClick={() => setActiveTab('photos')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'photos' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Layers size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Frames</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
+        >
+          <Settings size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Config</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('export')}
+          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
+        >
+          <Play size={isMobile ? 22 : 20} />
+          <span className="text-[10px] font-medium uppercase tracking-wider">Render</span>
+        </button>
+      </nav>
 
-          <div className="space-y-6 flex-1">
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-zinc-400 flex items-center justify-between">
-                <span className="flex items-center gap-2"><Clock size={14} /> Frame Delay</span>
-                <span className="text-white font-mono text-xs bg-zinc-800 px-2 py-1 rounded">{interval}s</span>
-              </label>
-              <input
-                type="range" min="0.1" max="2.0" step="0.1"
-                value={interval}
-                onChange={(e) => setInterval(parseFloat((e.target as HTMLInputElement).value))}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-pink-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-500 uppercase">Width</label>
-                <input
-                  type="number"
-                  value={width}
-                  onChange={(e) => setWidth(parseInt(e.target.value) || 400)}
-                  className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-pink-500 outline-none"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-zinc-500 uppercase">Height</label>
-                <input
-                  type="number"
-                  value={height}
-                  onChange={(e) => setHeight(parseInt(e.target.value) || 300)}
-                  className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl px-3 py-2 text-sm focus:ring-1 focus:ring-pink-500 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/30 rounded-xl p-1">
-              <button
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center justify-between w-full p-2 text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Wand2 size={14} className="text-pink-500" />
-                  Advanced Properties
-                </div>
-                {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              </button>
-
-              {showAdvanced && (
-                <div className="p-3 space-y-4 animate-fade-in border-t border-zinc-800/50 mt-1">
-                  {/* Fit Mode */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Image Fit</label>
-                    <div className="flex bg-zinc-950 rounded-lg p-1 gap-1">
-                      {(['fit', 'zoom', 'stretch'] as const).map((m) => (
-                        <button
-                          key={m}
-                          onClick={() => setFitMode(m)}
-                          className={`flex-1 py-1.5 rounded-md transition-colors text-[10px] uppercase font-bold text-center ${fitMode === m ? 'bg-zinc-800 text-pink-400 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
-                        >
-                          {m}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Transition */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Transition</label>
-                    <div className="flex bg-zinc-950 rounded-lg p-1 gap-1">
-                      {(['none', 'crossfade'] as const).map((e) => (
-                        <button
-                          key={e}
-                          onClick={() => setEffect(e)}
-                          className={`flex-1 py-1.5 rounded-md transition-colors text-[10px] uppercase font-bold text-center ${effect === e ? 'bg-zinc-800 text-pink-400 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
-                        >
-                          {e === 'none' ? 'Cut' : 'Fade'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Range */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-medium text-zinc-500 uppercase flex justify-between">
-                      Range <span className="text-pink-500/50 text-[10px]">PRO</span>
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number" min="1" max={files.length}
-                        value={frameRange[0] + 1}
-                        placeholder="Start"
-                        onChange={(e) => setFrameRange([Math.max(0, parseInt(e.target.value) - 1), frameRange[1]])}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 outline-none focus:border-pink-500"
-                      />
-                      <span className="text-zinc-600">-</span>
-                      <input
-                        type="number" min="1" max={files.length}
-                        value={frameRange[1] + 1}
-                        placeholder="End"
-                        onChange={(e) => setFrameRange([frameRange[0], Math.min(files.length - 1, parseInt(e.target.value) - 1)])}
-                        className="w-full bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded px-2 py-1 outline-none focus:border-pink-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {errorMessage && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center space-y-1">
-                <p className="text-red-400 text-sm font-medium">{errorMessage}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="pt-4 mt-auto">
-            <Button
-              className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 border-none shadow-lg shadow-pink-900/20 group relative overflow-hidden"
-              onClick={handleCreateGif}
-              disabled={isProcessing}
-            >
-              <div className="relative z-10 flex items-center justify-center font-bold tracking-wide">
-                {isProcessing ? (
-                  <>
-                    <Loader2 size={18} className="mr-2 animate-spin" />
-                    RENDERING {progress}%
-                  </>
-                ) : (
-                  <>
-                    <Film size={18} className="mr-2 group-hover:scale-110 transition-transform" /> GENERATE {outputFormat.toUpperCase()}
-                  </>
-                )}
-              </div>
-              {isProcessing && (
-                <div
-                  className="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300 backdrop-blur-[2px]"
-                  style={{ width: `${progress}%` }}
-                />
-              )}
-            </Button>
-          </div>
+      {/* 2. Settings / Content Panel */}
+      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+        <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+            {activeTab === 'photos' && <><Film size={16} className="text-pink-500" /> Storyboard</>}
+            {activeTab === 'settings' && <><Settings size={16} className="text-zinc-400" /> Animation</>}
+            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Finalize</>}
+          </h2>
+          <button onClick={() => { setFiles([]); setResultGif(null); }} className="text-zinc-600 hover:text-red-400 transition-colors">
+            <RefreshCcw size={14} />
+          </button>
         </div>
 
-        {/* Center: Stage / Preview */}
-        <div className="lg:col-span-9 bg-black/40 rounded-3xl border border-zinc-800 backdrop-blur-sm flex items-center justify-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] opacity-10 pointer-events-none"></div>
-
-          {/* Top bar controls overlay */}
-          <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="bg-black/60 backdrop-blur text-white text-xs px-3 py-1.5 rounded-full border border-white/10">
-              {width} x {height} px
-            </div>
-            <div className="bg-black/60 backdrop-blur text-white text-xs px-3 py-1.5 rounded-full border border-white/10">
-              {interval}s / frame
-            </div>
-          </div>
-
-          <div className="relative z-10 p-8 max-w-full max-h-full flex items-center justify-center">
-            {resultGif ? (
-              <div className="text-center space-y-6 animate-fade-in">
-                <div className="bg-zinc-800/50 p-1 rounded-xl shadow-2xl inline-block border border-white/10">
-                  <img src={resultGif} alt={`Generated ${outputFormat.toUpperCase()}`} className="max-h-[40vh] max-w-full rounded-lg shadow-black/50 shadow-lg" />
-                </div>
-                <div>
-                  <Button onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = resultGif!;
-                    a.download = `created.${outputFormat}`;
-                    a.click();
-                  }} className="bg-white text-black hover:bg-zinc-200 border-none font-bold">
-                    <Download size={18} className="mr-2" /> Download Result
-                  </Button>
-                </div>
-              </div>
-            ) : isProcessing ? (
-              <div className="text-center">
-                <div className="w-20 h-20 border-4 border-zinc-800 border-t-pink-500 rounded-full animate-spin mx-auto mb-6"></div>
-                <h3 className="text-xl font-bold text-white mb-2">Creating Animation</h3>
-                <p className="text-zinc-400">Stitching {files.length} frames together...</p>
-              </div>
-            ) : (
-              <div className={`relative w-full h-full flex items-center justify-center transition-all duration-500 ${files.length === 0 ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
-                {files.length > 0 ? (
-                  <div className="relative shadow-2xl shadow-black/50 rounded-lg overflow-hidden ring-1 ring-white/10 bg-black">
-                    <canvas
-                      ref={previewCanvasRef}
-                      className="max-h-[40vh] max-w-full block" // block removes weird bottom space
-                      style={{ aspectRatio: `${width}/${height}` }}
-                    />
-                    <div className="absolute top-2 left-2 px-2 py-0.5 bg-pink-500/80 text-white text-[10px] font-bold uppercase rounded tracking-wider backdrop-blur-md">
-                      Live Preview
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+          {activeTab === 'photos' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="grid grid-cols-2 gap-2">
+                {files.map((file, i) => (
+                  <div key={i} className="group relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
+                    <img src={file.previewUrl} className="w-full h-full object-cover" alt={`Frame ${i}`} />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button onClick={() => removeFile(i)} className="bg-red-500/80 hover:bg-red-500 p-2 rounded-full text-white transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    <div className="absolute top-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10 uppercase">
+                      #{i + 1}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-center space-y-4">
-                    <div className="w-24 h-24 bg-zinc-800/50 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-700/50">
-                      <ImageIcon size={40} className="text-zinc-600" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-zinc-700">No Image Selected</h3>
-                    <p className="text-zinc-600 max-w-xs mx-auto">Upload images to start creating your GIF animation sequence.</p>
-                    <Button variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-4 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500">
-                      Select Images
+                ))}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-800 transition-all group"
+                >
+                  <PlusIcon className="w-6 h-6 text-zinc-600 group-hover:text-pink-500 mb-1" />
+                  <span className="text-[10px] text-zinc-600 font-bold uppercase">Add Frame</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              <section>
+                <SliderControl
+                  label="Frame Delay"
+                  value={interval}
+                  min={0.1}
+                  max={2.0}
+                  onChange={setInterval}
+                  unit="s"
+                />
+              </section>
+
+              <section>
+                <SectionLabel>Dimensions</SectionLabel>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                    <span className="text-[10px] text-zinc-600 font-bold block mb-1">Width</span>
+                    <input type="number" value={width} onChange={(e) => setWidth(parseInt(e.target.value) || 400)} className="bg-transparent text-white font-mono w-full outline-none" />
+                  </div>
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
+                    <span className="text-[10px] text-zinc-600 font-bold block mb-1">Height</span>
+                    <input type="number" value={height} onChange={(e) => setHeight(parseInt(e.target.value) || 300)} className="bg-transparent text-white font-mono w-full outline-none" />
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <SectionLabel>Scaling & Transitions</SectionLabel>
+                <div className="space-y-2">
+                  <div className="flex bg-zinc-900 rounded-xl p-1 gap-1">
+                    {(['fit', 'zoom', 'stretch'] as const).map((m) => (
+                      <button key={m} onClick={() => setFitMode(m)} className={`flex-1 py-1.5 rounded-lg transition-colors text-[10px] uppercase font-bold text-center ${fitMode === m ? 'bg-zinc-800 text-pink-400' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex bg-zinc-900 rounded-xl p-1 gap-1">
+                    {(['none', 'crossfade'] as const).map((e) => (
+                      <button key={e} onClick={() => setEffect(e)} className={`flex-1 py-1.5 rounded-lg transition-colors text-[10px] uppercase font-bold text-center ${effect === e ? 'bg-zinc-800 text-pink-400' : 'text-zinc-600 hover:text-zinc-400'}`}>
+                        {e === 'none' ? 'Cut' : 'Fade'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
+
+          {activeTab === 'export' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              {resultGif ? (
+                <div className="space-y-4">
+                  <div className="aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-black flex items-center justify-center">
+                    <img src={resultGif} className="max-w-full max-h-full object-contain" alt="Preview" />
+                  </div>
+                  <Button
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-sm font-bold"
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = resultGif!;
+                      a.download = `created.${outputFormat}`;
+                      a.click();
+                    }}
+                  >
+                    <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
+                  </Button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
+                      <Share2 size={16} className="mr-2" /> Share
+                    </Button>
+                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={() => setResultGif(null)}>
+                      <Undo2 className="mr-2" size={16} /> Edit
                     </Button>
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50">
+                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Queue Meta</p>
+                    <p className="text-xs text-zinc-400">{files.length} frames ready for stitch.</p>
+                  </div>
+
+                  <Button
+                    className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 border-none shadow-lg shadow-pink-900/20 group relative overflow-hidden"
+                    onClick={handleCreateGif}
+                    disabled={isProcessing}
+                  >
+                    <div className="relative z-10 flex items-center justify-center font-bold tracking-wide uppercase">
+                      {isProcessing ? (
+                        <>
+                          <Loader2 size={18} className="mr-2 animate-spin" />
+                          PROGRESS {progress}%
+                        </>
+                      ) : (
+                        <>
+                          <Film size={18} className="mr-2" /> Render Animation
+                        </>
+                      )}
+                    </div>
+                    {isProcessing && (
+                      <div className="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300 backdrop-blur-[2px]" style={{ width: `${progress}%` }} />
+                    )}
+                  </Button>
+
+                  {errorMessage && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs shadow-sm">
+                      <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                      <p>{errorMessage}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </aside>
+
+      {/* 3. Preview Area */}
+      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
+          <div className={`relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center transition-all duration-500 ${files.length === 0 ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
+            {files.length > 0 ? (
+              <div className="relative w-full h-full flex items-center justify-center bg-black">
+                <canvas ref={previewCanvasRef} className="max-h-full max-w-full block shadow-2xl" style={{ aspectRatio: `${width}/${height}` }} />
+                <div className="absolute top-4 left-4 flex gap-2">
+                  <span className="bg-pink-500/90 text-[10px] text-white px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md">Live Stream</span>
+                  <span className="bg-black/60 text-[10px] text-zinc-300 px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md border border-white/5">{width}x{height}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center p-8 max-w-xs">
+                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-zinc-800">
+                  <ImageIcon size={32} className="text-zinc-700" />
+                </div>
+                <h3 className="text-lg font-bold text-zinc-600 mb-2">No Content</h3>
+                <p className="text-sm text-zinc-700 font-medium">Add some frames to begin your sequence.</p>
               </div>
             )}
           </div>
         </div>
-      </div >
+        {isMobile && <div className="absolute bottom-2 right-4 text-[10px] text-zinc-800 font-bold tracking-widest uppercase">Stage View</div>}
+      </main>
 
-      {/* Bottom Timeline */}
-      {
-        files.length > 0 && (
-          <div className="bg-surface rounded-2xl border border-zinc-800 p-4 animate-slide-up">
-            <div className="flex items-center justify-between mb-3 px-2">
-              <h4 className="text-sm font-bold text-zinc-400 flex items-center gap-2">
-                <Film size={14} /> Timeline ({files.length} Frames)
-              </h4>
-              <Button size="sm" variant="ghost" onClick={() => fileInputRef.current?.click()} className="text-pink-500 hover:text-pink-400 hover:bg-pink-500/10 h-8 text-xs">
-                + Add Frames
-              </Button>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar snap-x">
-              {files.map((file, i) => (
-                <div key={i} className="group relative min-w-[100px] h-[100px] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 flex-shrink-0 snap-center hover:border-zinc-600 transition-colors">
-                  <img src={file.previewUrl} alt={`Frame ${i}`} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <button onClick={() => removeFile(i)} className="bg-red-500/80 hover:bg-red-500 p-1.5 rounded-full text-white transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10">
-                    #{i + 1}
-                  </div>
-                </div>
-              ))}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="min-w-[100px] h-[100px] bg-zinc-900/50 rounded-lg border border-zinc-800 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-800 hover:border-zinc-600 transition-all group"
-              >
-                <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center mb-1 group-hover:bg-zinc-700">
-                  <span className="text-xl text-zinc-500 group-hover:text-white pb-1">+</span>
-                </div>
-                <span className="text-[10px] text-zinc-500 font-medium">Add Frame</span>
-              </button>
-            </div>
-          </div>
-        )
-      }
-
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleHiddenInputChange}
-        className="hidden"
-        multiple
-        accept="image/*"
-      />
-    </div >
+      <input type="file" ref={fileInputRef} onChange={handleHiddenInputChange} className="hidden" multiple accept="image/*" />
+    </div>
   );
 };
+
+// Simple Plus Icon if it's missing from imports
+const PlusIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+  </svg>
+);
+
+const Undo2 = ({ className, size }: { className?: string; size?: number }) => (
+  <svg width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+  </svg>
+);

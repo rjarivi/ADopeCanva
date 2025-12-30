@@ -3,9 +3,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Play, Pause, Scissors, Film, Volume2, RotateCcw, Loader2, AlertCircle, Download } from 'lucide-react';
+import { Play, Pause, Scissors, Film, Volume2, RotateCcw, Loader2, AlertCircle, Download, Settings, Share2, Trash2, Undo2, Maximize, Clock } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -76,20 +77,26 @@ export const VideoTrimmer: React.FC = () => {
         if (!file || !ffmpegRef.current || !duration) return;
 
         setIsProcessing(true);
+        setProgress(0);
         const ffmpeg = ffmpegRef.current;
         const inputName = 'input.mp4';
         const outputName = 'output.mp4';
 
+        // Progress Handler
+        const onProgress = ({ progress }: { progress: number }) => {
+            if (progress >= 0 && progress <= 1) {
+                setProgress(Math.round(progress * 100));
+            }
+        };
+        ffmpeg.on('progress', onProgress);
+
         try {
-            // Convert percentage range to seconds
             const startTime = (range.start / 100) * duration;
             const endTime = (range.end / 100) * duration;
             const durationTime = endTime - startTime;
 
-            // Write file
             await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
-            // Cap threads at 4
             const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
                 ? Math.min(navigator.hardwareConcurrency, 4).toString()
                 : '2';
@@ -116,7 +123,9 @@ export const VideoTrimmer: React.FC = () => {
             console.error(e);
             alert('Failed to trim video. See console for details.');
         } finally {
+            ffmpeg.off('progress', onProgress);
             setIsProcessing(false);
+            setProgress(100);
         }
     };
 
@@ -184,173 +193,200 @@ export const VideoTrimmer: React.FC = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6 animate-slide-up">
-            {/* Video Player Header */}
-            <div className={`flex flex-col sm:flex-row items-center justify-between mb-4 gap-4 ${isMobile ? 'text-center' : ''}`}>
-                <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                    <Film className="text-pink-500" size={20} />
-                    <span className="truncate max-w-[200px] sm:max-w-none">{file.file.name}</span>
-                </h3>
-                <Button variant="ghost" size="sm" onClick={() => setFile(null)} className={isMobile ? 'w-full sm:w-auto' : ''}>
-                    <RotateCcw size={16} className="mr-2" /> Start Over
-                </Button>
-            </div>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-pink-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-            {/* Main Player Area */}
-            <div className="relative aspect-video bg-black rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl group">
-                <video
-                    ref={videoRef}
-                    src={videoUrl}
-                    className="w-full h-full object-contain"
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onLoadedMetadata={handleLoadedMetadata}
-                    onTimeUpdate={(e) => {
-                        const currentPerc = (e.currentTarget.currentTime / e.currentTarget.duration) * 100;
-                        if (currentPerc > range.end) {
-                            e.currentTarget.currentTime = (range.start / 100) * e.currentTarget.duration;
-                        }
-                    }}
-                />
+            {/* Navigation removed as per simplified workflow */}
 
-                <div
-                    className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    onClick={togglePlay}
-                >
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:scale-110 transition-transform">
-                        {isPlaying ? <Pause fill="white" className="text-white" size={32} /> : <Play fill="white" className="text-white ml-1" size={32} />}
-                    </div>
+            {/* 2. Settings Panel */}
+            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+                <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+                    <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Scissors size={14} className="text-pink-500" /> Video Editor
+                    </h2>
+                    <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors">
+                        <Trash2 size={14} />
+                    </button>
                 </div>
-            </div>
 
-            {/* Timeline Editor */}
-            <div className="bg-surface p-6 rounded-2xl border border-zinc-800 space-y-6">
-                <div className="flex flex-col md:flex-row gap-8">
-                    <div className="flex-1 space-y-4">
-                        <div className="flex justify-between items-center text-sm text-zinc-400">
-                            <span>Range Start: <span className="text-white font-mono">{((range.start / 100) * duration).toFixed(1)}s</span></span>
-                            <span>Range End: <span className="text-white font-mono">{((range.end / 100) * duration).toFixed(1)}s</span></span>
-                        </div>
-
-                        {/* Timeline Visual */}
-                        <div className="relative h-20 bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 flex items-center select-none">
-                            <style>{`
-                      .thumb-input::-webkit-slider-thumb {
-                        pointer-events: auto;
-                        -webkit-appearance: none;
-                        height: 5rem;
-                        width: 30px;
-                        background: transparent;
-                        cursor: ew-resize;
-                      }
-                      .thumb-input::-moz-range-thumb {
-                        pointer-events: auto;
-                        height: 5rem;
-                        width: 30px;
-                        border: none;
-                        background: transparent;
-                        cursor: ew-resize;
-                      }
-                    `}</style>
-
-                            <div className="absolute inset-0 flex opacity-30 pointer-events-none px-2">
-                                {Array.from({ length: 40 }).map((_, i) => (
-                                    <div key={i} className="flex-1 bg-zinc-700 border-r border-zinc-800 odd:bg-zinc-600"></div>
-                                ))}
-                            </div>
-
-                            <div className="relative w-full h-full">
-                                <input
-                                    type="range"
-                                    min="0" max="100"
-                                    value={range.start}
-                                    onChange={(e) => {
-                                        const val = parseInt((e.target as HTMLInputElement).value);
-                                        if (val < range.end - 1) {
-                                            setRange(prev => ({ ...prev, start: val }));
-                                            if (videoRef.current) videoRef.current.currentTime = (val / 100) * duration;
-                                        }
-                                    }}
-                                    className="thumb-input absolute top-0 left-0 w-full h-full opacity-0 z-30 pointer-events-none appearance-none bg-transparent"
-                                />
-                                <input
-                                    type="range"
-                                    min="0" max="100"
-                                    value={range.end}
-                                    onChange={(e) => {
-                                        const val = parseInt((e.target as HTMLInputElement).value);
-                                        if (val > range.start + 1) {
-                                            setRange(prev => ({ ...prev, end: val }));
-                                            if (videoRef.current) videoRef.current.currentTime = (val / 100) * duration;
-                                        }
-                                    }}
-                                    className="thumb-input absolute top-0 left-0 w-full h-full opacity-0 z-30 pointer-events-none appearance-none bg-transparent"
-                                />
-
-                                <div
-                                    className="absolute top-0 bottom-0 bg-pink-500/10 backdrop-blur-[1px] pointer-events-none z-10"
-                                    style={{ left: `${range.start}%`, right: `${100 - range.end}%` }}
-                                >
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-pink-500">
-                                        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 bg-white h-10 w-4 rounded-md shadow-lg flex items-center justify-center cursor-ew-resize">
-                                            <div className="w-0.5 h-4 bg-zinc-300"></div>
-                                        </div>
-                                    </div>
-
-                                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-pink-500">
-                                        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 bg-white h-10 w-4 rounded-md shadow-lg flex items-center justify-center cursor-ew-resize">
-                                            <div className="w-0.5 h-4 bg-zinc-300"></div>
-                                        </div>
-                                    </div>
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        {/* Trim Controls */}
+                        <section className="space-y-4">
+                            <SectionLabel>Time Range</SectionLabel>
+                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex justify-between items-center">
+                                <div className="space-y-1">
+                                    <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Start</p>
+                                    <p className="text-lg font-mono text-white tracking-tighter">{((range.start / 100) * duration).toFixed(2)}s</p>
                                 </div>
-
-                                <div
-                                    className="absolute top-0 bottom-0 left-0 bg-black/60 pointer-events-none z-0"
-                                    style={{ width: `${range.start}%` }}
-                                />
-                                <div
-                                    className="absolute top-0 bottom-0 right-0 bg-black/60 pointer-events-none z-0"
-                                    style={{ width: `${100 - range.end}%` }}
-                                />
+                                <div className="w-px h-8 bg-zinc-800" />
+                                <div className="space-y-1 text-right">
+                                    <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">End</p>
+                                    <p className="text-lg font-mono text-white tracking-tighter">{((range.end / 100) * duration).toFixed(2)}s</p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div className="w-full md:w-48 space-y-4">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-zinc-400 flex items-center gap-2"><Volume2 size={16} /> Playback</span>
-                            <span className="text-white font-mono">{volume}%</span>
+                            <div className="relative h-12 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center group">
+                                <div className="absolute left-4 right-4 h-1.5 bg-zinc-800 rounded-full">
+                                    <div
+                                        className="absolute h-full bg-pink-500/50 rounded-full transition-all duration-100"
+                                        style={{ left: `${range.start}%`, width: `${range.end - range.start}%` }}
+                                    />
+                                    <div
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-pink-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
+                                        style={{ left: `${range.start}%` }}
+                                    />
+                                    <div
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-pink-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
+                                        style={{ left: `${range.end}%` }}
+                                    />
+                                </div>
+                                <input type="range" min="0" max="100" value={range.start} onChange={(e) => { setRange(prev => ({ ...prev, start: Math.min(parseInt(e.target.value), prev.end - 1) })); setTrimmedUrl(null); }} className="absolute left-4 right-4 h-full opacity-0 cursor-pointer z-10" />
+                                <input type="range" min="0" max="100" value={range.end} onChange={(e) => { setRange(prev => ({ ...prev, end: Math.max(parseInt(e.target.value), prev.start + 1) })); setTrimmedUrl(null); }} className="absolute left-4 right-4 h-full opacity-0 cursor-pointer z-10" />
+                            </div>
+                            <p className="text-[10px] text-zinc-600 text-center uppercase font-bold tracking-widest italic opacity-50">Drag handles to adjust clip</p>
+                        </section>
+
+                        {/* Player Controls */}
+                        <section className="space-y-3">
+                            <SectionLabel>Preview</SectionLabel>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    onClick={togglePlay}
+                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all uppercase font-bold text-[10px]"
+                                >
+                                    {isPlaying ? <Pause size={14} /> : <Play size={14} />} {isPlaying ? 'Stop' : 'Play'}
+                                </button>
+                                <button
+                                    onClick={() => { if (videoRef.current) videoRef.current.currentTime = (range.start / 100) * duration }}
+                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all uppercase font-bold text-[10px]"
+                                >
+                                    <RotateCcw size={14} /> Rewind
+                                </button>
+                            </div>
+                        </section>
+
+                        <section className="space-y-4">
+                            <SliderControl
+                                label="Monitor Volume"
+                                value={volume}
+                                min={0}
+                                max={100}
+                                onChange={setVolume}
+                                unit="%"
+                            />
+                        </section>
+
+                        {/* Action Buttons */}
+                        <div className="pt-4 space-y-3">
+                            {!trimmedUrl ? (
+                                <Button
+                                    className="w-full h-12 bg-pink-500 hover:bg-pink-600 shadow-lg shadow-pink-500/20 uppercase font-black text-[10px] tracking-widest"
+                                    onClick={handleExport}
+                                    isLoading={isProcessing}
+                                    disabled={isProcessing}
+                                >
+                                    {isProcessing ? (
+                                        <span className="flex items-center gap-2">
+                                            <Loader2 size={16} className="animate-spin" />
+                                            Processing {progress}%
+                                        </span>
+                                    ) : (
+                                        <><Scissors size={18} className="mr-2" /> Start Trimming</>
+                                    )}
+                                </Button>
+                            ) : (
+                                <div className="space-y-3 animate-slide-up">
+                                    <Button
+                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest shadow-lg"
+                                        onClick={downloadTrimmed}
+                                    >
+                                        <Download size={18} className="mr-2" /> Download Clip
+                                    </Button>
+                                    <Button
+                                        variant="secondary"
+                                        className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
+                                        onClick={() => {
+                                            setTrimmedUrl(null);
+                                            setProgress(0);
+                                        }}
+                                    >
+                                        <Undo2 size={16} className="mr-2" /> Adjust Selection
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={volume}
-                            onChange={(e) => setVolume(parseInt((e.target as HTMLInputElement).value))}
-                            className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-pink-500"
-                        />
+
+                        {/* Metadata Info */}
+                        <section className="bg-zinc-900/40 p-4 rounded-xl space-y-3 border border-zinc-800/50">
+                            <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-zinc-500 font-bold uppercase tracking-widest">Source Duration</span>
+                                <span className="text-zinc-300 font-mono">{duration.toFixed(2)}s</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px]">
+                                <span className="text-zinc-500 font-bold uppercase tracking-widest">Format</span>
+                                <span className="text-zinc-300 font-mono uppercase">MP4 (H.264)</span>
+                            </div>
+                        </section>
                     </div>
                 </div>
+            </aside>
 
-                <div className="h-px bg-zinc-800"></div>
+            {/* 3. Preview Area */}
+            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                    style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
-                <div className={`flex ${isMobile ? 'flex-col' : 'justify-end'} gap-4 items-center`}>
-                    {trimmedUrl ? (
-                        <Button className={`bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg shadow-pink-500/20 border-none ${isMobile ? 'w-full' : ''}`} onClick={downloadTrimmed}>
-                            <Download size={18} className="mr-2" /> Download Trimmed Clip
-                        </Button>
-                    ) : (
-                        <Button
-                            className={`bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 border-none ${isMobile ? 'w-full' : ''}`}
-                            onClick={handleExport}
-                            isLoading={isProcessing}
-                            disabled={isProcessing}
-                        >
-                            {isProcessing ? `Processing ${progress}%` : 'Trim Video'}
-                        </Button>
+                <div className="relative w-full h-full bg-black rounded-3xl overflow-hidden border border-zinc-800 shadow-2xl group flex items-center justify-center">
+                    <video
+                        ref={videoRef}
+                        src={videoUrl}
+                        className="w-full h-full object-contain"
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onLoadedMetadata={handleLoadedMetadata}
+                        onTimeUpdate={(e) => {
+                            const currentPerc = (e.currentTarget.currentTime / e.currentTarget.duration) * 100;
+                            if (currentPerc > range.end) {
+                                e.currentTarget.currentTime = (range.start / 100) * e.currentTarget.duration;
+                            }
+                        }}
+                    />
+
+                    {isProcessing && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 backdrop-blur-[2px]">
+                            <div className="relative w-16 h-16 flex items-center justify-center mb-4">
+                                <div className="absolute inset-0 border-2 border-pink-500/20 rounded-full"></div>
+                                <div
+                                    className="absolute inset-0 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(236,72,153,0.3)]"
+                                    style={{ animationDuration: '0.8s' }}
+                                ></div>
+                                <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                            </div>
+                            <p className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.2em] animate-pulse">
+                                {progress < 100 ? 'Trimming Video' : 'Finalizing'}
+                            </p>
+                        </div>
                     )}
+
+                    <div
+                        className={`absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer ${isProcessing ? 'pointer-events-none' : ''}`}
+                        onClick={togglePlay}
+                    >
+                        <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:scale-110 transition-all border border-white/5 shadow-2xl">
+                            {isPlaying ? <Pause fill="white" className="text-white" size={32} /> : <Play fill="white" className="text-white ml-1" size={32} />}
+                        </div>
+                    </div>
+
+                    <div className="absolute top-4 left-4 flex gap-2">
+                        <span className="bg-pink-500/90 text-[10px] text-white px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md">Stage View</span>
+                        <span className="bg-black/60 text-[10px] text-zinc-300 px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md border border-white/5">H.264 HD</span>
+                    </div>
+
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[80%] h-1 bg-zinc-800 rounded-full overflow-hidden opacity-50">
+                        <div className="h-full bg-pink-500 transition-all duration-100" style={{ width: `${(videoRef.current?.currentTime || 0) / (duration || 1) * 100}%` }} />
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
     );
 };

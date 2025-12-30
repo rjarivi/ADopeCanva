@@ -8,12 +8,15 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const GifCompressor: React.FC = () => {
+    const isMobile = useIsMobile();
     const [file, setFile] = useState<FileData | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultUrl, setResultUrl] = useState<string | null>(null);
     const [resultSize, setResultSize] = useState<string | null>(null);
+    const [progress, setProgress] = useState(0);
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -38,24 +41,31 @@ export const GifCompressor: React.FC = () => {
     const handleCompress = async () => {
         if (!file || !ffmpegRef.current) return;
         setIsProcessing(true);
+        setProgress(0);
         const ffmpeg = ffmpegRef.current;
         const inputName = 'compress_input.gif';
-        const outputName = 'compress_output.gif'; // temporary output to check size
+        const outputName = 'compress_output.gif';
         setResultUrl(null);
+
+        // Progress Handler
+        const onProgress = ({ progress }: { progress: number }) => {
+            if (progress >= 0 && progress <= 1) {
+                setProgress(Math.round(progress * 100));
+            }
+        };
+        ffmpeg.on('progress', onProgress);
 
         try {
             await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
-            // Calculate params based on level
             // Level 0: 256 colors, 1.0 scale
-            // Level 100: 32 colors, 0.5 scale
+            // Level 100: 16 colors, 0.3 scale
+            const maxColors = Math.max(8, Math.round(256 - (level / 100) * 240));
+            const scaleFactor = Math.max(0.3, 1 - (level / 100) * 0.7);
 
-            // Linear interpolation or steps
-            const maxColors = Math.max(2, Math.round(256 - (level / 100) * 224)); // 256 -> 32
-            const scale = Math.max(0.5, 1 - (level / 100) * 0.5); // 1.0 -> 0.5
-
-            // Filter Graph: Scale -> Split -> PaletteGen(colors) -> PaletteUse
-            const filter = `scale=iw*${scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}[p];[s1][p]paletteuse`;
+            // Aggressive Filter: stats_mode=full for better quality with fewer colors,
+            // dither=bayer:bayer_scale=1 for significantly better compression than floyd_steinberg.
+            const filter = `scale=iw*${scaleFactor}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`;
 
             await ffmpeg.exec([
                 '-y',
@@ -66,6 +76,10 @@ export const GifCompressor: React.FC = () => {
 
             const data = await ffmpeg.readFile(outputName);
             const blob = new Blob([data as any], { type: 'image/gif' });
+
+            // Final check: if the output is somehow larger (rare with these settings), 
+            // the user at least sees the comparison.
+
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');
@@ -77,7 +91,9 @@ export const GifCompressor: React.FC = () => {
             console.error(e);
             alert("Compression failed");
         } finally {
+            ffmpeg.off('progress', onProgress);
             setIsProcessing(false);
+            setProgress(0);
         }
     };
 
@@ -121,73 +137,140 @@ export const GifCompressor: React.FC = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up">
-            <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-8">
-                <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-white flex items-center gap-2"><SettingsIcon /> Compression Settings</h3>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+
+            {/* 1. Settings Panel */}
+            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-1 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+                <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
+                    <h3 className="font-bold text-white text-xs uppercase tracking-widest flex items-center gap-2">
+                        <Zap size={14} className="text-indigo-500" /> Optimize
+                    </h3>
                     <Button variant="ghost" size="sm" onClick={() => { setFile(null); setResultUrl(null); }}>
-                        <RefreshCcw size={16} /> Reset
+                        <RefreshCcw size={14} />
                     </Button>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="space-y-4">
-                        <div className="flex justify-between text-sm">
-                            <span className="text-zinc-400">Compression Level</span>
-                            <span className="text-indigo-400 font-bold">{level}%</span>
-                        </div>
-                        <Slider
-                            min={0} max={90}
-                            value={level}
-                            onChange={(v) => setLevel(v as number)}
-                            trackStyle={{ backgroundColor: '#6366f1' }}
-                            handleStyle={{ borderColor: '#6366f1', backgroundColor: '#4338ca' }}
-                        />
-                        <p className="text-xs text-zinc-500">
-                            Higher levels reduce file size but may impact quality (colors & resolution).
-                        </p>
-                    </div>
-
-                    <div className="bg-zinc-900/50 p-4 rounded-xl space-y-2 border border-zinc-800">
-                        <p className="text-sm text-zinc-400">Original Size: <span className="text-white">{(file.file.size / 1024 / 1024).toFixed(2)} MB</span></p>
-                        {resultSize && (
-                            <p className="text-sm text-zinc-400">New Size: <span className="text-green-400 font-bold">{resultSize}</span>
-                                <span className="ml-2 text-xs bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded">
-                                    -{Math.round((1 - parseFloat(resultSize) / (file.file.size / 1024 / 1024)) * 100)}%
-                                </span>
+                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
+                    <div className="space-y-8 animate-in fade-in duration-300">
+                        <section className="space-y-4">
+                            <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                                <span>Compression Level</span>
+                                <span className="text-indigo-400">{level}%</span>
+                            </div>
+                            <div className="px-2 py-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                                <Slider
+                                    min={0} max={90}
+                                    value={level}
+                                    onChange={(v) => {
+                                        setLevel(v as number);
+                                        setResultUrl(null); // Clear result if settings change
+                                    }}
+                                    trackStyle={{ backgroundColor: '#6366f1' }}
+                                    handleStyle={{ borderColor: '#6366f1', backgroundColor: '#4338ca' }}
+                                    railStyle={{ backgroundColor: '#27272a' }}
+                                />
+                            </div>
+                            <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-tight italic opacity-60">
+                                Higher levels reduce file size but may impact quality.
                             </p>
+                        </section>
+
+                        <section className="bg-zinc-900/50 p-4 rounded-xl space-y-3 border border-zinc-800/50">
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-zinc-500">Source</span>
+                                <span className="text-zinc-300 font-mono">{(file.file.size / 1024 / 1024).toFixed(2)} MB</span>
+                            </div>
+                            {resultSize && (
+                                <div className="flex justify-between items-center text-xs">
+                                    <span className="text-zinc-500">Output</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-indigo-400 font-bold font-mono">{resultSize}</span>
+                                        <span className="text-[10px] bg-green-500/10 text-green-500 px-1.5 py-0.5 rounded font-bold">
+                                            -{Math.round((1 - parseFloat(resultSize) / (file.file.size / 1024 / 1024)) * 100)}%
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </section>
+
+                        {!resultUrl ? (
+                            <Button
+                                onClick={handleCompress}
+                                isLoading={isProcessing}
+                                disabled={isProcessing}
+                                className="w-full h-12 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 border-none font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-900/20"
+                            >
+                                {isProcessing ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Processing {progress}%
+                                    </span>
+                                ) : (
+                                    <><Zap size={18} className="mr-2" /> Start Compression</>
+                                )}
+                            </Button>
+                        ) : (
+                            <div className="space-y-3 animate-slide-up">
+                                <Button
+                                    onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = resultUrl!;
+                                        a.download = 'compressed.gif';
+                                        a.click();
+                                    }}
+                                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-bold uppercase text-[10px] tracking-widest border-none shadow-lg"
+                                >
+                                    <Download size={18} className="mr-2" /> Download GIF
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => {
+                                        setFile(null);
+                                        setResultUrl(null);
+                                        setResultSize(null);
+                                    }}
+                                    className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
+                                >
+                                    <RefreshCcw size={16} className="mr-2" /> Compress Another
+                                </Button>
+                            </div>
                         )}
                     </div>
-
-                    <Button
-                        onClick={handleCompress}
-                        isLoading={isProcessing}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 border-none h-12"
-                    >
-                        <Zap size={18} className="mr-2" /> Compress GIF
-                    </Button>
                 </div>
-            </div>
+            </aside>
 
-            <div className="bg-black/50 rounded-3xl border border-zinc-800 flex items-center justify-center p-8 relative overflow-hidden min-h-[400px]">
-                {!resultUrl ? (
-                    <img src={file.previewUrl} className="max-w-full max-h-[350px] rounded-lg shadow-xl opacity-50" />
-                ) : (
-                    <div className="text-center space-y-4 animate-fade-in z-10">
-                        <img src={resultUrl} className="max-w-full max-h-[350px] rounded-lg shadow-xl" />
-                        <Button className="bg-white text-black" onClick={() => { const a = document.createElement('a'); a.href = resultUrl!; a.download = 'compressed.gif'; a.click(); }}>
-                            <Download size={18} className="mr-2" /> Download
-                        </Button>
-                    </div>
-                )}
+            {/* 3. Preview Area */}
+            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                    style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
-                {isProcessing && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-20">
-                        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-indigo-400 font-bold">Optimizing...</p>
+                <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
+                        <img src={resultUrl || file.previewUrl} className={`max-w-full max-h-full object-contain transition-opacity duration-500 ${isProcessing ? 'opacity-30' : 'opacity-100'}`} alt="Preview" />
+
+                        {isProcessing && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 backdrop-blur-[2px]">
+                                <div className="relative w-16 h-16 flex items-center justify-center mb-4">
+                                    <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full"></div>
+                                    <div
+                                        className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                                        style={{ animationDuration: '0.8s' }}
+                                    ></div>
+                                    <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                                </div>
+                                <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] animate-pulse">
+                                    {progress < 100 ? 'Compressing' : 'Finalizing'}
+                                </p>
+                            </div>
+                        )}
+                        <div className="absolute top-4 left-4 flex gap-2">
+                            <span className="bg-indigo-500/90 text-[10px] text-white px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md">{resultUrl ? 'Compressed' : 'Original'}</span>
+                            <span className="bg-black/60 text-[10px] text-zinc-300 px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md border border-white/5">Preview</span>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+                {isMobile && <div className="absolute bottom-2 right-4 text-[10px] text-zinc-800 font-bold tracking-widest uppercase">Stage View</div>}
+            </main>
         </div>
     );
 };

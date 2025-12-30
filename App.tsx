@@ -9,6 +9,7 @@ import { ToolCategory } from './types';
 import { ProEditor } from './views/ProEditor';
 
 const ToolRenderer = () => {
+    const isMobile = useIsMobile();
     const { toolId } = useParams();
     const tool = TOOLS.find(t => t.id === toolId);
 
@@ -36,9 +37,9 @@ const ToolRenderer = () => {
     }, [tool]);
 
     return (
-        <div className="animate-fade-in h-full p-4 md:p-8">
-            <div className="max-w-7xl mx-auto h-full">
-                <div className="h-[calc(100%-80px)]">
+        <div className={`animate-fade-in h-full ${isMobile ? 'p-0' : 'p-4 md:p-6'}`}>
+            <div className={`h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
+                <div className="h-full">
                     {tool.component}
                 </div>
             </div>
@@ -115,8 +116,8 @@ const App = () => {
                         {/* Hero / Promo */}
                         {showBanner && !isMobile && (
                             <div className="relative rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 h-64 flex flex-col justify-center px-10 md:px-16 animate-slide-up group shadow-2xl">
-                                <div className="absolute inset-0 bg-gradient-to-r from-teal-600/20 to-cyan-600/20 group-hover:opacity-110 transition-opacity"></div>
-                                <div className="absolute right-0 top-0 w-96 h-96 bg-teal-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 group-hover:opacity-110 transition-opacity"></div>
+                                <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
 
                                 <button
                                     onClick={() => setShowBanner(false)}
@@ -126,11 +127,11 @@ const App = () => {
                                 </button>
 
                                 <div className="relative z-10 max-w-lg">
-                                    <span className="inline-block px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 text-xs font-bold mb-4 border border-teal-500/20 shadow-sm">NEW FEATURE</span>
-                                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Smart Remove Background</h2>
-                                    <p className="text-zinc-400 mb-6">One click to isolate subjects. Powered by Gemini Vision.</p>
+                                    <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-4 border border-indigo-500/20 shadow-sm">HOT FEATURE</span>
+                                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Pro Image Editor</h2>
+                                    <p className="text-zinc-400 mb-6">Master your designs with layers, advanced filters, and professional tools.</p>
                                     <button
-                                        onClick={handleHeroClick}
+                                        onClick={() => navigate('/image-editor')}
                                         className="bg-white text-black px-6 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
                                     >
                                         Try it out

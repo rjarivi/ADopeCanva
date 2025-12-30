@@ -15,13 +15,13 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({
             {/* Home Link */}
             <button
                 onClick={() => onTabChange('home')}
-                className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'home' ? 'text-primary' : 'text-zinc-500 hover:text-zinc-300'
+                className={`h-full flex flex-col items-center justify-center gap-1 transition-colors ${activeTab === 'home' ? 'text-primary' : 'text-zinc-500 hover:text-zinc-300'
                     }`}
             >
-                <div className={`p-2 rounded-xl transition-all ${activeTab === 'home' ? 'bg-primary/10' : ''}`}>
-                    <Home size={24} />
+                <div className={`p-1.5 rounded-xl transition-all ${activeTab === 'home' ? 'bg-primary/10' : ''}`}>
+                    <Home size={22} />
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-wider">Home</span>
+                <span className="text-[9px] font-medium uppercase tracking-wider">Home</span>
             </button>
 
             {/* Circular Search Button */}
@@ -38,13 +38,13 @@ export const MobileNavbar: React.FC<MobileNavbarProps> = ({
             {/* Media Link */}
             <button
                 onClick={() => onTabChange('media')}
-                className={`flex flex-col items-center gap-1 transition-colors ${activeTab === 'media' ? 'text-primary' : 'text-zinc-500 hover:text-zinc-300'
+                className={`h-full flex flex-col items-center justify-center gap-1 transition-colors ${activeTab === 'media' ? 'text-primary' : 'text-zinc-500 hover:text-zinc-300'
                     }`}
             >
-                <div className={`p-2 rounded-xl transition-all ${activeTab === 'media' ? 'bg-primary/10' : ''}`}>
-                    <Library size={24} />
+                <div className={`p-1.5 rounded-xl transition-all ${activeTab === 'media' ? 'bg-primary/10' : ''}`}>
+                    <Library size={22} />
                 </div>
-                <span className="text-[10px] font-medium uppercase tracking-wider">Media</span>
+                <span className="text-[9px] font-medium uppercase tracking-wider">Media</span>
             </button>
         </div>
     );

@@ -1,11 +1,13 @@
 /// <reference lib="dom" />
 import React, { useState } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { ListMusic, Plus, Trash2, Download, CheckCircle, AlertCircle } from 'lucide-react';
 
 export const AudioMerger: React.FC = () => {
+  const isMobile = useIsMobile();
   const [files, setFiles] = useState<FileData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [mergedBlobUrl, setMergedBlobUrl] = useState<string | null>(null);
