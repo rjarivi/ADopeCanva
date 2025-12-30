@@ -20,8 +20,8 @@ interface VideoToGifProps {
 export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) => {
   const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
-  const [activeTab, setActiveTab] = useState<'settings' | 'export'>('settings');
   const [fps, setFps] = useState(15);
+  const [progress, setProgress] = useState(0);
   const [width, setWidth] = useState(480);
   const [quality, setQuality] = useState<'high' | 'standard'>('high');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -105,11 +105,19 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   const handleConvert = async () => {
     if (!file || !ffmpegRef.current) return;
     setIsProcessing(true);
+    setProgress(0);
     setLogs([]);
     const ffmpeg = ffmpegRef.current;
     const inputName = 'input.mp4';
     const outputName = `output.${outputFormat}`;
-    const paletteName = 'palette.png';
+
+    // Progress Handler
+    const onProgress = ({ progress }: { progress: number }) => {
+      if (progress >= 0 && progress <= 1) {
+        setProgress(Math.round(progress * 100));
+      }
+    };
+    ffmpeg.on('progress', onProgress);
 
     try {
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
@@ -187,7 +195,9 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       console.error(e);
       alert("Failed to create GIF. Check console for FFmpeg logs.");
     } finally {
+      ffmpeg.off('progress', onProgress);
       setIsProcessing(false);
+      setProgress(100);
     }
   };
 
@@ -255,129 +265,114 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   return (
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-green-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-      {/* 1. Navigation Rail (Mobile Bottom / Desktop Rail) */}
-      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-green-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Settings size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Params</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('export')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-green-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
-        >
-          <Download size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Done</span>
-        </button>
-      </nav>
+      {/* Navigation removed for simplified workflow */}
 
       {/* 2. Settings Panel */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h3 className="flex items-center gap-2 font-bold text-white text-xs uppercase tracking-widest">
-            {activeTab === 'settings' ? <><Settings size={14} /> Generator</> : <><Download size={14} /> Export</>}
+          <h3 className="flex items-center gap-2 font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
+            <Film size={14} className="text-green-500" /> {outputFormat.toUpperCase()} Generator
           </h3>
-          <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); }}>
+          <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); setGifUrl(null); }}>
             <RefreshCcw size={14} />
           </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          {activeTab === 'settings' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {/* Trimming */}
-              <div className="space-y-3">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center justify-between">
-                  <span className="flex items-center gap-2"><Scissors size={14} /> Trim Range</span>
-                  <span className="font-mono text-green-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
-                </label>
-                <div className="px-2 py-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                  <Slider
-                    range
-                    min={0}
-                    max={duration || 10}
-                    step={0.1}
-                    value={trimRange}
-                    onChange={(val) => setTrimRange(val as [number, number])}
-                    trackStyle={[{ backgroundColor: '#10b981' }]}
-                    handleStyle={[{ borderColor: '#10b981', backgroundColor: '#064e3b' }, { borderColor: '#10b981', backgroundColor: '#064e3b' }]}
-                    railStyle={{ backgroundColor: '#27272a' }}
-                  />
-                </div>
-              </div>
-
-              {/* Quality & Size */}
-              <div className="space-y-4 pt-4 border-t border-zinc-900">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Quality Mode</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => setQuality('standard')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
-                    <button onClick={() => setQuality('high')} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'high' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FPS</label>
-                    <select value={fps} onChange={(e) => setFps(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
-                      {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Width</label>
-                    <select value={width} onChange={(e) => setWidth(Number(e.target.value))} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
-                      {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Text Overlay */}
-              <div className="space-y-4 pt-4 border-t border-zinc-900">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Type size={14} /> Caption Overlay</label>
-                <input
-                  type="text"
-                  placeholder="Enter caption..."
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-green-500"
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Trimming */}
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center justify-between">
+                <span className="flex items-center gap-2"><Scissors size={14} /> Trim Range</span>
+                <span className="font-mono text-green-400">{formatTime(trimRange[0])} - {formatTime(trimRange[1])}</span>
+              </label>
+              <div className="px-2 py-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
+                <Slider
+                  range min={0} max={duration || 10} step={0.1} value={trimRange}
+                  onChange={(val) => { setTrimRange(val as [number, number]); setIsDone(false); setGifUrl(null); }}
+                  trackStyle={[{ backgroundColor: '#10b981' }]}
+                  handleStyle={[{ borderColor: '#10b981', backgroundColor: '#064e3b' }, { borderColor: '#10b981', backgroundColor: '#064e3b' }]}
+                  railStyle={{ backgroundColor: '#27272a' }}
                 />
               </div>
-
-              <Button
-                onClick={handleConvert}
-                className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 border-none shadow-lg shadow-green-900/20 font-bold uppercase text-[10px] tracking-[0.1em]"
-                isLoading={isProcessing}
-                disabled={isProcessing || isDone}
-              >
-                {isProcessing ? `Stitching Frames...` : 'Run Conversion'}
-              </Button>
             </div>
-          )}
 
-          {activeTab === 'export' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {isDone && gifUrl ? (
-                <div className="space-y-4">
-                  <div className="aspect-square bg-black rounded-2xl border border-zinc-800 overflow-hidden flex items-center justify-center bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
-                    <img src={gifUrl} alt={`${outputFormat} Result`} className="max-h-full max-w-full object-contain" />
-                  </div>
-                  <Button onClick={handleDownload} className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-bold uppercase text-xs tracking-widest border-none">
+            {/* Quality & Size */}
+            <div className="space-y-4 pt-4 border-t border-zinc-900">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Quality Mode</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => { setQuality('standard'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
+                  <button onClick={() => { setQuality('high'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-[10px] font-bold uppercase border transition-all ${quality === 'high' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">FPS</label>
+                  <select value={fps} onChange={(e) => { setFps(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                    {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Width</label>
+                  <select value={width} onChange={(e) => { setWidth(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                    {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Text Overlay */}
+            <div className="space-y-4 pt-4 border-t border-zinc-900">
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2"><Type size={14} /> Caption Overlay</label>
+              <input
+                type="text"
+                placeholder="Enter caption..."
+                value={text}
+                onChange={(e) => { setText(e.target.value); setIsDone(false); setGifUrl(null); }}
+                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 outline-none focus:ring-1 focus:ring-green-500"
+              />
+            </div>
+
+            <div className="pt-4">
+              {!isDone ? (
+                <Button
+                  onClick={handleConvert}
+                  className="w-full h-12 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 border-none shadow-lg shadow-green-900/20 font-black uppercase text-[10px] tracking-[0.1em]"
+                  isLoading={isProcessing}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={16} className="animate-spin" />
+                      Converting {progress}%
+                    </span>
+                  ) : 'Run Conversion'}
+                </Button>
+              ) : (
+                <div className="space-y-3 animate-slide-up">
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest border-none shadow-lg"
+                  >
                     <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
                   </Button>
-                </div>
-              ) : (
-                <div className="text-center py-12 flex flex-col items-center">
-                  <Loader2 size={32} className={`text-zinc-800 mb-4 ${isProcessing ? 'animate-spin text-green-500' : ''}`} />
-                  <p className="text-sm text-zinc-500">
-                    {isProcessing ? 'Rendering sequence...' : 'Convert a clip to export.'}
-                  </p>
+                  <Button
+                    variant="secondary"
+                    className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
+                    onClick={() => {
+                      setIsDone(false);
+                      setGifUrl(null);
+                      setProgress(0);
+                    }}
+                  >
+                    <RefreshCcw size={16} className="mr-2" /> Start Over
+                  </Button>
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
       </aside>
 
@@ -403,8 +398,17 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                   <img src={gifUrl} alt="Preview" className="max-h-full max-w-full object-contain" />
                 ) : (
                   <div className="text-center space-y-4 animate-in fade-in">
-                    <div className="w-12 h-12 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto shadow-lg shadow-green-500/20"></div>
-                    <p className="text-[10px] text-green-400 font-bold uppercase tracking-[0.2em] animate-pulse">Encoding Buffer</p>
+                    <div className="relative w-16 h-16 flex items-center justify-center mx-auto">
+                      <div className="absolute inset-0 border-2 border-green-500/20 rounded-full"></div>
+                      <div
+                        className="absolute inset-0 border-2 border-green-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                        style={{ animationDuration: '0.8s' }}
+                      ></div>
+                      <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                    </div>
+                    <p className="text-[10px] text-green-400 font-bold uppercase tracking-[0.2em] animate-pulse">
+                      {progress < 100 ? 'Encoding Buffer' : 'Finalizing'}
+                    </p>
                   </div>
                 )}
               </div>

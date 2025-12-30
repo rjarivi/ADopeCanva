@@ -19,7 +19,6 @@ export const MagicImageEditor: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [apiKey, setApiKey] = useState('');
-  const [activeTab, setActiveTab] = useState<'ai' | 'settings' | 'export'>('ai');
 
   const handleReset = () => {
     setFile(null);
@@ -143,38 +142,13 @@ export const MagicImageEditor: React.FC = () => {
   return (
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-purple-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-      {/* 1. Navigation (Desktop Rail / Mobile Bottom Bar) */}
-      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
-        <button
-          onClick={() => setActiveTab('ai')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'ai' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Wand2 size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">AI Edit</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Settings size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Config</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('export')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-purple-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
-        >
-          <Download size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Export</span>
-        </button>
-      </nav>
+      {/* Navigation removed for unified UX */}
 
       {/* 2. Settings Panel (Middle) */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden transition-all' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-            {activeTab === 'ai' && <><Sparkles size={16} className="text-purple-400" /> AI Generator</>}
-            {activeTab === 'settings' && <><Settings size={16} className="text-zinc-400" /> Settings</>}
-            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Export Options</>}
+          <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+            <Sparkles size={14} className="text-purple-400" /> Magic Editor
           </h2>
           <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
             <RefreshCcw size={14} />
@@ -182,29 +156,29 @@ export const MagicImageEditor: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          {activeTab === 'ai' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="space-y-4">
-                <ApiKeyInput
-                  serviceName="Gemini"
-                  localStorageKey="gemini_api_key"
-                  onKeyChange={setApiKey}
-                  description="Required for AI editing"
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="space-y-4">
+              <ApiKeyInput
+                serviceName="Gemini"
+                localStorageKey="gemini_api_key"
+                onKeyChange={setApiKey}
+                description="Required for AI editing"
+              />
+
+              <section>
+                <SectionLabel>Magic Prompt</SectionLabel>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
+                  placeholder='e.g., "Add a retro filter", "Change sky to sunset"'
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600 transition-all font-medium"
+                  disabled={isProcessing}
                 />
+              </section>
 
-                <section>
-                  <SectionLabel>Magic Prompt</SectionLabel>
-                  <textarea
-                    value={prompt}
-                    onChange={(e) => setPrompt((e.target as HTMLTextAreaElement).value)}
-                    placeholder='e.g., "Add a retro filter", "Change sky to sunset"'
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-purple-500 min-h-[120px] resize-none placeholder:text-zinc-600 transition-all"
-                    disabled={isProcessing}
-                  />
-                </section>
-
+              {!resultImage ? (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-none shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all"
+                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 border-none shadow-lg shadow-purple-500/20 active:scale-[0.98] transition-all font-black uppercase text-[10px] tracking-widest"
                   onClick={handleGenerate}
                   isLoading={isProcessing}
                   disabled={!prompt.trim() || isProcessing || !apiKey}
@@ -212,51 +186,10 @@ export const MagicImageEditor: React.FC = () => {
                   <Sparkles size={18} className="mr-2" />
                   {isProcessing ? 'Processing...' : 'Apply Magic'}
                 </Button>
-
-                {error && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs">
-                    <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                    <p>{error}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'settings' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              <section>
-                <SliderControl
-                  label="Before/After Slider"
-                  value={sliderPosition}
-                  min={0}
-                  max={100}
-                  onChange={setSliderPosition}
-                  unit="%"
-                />
-              </section>
-              <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
-                <h4 className="font-semibold text-zinc-200 mb-2 text-xs uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles size={14} className="text-yellow-400" /> AI Tips
-                </h4>
-                <ul className="text-[11px] text-zinc-500 list-disc list-inside space-y-2">
-                  <li>Be specific about locations and styles.</li>
-                  <li>Mention colors: "Turn the red car to blue".</li>
-                  <li>Style requests: "Make it look like a oil painting".</li>
-                </ul>
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'export' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {resultImage ? (
-                <div className="space-y-4">
-                  <div className="aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-black">
-                    <img src={resultImage} className="w-full h-full object-contain" alt="Preview" />
-                  </div>
+              ) : (
+                <div className="space-y-3 animate-slide-up">
                   <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none"
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg font-black uppercase text-[10px] tracking-widest"
                     onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
@@ -266,23 +199,42 @@ export const MagicImageEditor: React.FC = () => {
                   >
                     <Download size={18} className="mr-2" /> Download PNG
                   </Button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
-                      <Share2 size={16} className="mr-2" /> Share
-                    </Button>
-                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={handleReset}>
-                      <Trash2 size={16} className="mr-2" /> Reset
-                    </Button>
-                  </div>
+                  <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={handleReset}>
+                    <RefreshCcw size={16} className="mr-2" /> Start New
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-12">
-                  <AlertCircle size={32} className="mx-auto text-zinc-800 mb-4" />
-                  <p className="text-sm text-zinc-500">Generate an edit first to export.</p>
+              )}
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs shadow-sm">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <p>{error}</p>
                 </div>
               )}
             </div>
-          )}
+
+            <section>
+              <SliderControl
+                label="Before / After View"
+                value={sliderPosition}
+                min={0}
+                max={100}
+                onChange={setSliderPosition}
+                unit="%"
+              />
+            </section>
+
+            <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
+              <h4 className="font-semibold text-zinc-400 mb-2 text-[10px] uppercase tracking-widest flex items-center gap-2 font-bold">
+                <Sparkles size={14} className="text-yellow-400" /> AI Style Tips
+              </h4>
+              <ul className="text-[10px] text-zinc-500 space-y-2 uppercase font-bold tracking-tight">
+                <li>Be specific about colors & styles</li>
+                <li>"Turn the sky into a sunset"</li>
+                <li>"Make it look like an oil painting"</li>
+              </ul>
+            </section>
+          </div>
         </div>
       </aside>
 

@@ -18,7 +18,6 @@ export const BackgroundRemover: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [apiKey, setApiKey] = useState('');
-  const [activeTab, setActiveTab] = useState<'remove' | 'config' | 'export'>('remove');
 
   const handleReset = () => {
     setFile(null);
@@ -143,38 +142,13 @@ export const BackgroundRemover: React.FC = () => {
   return (
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-teal-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-      {/* 1. Navigation Rail / Bottom Bar */}
-      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
-        <button
-          onClick={() => setActiveTab('remove')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'remove' ? 'text-teal-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Eraser size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Remove</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('config')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'config' ? 'text-teal-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Settings size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Config</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('export')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-teal-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
-        >
-          <Download size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Export</span>
-        </button>
-      </nav>
+      {/* Navigation removed for unified UX */}
 
       {/* 2. Settings Panel (Middle) */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-            {activeTab === 'remove' && <><Sparkles size={16} className="text-teal-400" /> Subject Isolation</>}
-            {activeTab === 'config' && <><Settings size={16} className="text-zinc-400" /> Settings</>}
-            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Export</>}
+          <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+            <Eraser size={14} className="text-teal-400" /> BG Remover
           </h2>
           <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
             <RefreshCcw size={14} />
@@ -182,15 +156,8 @@ export const BackgroundRemover: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          {activeTab === 'remove' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50 mb-4">
-                <p className="text-[11px] text-zinc-400 leading-relaxed uppercase tracking-wide font-bold mb-2">How it works</p>
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Powered by Gemini Vision AI to identify and isolate the foreground subject from complex backgrounds.
-                </p>
-              </div>
-
+          <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="space-y-4">
               <ApiKeyInput
                 serviceName="Gemini"
                 localStorageKey="gemini_api_key"
@@ -198,57 +165,20 @@ export const BackgroundRemover: React.FC = () => {
                 description="Required for Smart BG removal"
               />
 
-              <Button
-                className="w-full h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 border-none shadow-lg shadow-teal-500/20 active:scale-[0.98] transition-all"
-                onClick={handleRemoveBackground}
-                isLoading={isProcessing}
-                disabled={isProcessing || !apiKey}
-              >
-                <Eraser size={18} className="mr-2" />
-                {isProcessing ? 'Removing...' : 'Remove Background'}
-              </Button>
-
-              {error && (
-                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs shadow-sm">
-                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                  <p>{error}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'config' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              <section>
-                <SliderControl
-                  label="Before / After View"
-                  value={sliderPosition}
-                  min={0}
-                  max={100}
-                  onChange={setSliderPosition}
-                  unit="%"
-                />
-              </section>
-              <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
-                <SectionLabel>Subject Tips</SectionLabel>
-                <ul className="text-[11px] text-zinc-500 space-y-2">
-                  <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> High contrast edges work best</li>
-                  <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Avoid extremely blurry areas</li>
-                  <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Single subject produces cleaner results</li>
-                </ul>
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'export' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {resultImage ? (
-                <div className="space-y-4">
-                  <div className="aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900/50 flex items-center justify-center p-2 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
-                    <img src={resultImage} className="max-w-full max-h-full object-contain" alt="No Background" />
-                  </div>
+              {!resultImage ? (
+                <Button
+                  className="w-full h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 border-none shadow-lg shadow-teal-500/20 active:scale-[0.98] transition-all font-black uppercase text-[10px] tracking-widest"
+                  onClick={handleRemoveBackground}
+                  isLoading={isProcessing}
+                  disabled={isProcessing || !apiKey}
+                >
+                  <Eraser size={18} className="mr-2" />
+                  {isProcessing ? 'Removing...' : 'Remove Background'}
+                </Button>
+              ) : (
+                <div className="space-y-3 animate-slide-up">
                   <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-sm"
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg font-black uppercase text-[10px] tracking-widest"
                     onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
@@ -258,25 +188,40 @@ export const BackgroundRemover: React.FC = () => {
                   >
                     <Download size={18} className="mr-2" /> Download PNG
                   </Button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
-                      <Share2 size={16} className="mr-2" /> Share
-                    </Button>
-                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={handleReset}>
-                      <Trash2 size={16} className="mr-2" /> Reset
-                    </Button>
-                  </div>
+                  <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={handleReset}>
+                    <RefreshCcw size={16} className="mr-2" /> New Image
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center py-12 flex flex-col items-center">
-                  <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
-                    <Layers size={20} className="text-zinc-700" />
-                  </div>
-                  <p className="text-sm text-zinc-500">Wait for subject isolation to complete.</p>
+              )}
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs shadow-sm">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <p>{error}</p>
                 </div>
               )}
             </div>
-          )}
+
+            <section>
+              <SliderControl
+                label="Before / After View"
+                value={sliderPosition}
+                min={0}
+                max={100}
+                onChange={setSliderPosition}
+                unit="%"
+              />
+            </section>
+
+            <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
+              <SectionLabel>Subject Tips</SectionLabel>
+              <ul className="text-[10px] text-zinc-500 space-y-2 uppercase font-bold tracking-tight">
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> High contrast edges work best</li>
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Avoid extremely blurry areas</li>
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Single subject produces cleaner results</li>
+              </ul>
+            </section>
+          </div>
         </div>
       </aside>
 
