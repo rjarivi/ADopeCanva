@@ -46,7 +46,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-background">
+        <div className="flex flex-col h-screen overflow-hidden bg-background dot-grid">
             {/* Small Mobile Header */}
             <header className="h-16 border-b border-zinc-800 flex items-center justify-center px-4 bg-background/95 backdrop-blur-md z-40 shrink-0">
                 <div

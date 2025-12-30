@@ -39,6 +39,14 @@
       /* zinc-950 */
       color: #f4f4f5;
       /* zinc-100 */
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
+      background-attachment: fixed;
+    }
+
+    .dot-grid {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 24px 24px;
     }
 
     /* Custom scrollbar for dark theme */
@@ -65,6 +73,11 @@
       darkMode: 'class',
       theme: {
         extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            unbounded: ['Unbounded', 'cursive'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
           colors: {
             background: '#09090b',
             surface: '#18181b',

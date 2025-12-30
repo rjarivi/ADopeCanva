@@ -193,15 +193,15 @@ export const VideoTrimmer: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-pink-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
             {/* Navigation removed as per simplified workflow */}
 
             {/* 2. Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <Scissors size={14} className="text-pink-500" /> Video Editor
+                    <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <Scissors size={14} className="text-indigo-500" /> Video Editor
                     </h2>
                     <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors">
                         <Trash2 size={14} />
@@ -214,29 +214,77 @@ export const VideoTrimmer: React.FC = () => {
                         <section className="space-y-4">
                             <SectionLabel>Time Range</SectionLabel>
                             <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 flex justify-between items-center">
-                                <div className="space-y-1">
-                                    <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Start</p>
-                                    <p className="text-lg font-mono text-white tracking-tighter">{((range.start / 100) * duration).toFixed(2)}s</p>
+                                <div className="space-y-2 flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Start</p>
+                                        <button
+                                            onClick={() => {
+                                                if (videoRef.current) {
+                                                    const currentPercent = (videoRef.current.currentTime / duration) * 100;
+                                                    setRange(prev => ({ ...prev, start: Math.min(currentPercent, prev.end - 1) }));
+                                                    setTrimmedUrl(null);
+                                                }
+                                            }}
+                                            className="text-[8px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                                        >
+                                            Set Current
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={((range.start / 100) * duration).toFixed(2)}
+                                        onChange={(e) => {
+                                            const val = Math.max(0, Math.min(Number(e.target.value), (range.end / 100) * duration - 0.1));
+                                            setRange(prev => ({ ...prev, start: (val / duration) * 100 }));
+                                            setTrimmedUrl(null);
+                                        }}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-xs font-mono outline-none focus:border-indigo-500/50"
+                                    />
                                 </div>
-                                <div className="w-px h-8 bg-zinc-800" />
-                                <div className="space-y-1 text-right">
-                                    <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">End</p>
-                                    <p className="text-lg font-mono text-white tracking-tighter">{((range.end / 100) * duration).toFixed(2)}s</p>
+                                <div className="w-px h-12 bg-zinc-800 mx-4" />
+                                <div className="space-y-2 flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <button
+                                            onClick={() => {
+                                                if (videoRef.current) {
+                                                    const currentPercent = (videoRef.current.currentTime / duration) * 100;
+                                                    setRange(prev => ({ ...prev, end: Math.max(currentPercent, prev.start + 1) }));
+                                                    setTrimmedUrl(null);
+                                                }
+                                            }}
+                                            className="text-[8px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                                        >
+                                            Set Current
+                                        </button>
+                                        <p className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">End</p>
+                                    </div>
+                                    <input
+                                        type="number"
+                                        step="0.1"
+                                        value={((range.end / 100) * duration).toFixed(2)}
+                                        onChange={(e) => {
+                                            const val = Math.min(duration, Math.max(Number(e.target.value), (range.start / 100) * duration + 0.1));
+                                            setRange(prev => ({ ...prev, end: (val / duration) * 100 }));
+                                            setTrimmedUrl(null);
+                                        }}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 text-white text-xs font-mono text-right outline-none focus:border-indigo-500/50"
+                                    />
                                 </div>
                             </div>
 
                             <div className="relative h-12 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center group">
                                 <div className="absolute left-4 right-4 h-1.5 bg-zinc-800 rounded-full">
                                     <div
-                                        className="absolute h-full bg-pink-500/50 rounded-full transition-all duration-100"
+                                        className="absolute h-full bg-indigo-500/50 rounded-full transition-all duration-100"
                                         style={{ left: `${range.start}%`, width: `${range.end - range.start}%` }}
                                     />
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-pink-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
                                         style={{ left: `${range.start}%` }}
                                     />
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-pink-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
                                         style={{ left: `${range.end}%` }}
                                     />
                                 </div>
@@ -252,13 +300,13 @@ export const VideoTrimmer: React.FC = () => {
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     onClick={togglePlay}
-                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all uppercase font-bold text-[10px]"
+                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all font-bold uppercase text-[10px] tracking-widest"
                                 >
                                     {isPlaying ? <Pause size={14} /> : <Play size={14} />} {isPlaying ? 'Stop' : 'Play'}
                                 </button>
                                 <button
                                     onClick={() => { if (videoRef.current) videoRef.current.currentTime = (range.start / 100) * duration }}
-                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all uppercase font-bold text-[10px]"
+                                    className="flex items-center justify-center gap-2 p-3 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-400 hover:text-white transition-all font-bold uppercase text-[10px] tracking-widest"
                                 >
                                     <RotateCcw size={14} /> Rewind
                                 </button>
@@ -280,7 +328,7 @@ export const VideoTrimmer: React.FC = () => {
                         <div className="pt-4 space-y-3">
                             {!trimmedUrl ? (
                                 <Button
-                                    className="w-full h-12 bg-pink-500 hover:bg-pink-600 shadow-lg shadow-pink-500/20 uppercase font-black text-[10px] tracking-widest"
+                                    className="w-full h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 shadow-lg shadow-indigo-500/20 border-none"
                                     onClick={handleExport}
                                     isLoading={isProcessing}
                                     disabled={isProcessing}
@@ -297,7 +345,7 @@ export const VideoTrimmer: React.FC = () => {
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
                                     <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-black uppercase text-[10px] tracking-widest shadow-lg"
+                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg"
                                         onClick={downloadTrimmed}
                                     >
                                         <Download size={18} className="mr-2" /> Download Clip
@@ -354,17 +402,19 @@ export const VideoTrimmer: React.FC = () => {
 
                     {isProcessing && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-black/40 backdrop-blur-[2px]">
-                            <div className="relative w-16 h-16 flex items-center justify-center mb-4">
-                                <div className="absolute inset-0 border-2 border-pink-500/20 rounded-full"></div>
-                                <div
-                                    className="absolute inset-0 border-2 border-pink-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(236,72,153,0.3)]"
-                                    style={{ animationDuration: '0.8s' }}
-                                ></div>
-                                <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                            <div className="text-center space-y-4 animate-in fade-in">
+                                <div className="relative w-16 h-16 flex items-center justify-center mx-auto">
+                                    <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full"></div>
+                                    <div
+                                        className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                                        style={{ animationDuration: '0.8s' }}
+                                    ></div>
+                                    <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                                </div>
+                                <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] animate-pulse">
+                                    {progress < 100 ? 'Encoding Buffer' : 'Finalizing'}
+                                </p>
                             </div>
-                            <p className="text-[10px] text-pink-400 font-bold uppercase tracking-[0.2em] animate-pulse">
-                                {progress < 100 ? 'Trimming Video' : 'Finalizing'}
-                            </p>
                         </div>
                     )}
 

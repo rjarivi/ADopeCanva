@@ -4,6 +4,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { Music, Mic2, Download, CheckCircle, RefreshCcw, Settings2, AlertCircle, Loader2 } from 'lucide-react';
+import { SectionLabel } from '../../components/EditorControls';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
@@ -50,8 +51,8 @@ export const AudioConverter: React.FC = () => {
     const ffmpeg = ffmpegRef.current;
     // Handle files with spaces or special chars by using a safe name
     const ext = file.file.name.split('.').pop() || 'mp3';
-    const inputName = `input.${ext}`;
-    const outputName = `output.${format.toLowerCase()}`;
+    const inputName = `input.${ext} `;
+    const outputName = `output.${format.toLowerCase()} `;
     setConvertedUrl(null);
 
     try {
@@ -89,7 +90,7 @@ export const AudioConverter: React.FC = () => {
 
       args.push(outputName);
 
-      setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')}`);
+      setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')} `);
       await ffmpeg.exec(args);
 
       const mimeMap: Record<string, string> = {
@@ -113,7 +114,7 @@ export const AudioConverter: React.FC = () => {
 
     } catch (e) {
       console.error(e);
-      setLogs(prev => prev + `\nError: ${(e as Error).message}`);
+      setLogs(prev => prev + `\nError: ${(e as Error).message} `);
     } finally {
       setIsProcessing(false);
     }
@@ -124,7 +125,7 @@ export const AudioConverter: React.FC = () => {
     const a = document.createElement('a');
     a.href = convertedUrl;
     const nameWithoutExt = file?.file.name.substring(0, file.file.name.lastIndexOf('.')) || 'audio';
-    a.download = `${nameWithoutExt}.${format.toLowerCase()}`;
+    a.download = `${nameWithoutExt}.${format.toLowerCase()} `;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -158,7 +159,7 @@ export const AudioConverter: React.FC = () => {
   if (engineStatus === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4 animate-fade-in text-center">
-        <Loader2 size={32} className="text-sky-500 animate-spin" />
+        <Loader2 size={32} className="text-indigo-500 animate-spin" />
         <p className="text-zinc-400">Loading Audio Engine...</p>
       </div>
     );
@@ -168,7 +169,7 @@ export const AudioConverter: React.FC = () => {
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-indigo-500">
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
             Audio Converter
           </h2>
           <p className="text-zinc-400">Convert music and voice recordings to any format.</p>
@@ -190,7 +191,7 @@ export const AudioConverter: React.FC = () => {
       <div className="bg-surface rounded-3xl border border-zinc-800 overflow-hidden shadow-2xl">
         <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
               <Music size={24} />
             </div>
             <div>
@@ -212,7 +213,7 @@ export const AudioConverter: React.FC = () => {
               </label>
 
               <div className="space-y-3">
-                <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Format</p>
+                <SectionLabel>Format</SectionLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {AUDIO_FORMATS.map(fmt => (
                     <button
@@ -220,12 +221,12 @@ export const AudioConverter: React.FC = () => {
                       onClick={() => setFormat(fmt)}
                       disabled={isProcessing || isDone}
                       className={`
-                              px-3 py-2 rounded-lg text-sm font-medium transition-all border
+px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider transition - all border
                               ${format === fmt
-                          ? 'bg-sky-500 text-white border-sky-500 shadow-md shadow-sky-500/20'
+                          ? 'bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-500/20'
                           : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
                         }
-                            `}
+`}
                     >
                       {fmt}
                     </button>
@@ -234,12 +235,12 @@ export const AudioConverter: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Quality (Bitrate)</p>
+                <SectionLabel>Quality (Bitrate)</SectionLabel>
                 <select
                   value={bitrate}
                   onChange={(e) => setBitrate((e.target as HTMLSelectElement).value)}
                   disabled={isProcessing || isDone || format === 'WAV' || format === 'FLAC'}
-                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-50"
+                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
                 >
                   {BITRATES.map(br => <option key={br} value={br}>{br.replace('k', ' kbps')}</option>)}
                 </select>
@@ -257,7 +258,8 @@ export const AudioConverter: React.FC = () => {
               <Button
                 onClick={handleConvert}
                 isLoading={isProcessing}
-                className="w-full bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 border-none h-14 text-lg"
+                size="lg"
+                className="w-full h-14"
               >
                 Convert Audio
               </Button>
@@ -266,7 +268,7 @@ export const AudioConverter: React.FC = () => {
                 <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm flex items-center justify-center gap-2 font-medium">
                   <CheckCircle size={18} /> Conversion Complete
                 </div>
-                <Button className="w-full h-14 text-lg bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 shadow-lg shadow-sky-500/20 border-none" onClick={handleDownload}>
+                <Button size="lg" className="w-full h-14" onClick={handleDownload}>
                   <Download size={20} className="mr-2" /> Download {format}
                 </Button>
               </div>
@@ -280,10 +282,10 @@ export const AudioConverter: React.FC = () => {
               {Array.from({ length: 20 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-2 bg-sky-500 rounded-full transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''}`}
+                  className={`w - 2 bg - indigo - 500 rounded - full transition - all duration - 300 ${isProcessing ? 'animate-pulse' : ''} `}
                   style={{
-                    height: `${Math.random() * 60 + 20}%`,
-                    animationDelay: `${i * 0.1}s`
+                    height: `${Math.random() * 60 + 20}% `,
+                    animationDelay: `${i * 0.1} s`
                   }}
                 />
               ))}
@@ -291,11 +293,11 @@ export const AudioConverter: React.FC = () => {
 
             {isProcessing ? (
               <div className="z-10 w-full max-w-[200px] space-y-4">
-                <div className="w-16 h-16 mx-auto border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin"></div>
+                <div className="w-16 h-16 mx-auto border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                 <div className="space-y-1">
                   <p className="text-white font-medium">Converting...</p>
                   <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-sky-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                    <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}% ` }}></div>
                   </div>
                 </div>
               </div>

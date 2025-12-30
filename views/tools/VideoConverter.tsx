@@ -202,7 +202,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-500">
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
             {title}
           </h2>
           <p className="text-zinc-400">Transform your videos to any format locally using WebAssembly.</p>
@@ -225,7 +225,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         {/* Header */}
         <div className="p-6 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-500">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
               <FileVideo size={24} />
             </div>
             <div>
@@ -242,7 +242,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
           {/* Format Selection */}
           <div className="space-y-8">
             <div>
-              <label className="text-sm font-medium text-zinc-400 mb-4 block uppercase tracking-wider">Select Output Format</label>
+              <label className="text-xs font-bold text-zinc-400 mb-4 block uppercase tracking-wider">Select Output Format</label>
               <div className="grid grid-cols-3 gap-3">
                 {FORMATS.map(fmt => (
                   <button
@@ -252,7 +252,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                     className={`
                             px-4 py-3 rounded-xl text-sm font-semibold transition-all border
                             ${targetFormat === fmt
-                        ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/20 scale-105'
+                        ? 'bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105'
                         : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600'
                       }
                             ${(isProcessing || isDone) ? 'opacity-50 cursor-not-allowed' : ''}
@@ -274,7 +274,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
               <Button
                 onClick={handleConvert}
                 isLoading={isProcessing}
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-none h-14 text-lg shadow-orange-500/20"
+                size="lg"
+                className="w-full h-14"
               >
                 {isProcessing ? 'Converting...' : `Convert to ${targetFormat}`}
               </Button>
@@ -283,7 +284,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                 <div className="flex items-center gap-2 text-green-400 font-medium justify-center p-3 bg-green-500/10 rounded-xl border border-green-500/20">
                   <CheckCircle size={20} /> Conversion Complete
                 </div>
-                <Button className="w-full h-14 text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg shadow-orange-500/20 border-none" onClick={handleDownload}>
+                <Button size="lg" className="w-full h-14" onClick={handleDownload}>
                   <Download size={20} className="mr-2" /> Download {targetFormat}
                 </Button>
               </div>
@@ -293,12 +294,12 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
           {/* Visualizer / Progress */}
           <div className="relative aspect-square md:aspect-video rounded-2xl bg-black/40 border border-zinc-800 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
             {/* Background Glow */}
-            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-orange-500/20 blur-[50px] rounded-full transition-opacity duration-1000 ${isProcessing ? 'opacity-100 animate-pulse' : 'opacity-20'}`}></div>
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-indigo-500/20 blur-[50px] rounded-full transition-opacity duration-1000 ${isProcessing ? 'opacity-100 animate-pulse' : 'opacity-20'}`}></div>
 
             {isProcessing ? (
               <div className="w-full max-w-xs space-y-6 relative z-10">
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+                  <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
                   <h4 className="text-xl font-bold text-white mt-4">Transcoding...</h4>
                   <p className="text-xs text-zinc-500">This happens in your browser</p>
                 </div>
@@ -309,7 +310,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                   </div>
                   <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300 ease-out"
+                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 transition-all duration-300 ease-out"
                       style={{ width: `${progress}%` }}
                     ></div>
                   </div>

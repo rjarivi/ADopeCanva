@@ -577,11 +577,35 @@ export const GifEditor: React.FC = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Start</label>
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Start</label>
+                                                <button
+                                                    onClick={() => {
+                                                        if (videoRef.current) {
+                                                            setTrimRange([videoRef.current.currentTime, trimRange[1]]);
+                                                        }
+                                                    }}
+                                                    className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                                                >
+                                                    Set Current
+                                                </button>
+                                            </div>
                                             <input type="number" step="0.1" value={trimRange[0].toFixed(1)} onChange={(e) => setTrimRange([Number(e.target.value), trimRange[1]])} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white text-xs" />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">End</label>
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">End</label>
+                                                <button
+                                                    onClick={() => {
+                                                        if (videoRef.current) {
+                                                            setTrimRange([trimRange[0], videoRef.current.currentTime]);
+                                                        }
+                                                    }}
+                                                    className="text-[9px] text-indigo-400 hover:text-indigo-300 font-bold uppercase transition-colors"
+                                                >
+                                                    Set Current
+                                                </button>
+                                            </div>
                                             <input type="number" step="0.1" value={trimRange[1].toFixed(1)} onChange={(e) => setTrimRange([trimRange[0], Number(e.target.value)])} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-white text-xs" />
                                         </div>
                                     </div>

@@ -140,7 +140,7 @@ export const BackgroundRemover: React.FC = () => {
   }
 
   return (
-    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-teal-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
       {/* Navigation removed for unified UX */}
 
@@ -148,7 +148,7 @@ export const BackgroundRemover: React.FC = () => {
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
           <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-            <Eraser size={14} className="text-teal-400" /> BG Remover
+            <Eraser size={14} className="text-indigo-400" /> BG Remover
           </h2>
           <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
             <RefreshCcw size={14} />
@@ -167,7 +167,7 @@ export const BackgroundRemover: React.FC = () => {
 
               {!resultImage ? (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 border-none shadow-lg shadow-teal-500/20 active:scale-[0.98] transition-all font-black uppercase text-[10px] tracking-widest"
+                  className="w-full h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
                   onClick={handleRemoveBackground}
                   isLoading={isProcessing}
                   disabled={isProcessing || !apiKey}
@@ -178,7 +178,7 @@ export const BackgroundRemover: React.FC = () => {
               ) : (
                 <div className="space-y-3 animate-slide-up">
                   <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg font-black uppercase text-[10px] tracking-widest"
+                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
                     onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
@@ -216,9 +216,9 @@ export const BackgroundRemover: React.FC = () => {
             <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
               <SectionLabel>Subject Tips</SectionLabel>
               <ul className="text-[10px] text-zinc-500 space-y-2 uppercase font-bold tracking-tight">
-                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> High contrast edges work best</li>
-                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Avoid extremely blurry areas</li>
-                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-teal-500" /> Single subject produces cleaner results</li>
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500" /> High contrast edges work best</li>
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500" /> Avoid extremely blurry areas</li>
+                <li className="flex items-center gap-2"><div className="w-1 h-1 rounded-full bg-indigo-500" /> Single subject produces cleaner results</li>
               </ul>
             </section>
           </div>
@@ -243,11 +243,11 @@ export const BackgroundRemover: React.FC = () => {
                 />
 
                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest">Original</div>
-                <div className="absolute top-4 right-4 bg-teal-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest shadow-lg shadow-teal-500/20">Clean</div>
+                <div className="absolute top-4 right-4 bg-indigo-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20">Clean</div>
 
                 <div className="absolute inset-y-0" style={{ left: `${sliderPosition}%` }}>
                   <div className="absolute inset-y-0 -left-px w-px bg-white/50"></div>
-                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl text-teal-600 ring-2 ring-black/10">
+                  <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl text-indigo-600 ring-2 ring-black/10">
                     <Sliders size={14} className="rotate-90" />
                   </div>
                 </div>
@@ -266,7 +266,7 @@ export const BackgroundRemover: React.FC = () => {
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10 animate-fade-in">
                     <div className="w-12 h-12 relative mb-4">
                       <div className="absolute inset-0 border-2 border-zinc-700/30 rounded-full"></div>
-                      <div className="absolute inset-0 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                     <p className="text-white font-bold tracking-[0.2em] uppercase text-[10px]">Analyzing Pixels</p>
                   </div>

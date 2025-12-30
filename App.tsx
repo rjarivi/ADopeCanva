@@ -242,7 +242,7 @@ const App = () => {
             </header>
 
             {/* Main Content */}
-            <main className={`flex-1 relative scroll-smooth bg-background ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+            <main className={`flex-1 relative scroll-smooth bg-background dot-grid ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {content}
             </main>
         </div>

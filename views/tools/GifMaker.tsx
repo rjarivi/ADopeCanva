@@ -4,12 +4,15 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Image as ImageIcon, Film, Download, Trash2, Clock, Settings, RefreshCcw, Play, Loader2, AlertCircle, Maximize, Minimize, MoveHorizontal, ChevronDown, ChevronUp, Layers, Wand2, Share2 } from 'lucide-react';
+import { Image as ImageIcon, Film, Download, Trash2, Settings, RefreshCcw, Play, Loader2, AlertCircle, Plus, Zap, ChevronDown, ChevronRight, ZoomIn, ZoomOut, Maximize, Hand, Undo2, Copy } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 // Helper function for drawing images (used in both preview and generation)
+const MAX_DIMENSION = 1920;
+const MAX_FRAMES = 100;
+
 const drawImageToCanvas = (img: HTMLImageElement, ctx: CanvasRenderingContext2D, tW: number, tH: number, mode: 'fit' | 'zoom' | 'stretch') => {
   ctx.clearRect(0, 0, tW, tH);
   if (mode === 'stretch') {
@@ -25,37 +28,43 @@ const drawImageToCanvas = (img: HTMLImageElement, ctx: CanvasRenderingContext2D,
 };
 
 interface GifMakerProps {
-  outputFormat?: 'gif' | 'apng' | 'webp';
+  initialOutputFormat?: 'gif' | 'apng' | 'webp';
 }
 
-export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
+export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' }) => {
   const isMobile = useIsMobile();
   const [files, setFiles] = useState<FileData[]>([]);
-  const [interval, setInterval] = useState(0.5); // Seconds per frame
+  const [delay, setDelay] = useState(500); // ms per frame
   const [width, setWidth] = useState(400);
   const [height, setHeight] = useState(300);
   const [fitMode, setFitMode] = useState<'fit' | 'zoom' | 'stretch'>('fit');
   const [effect, setEffect] = useState<'none' | 'crossfade'>('none');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [frameRange, setFrameRange] = useState<[number, number]>([0, 0]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resultGif, setResultGif] = useState<string | null>(null);
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  const [logs, setLogs] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'photos' | 'settings' | 'export'>('photos');
+  const [outputFormat, setOutputFormat] = useState<'gif' | 'apng' | 'webp'>(initialOutputFormat);
+  const [isProMode, setIsProMode] = useState(false);
+  const [isFramesCollapsed, setIsFramesCollapsed] = useState(false);
+  const [isProCollapsed, setIsProCollapsed] = useState(false);
+
+  // Viewport State
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanMode, setIsPanMode] = useState(false);
 
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
 
   useEffect(() => {
     let ffInstance: FFmpeg | null = null;
     const logCallback = ({ message }: { message: string }) => {
       console.log('[GifMaker]', message);
-      setLogs(prev => [...prev.slice(-49), message]);
     };
 
     getFFmpeg()
@@ -95,33 +104,25 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
 
     let animationFrameId: number;
     let lastFrameTime = 0;
-    // Map frame range to slice indices
     const startIdx = Math.max(0, frameRange[0]);
     const endIdx = Math.min(files.length - 1, frameRange[1]);
     let currentIdx = startIdx;
 
     const render = (time: number) => {
-      // Run at standard 60fps check, but only update frame if interval passed
-      // If interval is very small (< 0.05), we clamp it to avoid browser freeze, though user slider min is 0.1
-      const frameDelayMs = Math.max(50, interval * 1000);
-
-      if (time - lastFrameTime > frameDelayMs) {
+      if (time - lastFrameTime > delay) {
         const canvas = previewCanvasRef.current;
         if (canvas) {
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // Update canvas size matches settings
             if (canvas.width !== width) canvas.width = width;
             if (canvas.height !== height) canvas.height = height;
 
             const file = files[currentIdx];
             if (file) {
               const img = imageCache.current.get(file.previewUrl);
-              // Draw if loaded, or try to draw immediate if available
               if (img && img.complete && img.naturalWidth > 0) {
                 drawImageToCanvas(img, ctx, width, height, fitMode);
               } else {
-                // Try direct load (might flicker first time)
                 const tempImg = new Image();
                 tempImg.src = file.previewUrl;
                 tempImg.onload = () => drawImageToCanvas(tempImg, ctx, width, height, fitMode);
@@ -141,11 +142,39 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
 
     animationFrameId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [resultGif, files, interval, width, height, fitMode, frameRange]);
+  }, [resultGif, files, delay, width, height, fitMode, frameRange]);
 
   const handleFilesSelect = (newFiles: FileData[]) => {
+    let filesToAdd = newFiles;
+    if (files.length + newFiles.length > MAX_FRAMES) {
+      setErrorMessage(`Maximum limit of ${MAX_FRAMES} frames reached to ensure processing stability. Only the first ${MAX_FRAMES - files.length} files were added.`);
+      filesToAdd = newFiles.slice(0, MAX_FRAMES - files.length);
+    } else {
+      setErrorMessage(''); // Clear error if within limits
+    }
+
+    // If it's the first upload, try to match resolution and fit viewport
+    if (files.length === 0 && filesToAdd.length > 0) {
+      const img = new Image();
+      img.src = filesToAdd[0].previewUrl;
+      img.onload = () => {
+        const cappedW = Math.min(img.naturalWidth, MAX_DIMENSION);
+        const cappedH = Math.min(img.naturalHeight, MAX_DIMENSION);
+        setWidth(cappedW);
+        setHeight(cappedH);
+
+        // Auto fit zoom logic
+        if (viewportRef.current) {
+          const vw = viewportRef.current.offsetWidth * 0.8;
+          const vh = viewportRef.current.offsetHeight * 0.8;
+          const scale = Math.min(vw / cappedW, vh / cappedH, 1);
+          setZoom(scale);
+        }
+      };
+    }
+
     setFiles(prev => {
-      const updated = [...prev, ...newFiles];
+      const updated = [...prev, ...filesToAdd];
       if (prev.length === 0) {
         setFrameRange([0, updated.length - 1]);
       } else {
@@ -163,6 +192,18 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
     });
   };
 
+  const duplicateFile = (index: number) => {
+    setFiles(prev => {
+      const updated = [...prev];
+      const fileToDuplicate = updated[index];
+      if (fileToDuplicate) {
+        updated.splice(index + 1, 0, { ...fileToDuplicate });
+      }
+      setFrameRange([0, Math.max(0, updated.length - 1)]);
+      return updated;
+    });
+  };
+
   const handleHiddenInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files).map((file: File) => ({
@@ -172,18 +213,47 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
         previewUrl: URL.createObjectURL(file)
       }));
       handleFilesSelect(newFiles);
-      // Reset input value so same files can be selected again if needed
       e.target.value = '';
     }
   };
 
-  const handleCreateGif = async () => {
+  // Interaction Handlers
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 0.9 : 1.1;
+      setZoom(z => Math.min(5, Math.max(0.1, z * delta)));
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isPanMode || e.button === 1) { // Middle click or pan mode
+      const startX = e.clientX - pan.x;
+      const startY = e.clientY - pan.y;
+
+      const handleMouseMove = (em: MouseEvent) => {
+        setPan({
+          x: em.clientX - startX,
+          y: em.clientY - startY
+        });
+      };
+
+      const handleMouseUp = () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+      };
+
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+  };
+
+  const handleGenerate = async () => {
     if (isProcessing || files.length === 0 || !ffmpegRef.current) return;
     setIsProcessing(true);
     setProgress(0);
     setResultGif(null);
     setErrorMessage('');
-    setLogs([]);
 
     const ffmpeg = ffmpegRef.current;
     let frameFiles: string[] = [];
@@ -201,19 +271,14 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
             canvas.width = tW;
             canvas.height = tH;
             const ctx = canvas.getContext('2d')!;
-
             drawImageToCanvas(img, ctx, tW, tH, mode);
-
             canvas.toBlob(blob => {
               URL.revokeObjectURL(objectUrl);
               if (blob) resolve(blob);
               else reject(new Error('Canvas blob conversion failed'));
             }, 'image/png');
           };
-          img.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            reject(new Error('Failed to load image'));
-          };
+          img.onerror = () => { reject(new Error('Failed to load image')); };
           img.src = objectUrl;
         });
       };
@@ -228,12 +293,12 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
           const check = () => {
             if (++loaded === 2) {
               const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
               canvas.width = tW;
               canvas.height = tH;
-              const ctx = canvas.getContext('2d')!;
-              ctx.drawImage(imgA, 0, 0);
+              ctx.drawImage(imgA, 0, 0, tW, tH);
               ctx.globalAlpha = alpha;
-              ctx.drawImage(imgB, 0, 0);
+              ctx.drawImage(imgB, 0, 0, tW, tH);
               canvas.toBlob(b => {
                 URL.revokeObjectURL(urlA);
                 URL.revokeObjectURL(urlB);
@@ -252,14 +317,12 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
       const framesData: { name: string, duration: number }[] = [];
       let frameCounter = 0;
 
-      console.log('[GifMaker] Preparing frames with quality Canvas rendering...');
-
       for (let i = 0; i < selectedFiles.length; i++) {
         const currentBlob = await processImage(selectedFiles[i].file, targetW, targetH, fitMode);
         const currentName = `f_${frameCounter.toString().padStart(4, '0')}.png`;
         await writeFileToFFmpeg(ffmpeg, currentName, currentBlob);
 
-        const mainDuration = effect === 'crossfade' && i < selectedFiles.length - 1 ? interval * 0.7 : interval;
+        const mainDuration = effect === 'crossfade' && i < selectedFiles.length - 1 ? (delay / 1000) * 0.7 : (delay / 1000);
         framesData.push({ name: currentName, duration: mainDuration });
         frameFiles.push(currentName);
         frameCounter++;
@@ -267,7 +330,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
         if (effect === 'crossfade' && i < selectedFiles.length - 1) {
           const nextBlob = await processImage(selectedFiles[i + 1].file, targetW, targetH, fitMode);
           const steps = 5;
-          const transDuration = (interval * 0.3) / steps;
+          const transDuration = ((delay / 1000) * 0.3) / steps;
           for (let s = 1; s <= steps; s++) {
             const alpha = s / (steps + 1);
             const tBlob = await blendImages(currentBlob, nextBlob, alpha, targetW, targetH);
@@ -282,47 +345,56 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
       }
 
       const outputFilename = `output.${outputFormat}`;
+      let totalDuration = 0;
       let concatContent = "";
       for (const fd of framesData) {
-        concatContent += `file '${fd.name}'\nduration ${fd.duration.toFixed(3)}\n`;
+        concatContent += `file '${fd.name}'\nduration ${fd.duration.toFixed(4)}\n`;
+        totalDuration += fd.duration;
       }
+      // FFmpeg concat demuxer often needs the last file repeated or a trailing newline
       if (framesData.length > 0) {
         concatContent += `file '${framesData[framesData.length - 1].name}'\n`;
       }
 
       await ffmpeg.writeFile('list.txt', concatContent);
-
-      console.log(`[GifMaker] Stitching ${framesData.length} frames to ${outputFormat.toUpperCase()}...`);
+      console.log('[GifMaker] list.txt generated with', framesData.length, 'frames');
 
       const args = [
-        '-threads', '4',
         '-f', 'concat',
         '-safe', '0',
-        '-i', 'list.txt'
+        '-i', 'list.txt',
+        '-fps_mode', 'vfr'
       ];
 
       if (outputFormat === 'gif') {
-        args.push('-filter_complex', `[0:v]split[a][b];[a]palettegen[p];[b][p]paletteuse`);
-        args.push('-f', 'gif');
-      } else if (outputFormat === 'apng') {
-        args.push('-f', 'apng');
-        args.push('-plays', '0');
-      } else if (outputFormat === 'webp') {
-        args.push('-c:v', 'libwebp');
-        args.push('-lossless', '0');
+        // High quality palette generation + force single thread for concat stability
+        args.push('-vf', 'split[a][b];[a]palettegen[p];[b][p]paletteuse');
         args.push('-loop', '0');
-        args.push('-preset', 'default');
+        args.push('-threads', '1');
+      } else if (outputFormat === 'apng') {
+        args.push('-f', 'apng', '-plays', '0', '-threads', '1');
+      } else if (outputFormat === 'webp') {
+        args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', '0', '-threads', '1');
       }
 
       args.push('-y', outputFilename);
 
-      await ffmpeg.exec(args);
+      console.log('[GifMaker] Executing FFmpeg with args:', args.join(' '));
+      try {
+        await ffmpeg.exec(args);
+      } catch (execErr) {
+        console.warn('[GifMaker] FFmpeg exec reported an issue (often an Abort in WASM), checking for output file anyway...', execErr);
+      }
 
-      setProgress(95);
       const mimeType = outputFormat === 'gif' ? 'image/gif' : (outputFormat === 'apng' ? 'image/apng' : 'image/webp');
-      const url = await readFileFromFFmpeg(ffmpeg, outputFilename, mimeType);
-      setResultGif(url);
-      setProgress(100);
+
+      try {
+        const url = await readFileFromFFmpeg(ffmpeg, outputFilename, mimeType);
+        setResultGif(url);
+        setProgress(100);
+      } catch (readErr) {
+        throw new Error(`The ${outputFormat.toUpperCase()} file could not be retrieved from the engine. It may have failed to render.`);
+      }
 
       // Cleanup
       for (const f of frameFiles) {
@@ -339,10 +411,17 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
     }
   };
 
-  // ... (Rest of UI is mostly fine, minor updates for loading state)
+  const handleDownload = () => {
+    if (resultGif) {
+      const a = document.createElement('a');
+      a.href = resultGif;
+      a.download = `created.${outputFormat}`;
+      a.click();
+    }
+  };
 
   if (engineStatus === 'loading') {
-    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-pink-500" /></div>;
+    return <div className="flex justify-center p-12"><Loader2 className="animate-spin text-indigo-500" /></div>;
   }
 
   if (engineStatus === 'error') {
@@ -352,26 +431,17 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
           <AlertCircle size={32} />
         </div>
         <h3 className="text-xl font-bold text-white">Engine Failed</h3>
-        <p className="text-zinc-400 max-w-md">The GIF engine could not load.</p>
-        {errorMessage && (
-          <p className="text-red-400 text-sm font-mono bg-black/50 p-2 rounded max-w-lg mx-auto">
-            {errorMessage}
-          </p>
-        )}
+        <p className="text-zinc-400">The GIF engine could not load.</p>
         <Button onClick={() => window.location.reload()} variant="secondary">Reload Page</Button>
       </div>
     );
   }
 
-  // Helper render code...
-  // (Paste full component with FFmpeg logic)
-
   if (files.length === 0) {
-    // ... (Keep existing empty state but update types/imports)
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
             {outputFormat === 'apng' ? 'APNG Maker' : 'GIF Maker'}
           </h2>
           <p className="text-zinc-400">Create animated {outputFormat.toUpperCase()}s from a series of images.</p>
@@ -390,234 +460,310 @@ export const GifMaker: React.FC<GifMakerProps> = ({ outputFormat = 'gif' }) => {
   }
 
   return (
-    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-pink-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
-
-      {/* 1. Navigation Rail / Bottom Bar */}
-      <nav className={`${isMobile ? 'order-3 w-full h-16 border-t flex-row justify-around' : 'order-1 w-16 border-r flex-col py-4'} border-zinc-900 bg-zinc-950 flex items-center shrink-0 z-30`}>
-        <button
-          onClick={() => setActiveTab('photos')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'photos' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Layers size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Frames</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'settings' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square mb-4'}`}
-        >
-          <Settings size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Config</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('export')}
-          className={`flex flex-col items-center justify-center gap-1 transition-all ${activeTab === 'export' ? 'text-pink-400' : 'text-zinc-500'} ${isMobile ? 'flex-1' : 'w-full aspect-square'}`}
-        >
-          <Play size={isMobile ? 22 : 20} />
-          <span className="text-[10px] font-medium uppercase tracking-wider">Render</span>
-        </button>
-      </nav>
-
-      {/* 2. Settings / Content Panel */}
-      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 h-[85vh] shadow-2xl'}`}>
+      <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-semibold text-sm text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-            {activeTab === 'photos' && <><Film size={16} className="text-pink-500" /> Storyboard</>}
-            {activeTab === 'settings' && <><Settings size={16} className="text-zinc-400" /> Animation</>}
-            {activeTab === 'export' && <><Download size={16} className="text-zinc-400" /> Finalize</>}
+          <h2 className="font-bold text-xs text-zinc-100 flex items-center gap-2.5 tracking-tight font-['Unbounded']">
+            <Film size={16} className="text-indigo-400" /> {outputFormat === 'apng' ? 'Apng Maker' : outputFormat === 'webp' ? 'Webp Maker' : 'Gif Maker'}
           </h2>
-          <button onClick={() => { setFiles([]); setResultGif(null); }} className="text-zinc-600 hover:text-red-400 transition-colors">
+          <button onClick={() => { setFiles([]); setResultGif(null); }} className="text-zinc-600 hover:text-red-400 transition-colors p-1.5 hover:bg-zinc-900 rounded-lg" title="Reset Project">
             <RefreshCcw size={14} />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          {activeTab === 'photos' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              <div className="grid grid-cols-2 gap-2">
-                {files.map((file, i) => (
-                  <div key={i} className="group relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
-                    <img src={file.previewUrl} className="w-full h-full object-cover" alt={`Frame ${i}`} />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button onClick={() => removeFile(i)} className="bg-red-500/80 hover:bg-red-500 p-2 rounded-full text-white transition-colors">
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                    <div className="absolute top-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10 uppercase">
-                      #{i + 1}
-                    </div>
-                  </div>
-                ))}
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square bg-zinc-900/50 rounded-xl border border-zinc-800 border-dashed flex flex-col items-center justify-center cursor-pointer hover:bg-zinc-800 transition-all group"
-                >
-                  <PlusIcon className="w-6 h-6 text-zinc-600 group-hover:text-pink-500 mb-1" />
-                  <span className="text-[10px] text-zinc-600 font-bold uppercase">Add Frame</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="space-y-8 animate-in fade-in duration-300">
 
-          {activeTab === 'settings' && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              <section>
-                <SliderControl
-                  label="Frame Delay"
-                  value={interval}
-                  min={0.1}
-                  max={2.0}
-                  onChange={setInterval}
-                  unit="s"
-                />
-              </section>
+            <section className="space-y-6">
+              <SliderControl
+                label="Frame Delay"
+                value={delay}
+                min={20}
+                max={2000}
+                unit="ms"
+                onChange={setDelay}
+              />
 
-              <section>
-                <SectionLabel>Dimensions</SectionLabel>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                    <span className="text-[10px] text-zinc-600 font-bold block mb-1">Width</span>
-                    <input type="number" value={width} onChange={(e) => setWidth(parseInt(e.target.value) || 400)} className="bg-transparent text-white font-mono w-full outline-none" />
-                  </div>
-                  <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                    <span className="text-[10px] text-zinc-600 font-bold block mb-1">Height</span>
-                    <input type="number" value={height} onChange={(e) => setHeight(parseInt(e.target.value) || 300)} className="bg-transparent text-white font-mono w-full outline-none" />
-                  </div>
-                </div>
-              </section>
-
-              <section>
-                <SectionLabel>Scaling & Transitions</SectionLabel>
-                <div className="space-y-2">
-                  <div className="flex bg-zinc-900 rounded-xl p-1 gap-1">
-                    {(['fit', 'zoom', 'stretch'] as const).map((m) => (
-                      <button key={m} onClick={() => setFitMode(m)} className={`flex-1 py-1.5 rounded-lg transition-colors text-[10px] uppercase font-bold text-center ${fitMode === m ? 'bg-zinc-800 text-pink-400' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                        {m}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex bg-zinc-900 rounded-xl p-1 gap-1">
-                    {(['none', 'crossfade'] as const).map((e) => (
-                      <button key={e} onClick={() => setEffect(e)} className={`flex-1 py-1.5 rounded-lg transition-colors text-[10px] uppercase font-bold text-center ${effect === e ? 'bg-zinc-800 text-pink-400' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                        {e === 'none' ? 'Cut' : 'Fade'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          {activeTab === 'export' && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {resultGif ? (
-                <div className="space-y-4">
-                  <div className="aspect-square rounded-xl overflow-hidden border border-zinc-800 bg-black flex items-center justify-center">
-                    <img src={resultGif} className="max-w-full max-h-full object-contain" alt="Preview" />
-                  </div>
-                  <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-sm font-bold"
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <SectionLabel>Dimension Config</SectionLabel>
+                  <button
                     onClick={() => {
-                      const a = document.createElement('a');
-                      a.href = resultGif!;
-                      a.download = `created.${outputFormat}`;
-                      a.click();
+                      if (files.length > 0) {
+                        const img = imageCache.current.get(files[0].previewUrl);
+                        if (img) {
+                          setWidth(Math.min(img.naturalWidth, MAX_DIMENSION));
+                          setHeight(Math.min(img.naturalHeight, MAX_DIMENSION));
+                        }
+                      }
                     }}
+                    className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest"
                   >
-                    <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
-                  </Button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="secondary" className="h-10 border-zinc-800" disabled>
-                      <Share2 size={16} className="mr-2" /> Share
-                    </Button>
-                    <Button variant="secondary" className="h-10 text-red-400 border-zinc-800" onClick={() => setResultGif(null)}>
-                      <Undo2 className="mr-2" size={16} /> Edit
-                    </Button>
+                    Match Source
+                  </button>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1 space-y-1">
+                    <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-tight">Width</div>
+                    <input
+                      type="number"
+                      value={width}
+                      onChange={(e) => setWidth(Math.min(MAX_DIMENSION, parseInt(e.target.value) || 400))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm text-zinc-200"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-tight">Height</div>
+                    <input
+                      type="number"
+                      value={height}
+                      onChange={(e) => setHeight(Math.min(MAX_DIMENSION, parseInt(e.target.value) || 300))}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-sm text-zinc-200"
+                    />
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/50">
-                    <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mb-1">Queue Meta</p>
-                    <p className="text-xs text-zinc-400">{files.length} frames ready for stitch.</p>
-                  </div>
-
-                  <Button
-                    className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 border-none shadow-lg shadow-pink-900/20 group relative overflow-hidden"
-                    onClick={handleCreateGif}
-                    disabled={isProcessing}
-                  >
-                    <div className="relative z-10 flex items-center justify-center font-bold tracking-wide uppercase">
-                      {isProcessing ? (
-                        <>
-                          <Loader2 size={18} className="mr-2 animate-spin" />
-                          PROGRESS {progress}%
-                        </>
-                      ) : (
-                        <>
-                          <Film size={18} className="mr-2" /> Render Animation
-                        </>
-                      )}
-                    </div>
-                    {isProcessing && (
-                      <div className="absolute left-0 top-0 bottom-0 bg-white/20 transition-all duration-300 backdrop-blur-[2px]" style={{ width: `${progress}%` }} />
-                    )}
-                  </Button>
-
-                  {errorMessage && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-500 text-xs shadow-sm">
-                      <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                      <p>{errorMessage}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* 3. Preview Area */}
-      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900 shadow-inner`}>
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-        <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
-          <div className={`relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center transition-all duration-500 ${files.length === 0 ? 'opacity-50 scale-95' : 'opacity-100 scale-100'}`}>
-            {files.length > 0 ? (
-              <div className="relative w-full h-full flex items-center justify-center bg-black">
-                <canvas ref={previewCanvasRef} className="max-h-full max-w-full block shadow-2xl" style={{ aspectRatio: `${width}/${height}` }} />
-                <div className="absolute top-4 left-4 flex gap-2">
-                  <span className="bg-pink-500/90 text-[10px] text-white px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md">Live Stream</span>
-                  <span className="bg-black/60 text-[10px] text-zinc-300 px-2 py-1 rounded font-bold uppercase tracking-widest backdrop-blur-md border border-white/5">{width}x{height}</span>
-                </div>
+                {(width >= MAX_DIMENSION || height >= MAX_DIMENSION) && (
+                  <p className="text-[9px] text-yellow-500/80 font-medium italic">
+                    Note: Dimensions capped at {MAX_DIMENSION}px for engine stability.
+                  </p>
+                )}
               </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <select
+                  value={outputFormat}
+                  onChange={(e) => setOutputFormat(e.target.value as any)}
+                  className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-xs font-bold uppercase text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                >
+                  <option value="gif">Export GIF</option>
+                  <option value="apng">Export APNG</option>
+                  <option value="webp">Export WEBP</option>
+                </select>
+              </div>
+
+              <div className="pt-2 border-t border-zinc-900">
+                <button
+                  onClick={() => setIsProCollapsed(!isProCollapsed)}
+                  className="w-full flex items-center justify-between group py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className={isProCollapsed ? 'text-zinc-600' : 'text-yellow-500'} />
+                    <SectionLabel className="!mb-0">Pro Features</SectionLabel>
+                  </div>
+                  {isProCollapsed ? <ChevronRight size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
+                </button>
+
+                {!isProCollapsed && (
+                  <div className="space-y-6 pt-4 animate-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-3">
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest pl-1">Transition Effect</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(['none', 'crossfade'] as const).map(eff => (
+                          <button key={eff} onClick={() => { setEffect(eff); if (eff !== 'none') setIsProMode(true); }} className={`py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${effect === eff ? 'bg-white text-black border-white' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'}`}>
+                            {eff}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest pl-1">Image Fit Mode</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {(['fit', 'zoom', 'stretch'] as const).map(m => (
+                          <button key={m} onClick={() => { setFitMode(m); setIsProMode(true); }} className={`py-2 rounded-xl transition-all text-[10px] font-bold uppercase border ${fitMode === m ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'}`}>
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {!resultGif ? (
+              <Button
+                className="w-full h-14 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
+                onClick={handleGenerate}
+                isLoading={isProcessing}
+                disabled={files.length < 2 || isProcessing}
+              >
+                <Zap size={18} className="mr-2" />
+                {isProcessing ? 'Rendering...' : 'Start Render'}
+              </Button>
             ) : (
-              <div className="text-center p-8 max-w-xs">
-                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-zinc-800">
-                  <ImageIcon size={32} className="text-zinc-700" />
-                </div>
-                <h3 className="text-lg font-bold text-zinc-600 mb-2">No Content</h3>
-                <p className="text-sm text-zinc-700 font-medium">Add some frames to begin your sequence.</p>
+              <div className="space-y-3 animate-slide-up">
+                <Button
+                  className="w-full h-14 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
+                  onClick={handleDownload}
+                >
+                  <Download size={18} className="mr-2" /> Download Output
+                </Button>
+                <Button variant="secondary" className="w-full h-14 border-zinc-800" onClick={() => { setFiles([]); setResultGif(null); }}>
+                  <RefreshCcw size={16} className="mr-2" /> New Project
+                </Button>
               </div>
             )}
           </div>
         </div>
-        {isMobile && <div className="absolute bottom-2 right-4 text-[10px] text-zinc-800 font-bold tracking-widest uppercase">Stage View</div>}
-      </main>
+      </aside>
 
+      <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative flex flex-col min-w-0 min-h-0 bg-[#09090b]`}>
+        {/* Canvas Area */}
+        <div className="flex-1 relative overflow-hidden flex items-center justify-center border-b border-zinc-900 shadow-inner">
+          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+          {/* Viewport Area */}
+          <div
+            ref={viewportRef}
+            className={`relative w-full h-full overflow-hidden flex items-center justify-center ${isPanMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+          >
+            {/* Viewport Toolbar */}
+            {files.length > 0 && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-zinc-900/80 backdrop-blur border border-white/5 p-1 rounded-full shadow-2xl animate-in fade-in zoom-in duration-300">
+                <button
+                  onClick={() => setIsPanMode(!isPanMode)}
+                  className={`p-2 rounded-full transition-colors ${isPanMode ? 'bg-indigo-500 text-white' : 'text-zinc-500 hover:text-white'}`}
+                  title="Pan Tool"
+                >
+                  <Hand size={16} />
+                </button>
+                <div className="w-px h-3 bg-zinc-800 mx-1"></div>
+                <button onClick={() => setZoom(z => Math.max(0.1, z - 0.2))} className="p-2 text-zinc-500 hover:text-white" title="Zoom Out">
+                  <ZoomOut size={16} />
+                </button>
+                <span className="text-[10px] font-mono text-zinc-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
+                <button onClick={() => setZoom(z => Math.min(5, z + 0.2))} className="p-2 text-zinc-500 hover:text-white" title="Zoom In">
+                  <ZoomIn size={16} />
+                </button>
+                <div className="w-px h-3 bg-zinc-800 mx-1"></div>
+                <button
+                  onClick={() => {
+                    if (viewportRef.current && files[0]) {
+                      const img = imageCache.current.get(files[0].previewUrl);
+                      if (img) {
+                        const vw = viewportRef.current.offsetWidth * 0.8;
+                        const vh = viewportRef.current.offsetHeight * 0.8;
+                        const scale = Math.min(vw / img.naturalWidth, vh / img.naturalHeight, 1);
+                        setZoom(scale);
+                        setPan({ x: 0, y: 0 });
+                      }
+                    }
+                  }}
+                  className="p-2 text-zinc-500 hover:text-white"
+                  title="Reset View"
+                >
+                  <Undo2 size={16} />
+                </button>
+              </div>
+            )}
+
+            <div
+              className={`relative transition-all duration-75 ease-out flex items-center justify-center`}
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                willChange: 'transform'
+              }}
+            >
+              <div className={`relative rounded-2xl overflow-hidden flex items-center justify-center transition-opacity duration-500 ${files.length === 0 ? 'opacity-50 scale-95' : 'opacity-100 scale-100 shadow-2xl border border-white/5 bg-zinc-900/50'}`}>
+                {files.length > 0 ? (
+                  <div className="relative flex items-center justify-center">
+                    {resultGif ? (
+                      <img src={resultGif} className="block shadow-2xl max-w-full max-h-full rounded-lg" style={{ width: `${width}px`, height: `${height}px`, objectFit: 'contain' }} alt="Generated Result" />
+                    ) : (
+                      <canvas ref={previewCanvasRef} className="block shadow-2xl" />
+                    )}
+                    {isProcessing && (
+                      <div className="absolute inset-x-4 bottom-4">
+                        <div className="bg-black/60 backdrop-blur-md rounded-2xl p-4 border border-white/10 shadow-2xl animate-slide-up">
+                          <div className="flex items-center gap-4 mb-3">
+                            <div className="relative w-10 h-10 flex items-center justify-center">
+                              <div className="absolute inset-0 border-2 border-indigo-500/20 rounded-full"></div>
+                              <div className="absolute inset-0 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                              <span className="text-[10px] font-bold text-white font-mono">{progress}%</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-xs font-bold uppercase tracking-widest text-white">Rendering {outputFormat.toUpperCase()}</p>
+                              <p className="text-[9px] text-zinc-400 uppercase tracking-widest font-bold">Baking Frames...</p>
+                            </div>
+                          </div>
+                          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500" style={{ width: `${progress}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center p-8 max-w-xs">
+                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6 border border-zinc-800">
+                      <ImageIcon size={32} className="text-zinc-700" />
+                    </div>
+                    <h3 className="text-lg font-bold text-zinc-600 mb-2">No Content</h3>
+                    <p className="text-sm text-zinc-700 font-medium">Add some frames to begin your sequence.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Storyboard Timeline */}
+        {!isMobile && (
+          <div className="h-44 bg-zinc-950 border-t border-zinc-900 flex flex-col shrink-0">
+            <div className="h-10 px-5 flex items-center justify-between border-b border-zinc-900 bg-zinc-900/20">
+              <div className="flex items-center gap-3">
+                <SectionLabel className="!mb-0">Storyboard Timeline</SectionLabel>
+                <span className="text-[10px] text-zinc-500 font-mono bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">{files.length} frames</span>
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest flex items-center gap-1.5 transition-colors"
+              >
+                <Plus size={14} /> Add Frames
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar-h flex items-center gap-3">
+              {files.map((file, i) => (
+                <div key={i} className="group relative h-24 aspect-square shrink-0 bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-all hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5">
+                  <img src={file.previewUrl} className="w-full h-full object-cover" alt={`Frame ${i}`} />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => duplicateFile(i)}
+                      className="bg-zinc-800/90 hover:bg-indigo-500 p-2 rounded-full text-white transition-all shadow-xl hover:scale-110"
+                      title="Duplicate Frame"
+                    >
+                      <Copy size={13} />
+                    </button>
+                    <button
+                      onClick={() => removeFile(i)}
+                      className="bg-zinc-800/90 hover:bg-red-500 p-2 rounded-full text-white transition-all shadow-xl hover:scale-110"
+                      title="Delete Frame"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                  <div className="absolute top-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10">
+                    #{i + 1}
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="h-24 aspect-square shrink-0 border-2 border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-zinc-600 hover:text-indigo-400 hover:border-indigo-500/50 transition-all bg-zinc-900/30 hover:bg-zinc-900/50 group"
+              >
+                <Plus size={20} className="mb-1 transition-transform group-hover:scale-110" />
+                <span className="text-[8px] font-bold uppercase tracking-tighter">Add</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
       <input type="file" ref={fileInputRef} onChange={handleHiddenInputChange} className="hidden" multiple accept="image/*" />
     </div>
   );
 };
 
-// Simple Plus Icon if it's missing from imports
-const PlusIcon = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
-
-const Undo2 = ({ className, size }: { className?: string; size?: number }) => (
-  <svg width={size} height={size} className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-  </svg>
-);
+export default GifMaker;

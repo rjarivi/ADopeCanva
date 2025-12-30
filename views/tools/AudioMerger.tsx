@@ -4,7 +4,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { ListMusic, Plus, Trash2, Download, CheckCircle, AlertCircle } from 'lucide-react';
+import { ListMusic, Music, Plus, Trash2, Download, CheckCircle, AlertCircle } from 'lucide-react';
 
 export const AudioMerger: React.FC = () => {
   const isMobile = useIsMobile();
@@ -109,7 +109,7 @@ export const AudioMerger: React.FC = () => {
     return (
       <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
             Audio Merger
           </h2>
           <p className="text-zinc-400">Combine multiple audio tracks into a single WAV file.</p>
@@ -133,8 +133,8 @@ export const AudioMerger: React.FC = () => {
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-surface rounded-3xl border border-zinc-800 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <ListMusic className="text-cyan-500" /> Tracks ({files.length})
+            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
+              <ListMusic size={14} className="text-indigo-500" /> Tracks ({files.length})
             </h3>
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => { setFiles([]); setMergedBlobUrl(null); }}>Clear All</Button>
@@ -144,7 +144,7 @@ export const AudioMerger: React.FC = () => {
           <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
             {files.map((file, index) => (
               <div key={index} className="flex items-center gap-4 p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl group hover:border-zinc-700 transition-all">
-                <div className="w-8 h-8 rounded-full bg-cyan-500/10 text-cyan-500 flex items-center justify-center font-bold text-xs">
+                <div className="w-8 h-8 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-bold text-xs uppercase">
                   {index + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -175,7 +175,7 @@ export const AudioMerger: React.FC = () => {
       {/* Settings & Action */}
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6 sticky top-6">
-          <h3 className="font-bold text-white">Action</h3>
+          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Action</h3>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-sm text-red-400 flex items-start gap-2">
@@ -187,7 +187,8 @@ export const AudioMerger: React.FC = () => {
           <div className="pt-4">
             {!mergedBlobUrl ? (
               <Button
-                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 border-none shadow-lg shadow-cyan-500/20"
+                className="w-full h-14"
+                size="lg"
                 onClick={handleMerge}
                 isLoading={isProcessing}
                 disabled={files.length < 2 || isProcessing}
@@ -204,8 +205,8 @@ export const AudioMerger: React.FC = () => {
                   download="merged-audio.wav"
                   className="block w-full"
                 >
-                  <Button className="w-full bg-white text-black hover:bg-zinc-200">
-                    <Download size={18} className="mr-2" /> Download WAV
+                  <Button size="lg" className="w-full h-14">
+                    <Download size={20} className="mr-2" /> Download Merged Audio
                   </Button>
                 </a>
                 <Button variant="ghost" className="w-full" onClick={() => { setMergedBlobUrl(null); setFiles([]); }}>
