@@ -65,19 +65,19 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     setUploadProgress(0);
 
     // Simulate upload progress
+    let progress = 0;
     const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            processFiles(files);
-            setIsUploading(false);
-            setUploadProgress(0);
-          }, 200);
-          return 100;
-        }
-        return prev + 10;
-      });
+      progress += 10;
+      setUploadProgress(progress);
+
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => {
+          processFiles(files);
+          setIsUploading(false);
+          setUploadProgress(0);
+        }, 200);
+      }
     }, 50);
   };
 
