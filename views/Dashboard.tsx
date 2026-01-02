@@ -13,6 +13,7 @@ import { AudioReplacer } from './tools/AudioReplacer';
 import { VideoToGif } from './tools/VideoToGif';
 import { AudioMerger } from './tools/AudioMerger';
 import { AudioConverter } from './tools/AudioConverter';
+import { AudioTrimmer } from './tools/AudioTrimmer';
 import { ImageCropper } from './tools/ImageCropper';
 import { PdfSuite } from './tools/DocSuite';
 import { JsonFormatter } from './tools/JsonFormatter';
@@ -69,6 +70,14 @@ export const TOOLS: ToolItem[] = [
         icon: Music,
         component: <AudioConverter />,
         popular: true
+    },
+    {
+        id: 'audio-trimmer',
+        title: 'Audio Trimmer',
+        description: 'Trim and cut audio with waveform visualization.',
+        category: ToolCategory.AUDIO,
+        icon: Scissors,
+        component: <AudioTrimmer />
     },
     {
         id: 'text-tools',
