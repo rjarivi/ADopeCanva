@@ -16,6 +16,14 @@ import { Button } from '../../components/ui/Button';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Types
+type GradientType = 'linear' | 'radial';
+
+interface GradientStop {
+    id: string;
+    color: string;
+    offset: number;
+}
+
 interface Layer {
     id: string;
     type: 'image' | 'text' | 'shape';
@@ -73,6 +81,9 @@ interface Layer {
 
     // State
     locked: boolean;
+    rotation?: number;
+    flipX?: boolean;
+    flipY?: boolean;
 }
 
 const FONTS = [
@@ -142,6 +153,16 @@ const SliderControl = ({ value, min, max, onChange, label, unit = '' }: SliderCo
     );
 };
 
+// Helper: Hex to RGB
+const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+};
+
 export const ImageEditor: React.FC = () => {
     // State
     const isMobile = useIsMobile();
@@ -153,9 +174,26 @@ export const ImageEditor: React.FC = () => {
     const [zoom, setZoom] = useState(1);
     const [bgColor, setBgColor] = useState<string>('transparent'); // or #ffffff
     const [activeTab, setActiveTab] = useState<'canvas' | 'edit' | 'text' | 'layers' | 'shapes'>('canvas');
-    const [navMode, setNavMode] = useState<'sidebar' | 'sidebar-right' | 'top'>('sidebar');
+    const [rightTab, setRightTab] = useState<'layers' | 'edit'>('layers');
+    const [showLeftSidebar, setShowLeftSidebar] = useState(true);
+    const [showRightSidebar, setShowRightSidebar] = useState(true);
     const [isCanvasLocked, setIsCanvasLocked] = useState(false);
+
     const [customFonts, setCustomFonts] = useState<string[]>([]);
+    const [navMode, setNavMode] = useState<'sidebar' | 'sidebar-right' | 'top'>('sidebar');
+
+    // Gradient State
+    const [bgType, setBgType] = useState<'solid' | 'gradient'>('solid');
+    const [gradientType, setGradientType] = useState<GradientType>('linear');
+    const [gradientAngle, setGradientAngle] = useState(90);
+    const [gradientStops, setGradientStops] = useState<GradientStop[]>([
+        { id: '1', color: '#ff0000', offset: 0 },
+        { id: '2', color: '#0000ff', offset: 100 }
+    ]);
+
+    // Text Editing State
+    const [editingTextLayerId, setEditingTextLayerId] = useState<string | null>(null);
+    const [editingTextValue, setEditingTextValue] = useState('');
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -221,6 +259,9 @@ export const ImageEditor: React.FC = () => {
                 type: 'image',
                 visible: true,
                 locked: false,
+                rotation: 0,
+                flipX: false,
+                flipY: false,
                 name: fileData.file.name,
                 x: 0,
                 y: 0,
@@ -329,6 +370,9 @@ export const ImageEditor: React.FC = () => {
             type: 'text',
             visible: true,
             locked: false,
+            rotation: 0,
+            flipX: false,
+            flipY: false,
             name: 'Text Layer',
             x: canvasSize.width / 2,
             y: canvasSize.height / 2,
@@ -387,13 +431,21 @@ export const ImageEditor: React.FC = () => {
             chromaKeyColor: '#000000',
             chromaKeyTolerance: 0,
             locked: false,
+            rotation: 0,
+            flipX: false,
+            flipY: false,
             emojiContent: emoji,
             cornerRadius: 0,
             points: 5
         };
         setLayers(prev => [newLayer, ...prev]);
         setActiveLayerId(newLayer.id);
-        setActiveTab('edit'); // Switch to edit to customize
+        if (isMobile) {
+            setActiveTab('edit');
+        } else {
+            setRightTab('edit');
+            setShowRightSidebar(true);
+        }
     };
 
     const duplicateLayer = (id: string) => {
@@ -501,8 +553,36 @@ export const ImageEditor: React.FC = () => {
         // Clear and fill background
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        if (bgColor !== 'transparent') {
-            ctx.fillStyle = bgColor;
+        if (bgType === 'solid') {
+            if (bgColor !== 'transparent') {
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        } else {
+            // Gradient Background
+            let gradient: CanvasGradient;
+            if (gradientType === 'linear') {
+                // Calculate simple coords based on angle
+                const rad = (gradientAngle * Math.PI) / 180;
+                const len = Math.max(canvas.width, canvas.height);
+                const x0 = canvas.width / 2 + Math.cos(rad + Math.PI) * len;
+                const y0 = canvas.height / 2 + Math.sin(rad + Math.PI) * len;
+                const x1 = canvas.width / 2 + Math.cos(rad) * len;
+                const y1 = canvas.height / 2 + Math.sin(rad) * len;
+                gradient = ctx.createLinearGradient(x0, y0, x1, y1);
+            } else {
+                gradient = ctx.createRadialGradient(
+                    canvas.width / 2, canvas.height / 2, 0,
+                    canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) / 2
+                );
+            }
+
+            // Sort stops by offset to prevent rendering glitches
+            const sortedStops = [...gradientStops].sort((a, b) => a.offset - b.offset);
+            sortedStops.forEach(stop => {
+                gradient.addColorStop(stop.offset / 100, stop.color);
+            });
+            ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -520,55 +600,65 @@ export const ImageEditor: React.FC = () => {
             // Apply filters
             ctx.filter = `brightness(${layer.brightness}%) contrast(${layer.contrast}%) saturate(${layer.saturation}%) sepia(${layer.sepia}%) invert(${layer.invert}%) grayscale(${layer.grayscale}%) blur(${layer.blur}px)`;
 
+            // Apply Transformations (Rotation/Flip)
+            if (layer.rotation || layer.flipX || layer.flipY) {
+                const cx = layer.x + (layer.width || 0) / 2;
+                const cy = layer.y + (layer.height || 0) / 2;
+                ctx.translate(cx, cy);
+                if (layer.rotation) ctx.rotate((layer.rotation * Math.PI) / 180);
+                if (layer.flipX || layer.flipY) ctx.scale(layer.flipX ? -1 : 1, layer.flipY ? -1 : 1);
+                ctx.translate(-cx, -cy);
+            }
+
             if (layer.type === 'image' && layer.image) {
                 if (layer.chromaKeyEnabled) {
                     // Create temporary canvas for processing
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = layer.width!;
-                    tempCanvas.height = layer.height!;
+                    tempCanvas.width = layer.image.width;
+                    tempCanvas.height = layer.image.height;
                     const tempCtx = tempCanvas.getContext('2d');
-
                     if (tempCtx) {
-                        // Draw the CROPPED image into the temp canvas, filling it
-                        const sx = layer.cropX || 0;
-                        const sy = layer.cropY || 0;
-                        const sw = layer.cropWidth || layer.image.width;
-                        const sh = layer.cropHeight || layer.image.height;
-
-                        tempCtx.drawImage(layer.image, sx, sy, sw, sh, 0, 0, layer.width!, layer.height!);
-
-                        const imageData = tempCtx.getImageData(0, 0, layer.width!, layer.height!);
+                        tempCtx.drawImage(layer.image, 0, 0);
+                        const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
                         const data = imageData.data;
-
-                        // Hex to RGB
-                        const hex = layer.chromaKeyColor.replace('#', '');
-                        const r = parseInt(hex.substring(0, 2), 16);
-                        const g = parseInt(hex.substring(2, 4), 16);
-                        const b = parseInt(hex.substring(4, 6), 16);
+                        const targetColor = hexToRgb(layer.chromaKeyColor); // Assuming hexToRgb is defined elsewhere
                         const tolerance = layer.chromaKeyTolerance;
 
-                        // Scaled tolerance
-                        const threshold = tolerance * 3;
-
-                        for (let i = 0; i < data.length; i += 4) {
-                            const dr = Math.abs(data[i] - r);
-                            const dg = Math.abs(data[i + 1] - g);
-                            const db = Math.abs(data[i + 2] - b);
-
-                            if (dr + dg + db < threshold) {
-                                data[i + 3] = 0; // Transparent
+                        if (targetColor) {
+                            for (let i = 0; i < data.length; i += 4) {
+                                const r = data[i];
+                                const g = data[i + 1];
+                                const b = data[i + 2];
+                                const distance = Math.sqrt(
+                                    Math.pow(r - targetColor.r, 2) +
+                                    Math.pow(g - targetColor.g, 2) +
+                                    Math.pow(b - targetColor.b, 2)
+                                );
+                                if (distance < tolerance) {
+                                    data[i + 3] = 0; // Set alpha to 0
+                                }
                             }
+                            tempCtx.putImageData(imageData, 0, 0);
+                            ctx.drawImage(tempCanvas, layer.cropX || 0, layer.cropY || 0, layer.cropWidth || layer.image.width, layer.cropHeight || layer.image.height, layer.x, layer.y, layer.width || 0, layer.height || 0);
+                        } else {
+                            ctx.drawImage(layer.image, layer.cropX || 0, layer.cropY || 0, layer.cropWidth || layer.image.width, layer.cropHeight || layer.image.height, layer.x, layer.y, layer.width || 0, layer.height || 0);
                         }
-
-                        tempCtx.putImageData(imageData, 0, 0);
-                        ctx.drawImage(tempCanvas, layer.x, layer.y, layer.width!, layer.height!);
                     }
-                } else {
-                    const sx = layer.cropX || 0;
-                    const sy = layer.cropY || 0;
-                    const sw = layer.cropWidth || layer.image.width;
-                    const sh = layer.cropHeight || layer.image.height;
-                    ctx.drawImage(layer.image, sx, sy, sw, sh, layer.x, layer.y, layer.width!, layer.height!);
+                }
+            } else if (layer.type === 'text' && layer.text) {
+                // SKIP RENDERING IF WE ARE CURRENTLY EDITING THIS TEXT LAYER
+                if (layer.id !== editingTextLayerId) {
+                    ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize || 40}px ${layer.fontFamily || 'Arial'}`;
+                    ctx.fillStyle = layer.color || '#ffffff';
+                    ctx.textAlign = layer.textAlign || 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(layer.text, layer.x, layer.y);
+                    if (layer.textDecoration === 'underline') {
+                        const metrics = ctx.measureText(layer.text);
+                        const width = metrics.width;
+                        const height = layer.fontSize || 40;
+                        ctx.fillRect(layer.x - width / 2, layer.y + height / 2, width, height / 10);
+                    }
                 }
             } else if (layer.type === 'shape') {
                 ctx.fillStyle = layer.fillColor || '#000000';
@@ -744,7 +834,7 @@ export const ImageEditor: React.FC = () => {
             ctx.restore();
         });
 
-    }, [layers, canvasSize, bgColor, layers.map(l => l.chromaKeyEnabled)]);
+    }, [layers, canvasSize, bgColor, bgType, gradientType, gradientAngle, gradientStops, layers.map(l => l.chromaKeyEnabled)]);
 
     // Actions
     const updateLayer = (id: string, updates: Partial<Layer>) => {
@@ -900,24 +990,54 @@ export const ImageEditor: React.FC = () => {
                     }
                     // Side handles for text are ignored for now (could be used for wrapping later)
                 } else {
-                    if (resizeDirection.includes('e')) {
-                        newAttrs.width = Math.max(minSize, iw + dx);
-                    }
-                    if (resizeDirection.includes('w')) {
-                        const desiredW = iw - dx;
-                        if (desiredW >= minSize) {
-                            newAttrs.x = ix + dx;
-                            newAttrs.width = desiredW;
+                    const isCorner = resizeDirection.length === 2;
+
+                    if (isCorner) {
+                        // Proportional Resize for Corners
+                        const ratio = iw / ih;
+                        let newW = iw;
+
+                        if (resizeDirection.includes('e')) {
+                            newW = Math.max(minSize, iw + dx);
+                        } else if (resizeDirection.includes('w')) {
+                            newW = Math.max(minSize, iw - dx);
                         }
-                    }
-                    if (resizeDirection.includes('s')) {
-                        newAttrs.height = Math.max(minSize, ih + dy);
-                    }
-                    if (resizeDirection.includes('n')) {
-                        const desiredH = ih - dy;
-                        if (desiredH >= minSize) {
-                            newAttrs.y = iy + dy;
-                            newAttrs.height = desiredH;
+
+                        // Calculate height based on aspect ratio
+                        const newH = newW / ratio;
+
+                        // Apply
+                        newAttrs.width = newW;
+                        newAttrs.height = newH;
+
+                        // Adjust positions if resizing from Left or Top
+                        if (resizeDirection.includes('w')) {
+                            newAttrs.x = ix + (iw - newW);
+                        }
+                        if (resizeDirection.includes('n')) {
+                            newAttrs.y = iy + (ih - newH);
+                        }
+                    } else {
+                        // Normal Non-Proportional Resize for Sides
+                        if (resizeDirection.includes('e')) {
+                            newAttrs.width = Math.max(minSize, iw + dx);
+                        }
+                        if (resizeDirection.includes('w')) {
+                            const desiredW = iw - dx;
+                            if (desiredW >= minSize) {
+                                newAttrs.x = ix + dx;
+                                newAttrs.width = desiredW;
+                            }
+                        }
+                        if (resizeDirection.includes('s')) {
+                            newAttrs.height = Math.max(minSize, ih + dy);
+                        }
+                        if (resizeDirection.includes('n')) {
+                            const desiredH = ih - dy;
+                            if (desiredH >= minSize) {
+                                newAttrs.y = iy + dy;
+                                newAttrs.height = desiredH;
+                            }
                         }
                     }
                 }
@@ -1169,11 +1289,12 @@ export const ImageEditor: React.FC = () => {
                                                     { id: 'black', value: '#000000', label: 'Black' },
                                                     { id: 'blue', value: '#3b82f6', label: 'Blue' },
                                                     { id: 'red', value: '#ef4444', label: 'Red' },
+                                                    { id: 'iridescent', value: '#d8b4fe', label: 'Iridescent' },
                                                 ].map((c) => (
                                                     <button
                                                         key={c.id}
-                                                        onClick={() => setBgColor(c.value)}
-                                                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-transform hover:scale-110 ${bgColor === c.value ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950' : ''
+                                                        onClick={() => { setBgColor(c.value); setBgType('solid'); }}
+                                                        className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-transform hover:scale-110 ${bgType === 'solid' && bgColor === c.value ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950' : ''
                                                             }`}
                                                         style={{
                                                             background: c.value === 'transparent'
@@ -1184,23 +1305,37 @@ export const ImageEditor: React.FC = () => {
                                                         }}
                                                         title={c.label}
                                                     >
-                                                        {bgColor === c.value && (
+                                                        {bgType === 'solid' && bgColor === c.value && (
                                                             <div className={`w-1.5 h-1.5 rounded-full ${['#ffffff', 'transparent'].includes(c.value) ? 'bg-black' : 'bg-white'}`} />
                                                         )}
                                                     </button>
                                                 ))}
+
+                                                {/* Gradient Toggle Button */}
+                                                <button
+                                                    onClick={() => setBgType('gradient')}
+                                                    className={`w-6 h-6 rounded-full relative flex items-center justify-center transition-transform hover:scale-110 ${bgType === 'gradient' ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-zinc-950' : ''}`}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #1cb5e0 0%, #000851 100%)' // Example attractive gradient
+                                                    }}
+                                                    title="Gradient"
+                                                >
+                                                    {bgType === 'gradient' && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />}
+                                                </button>
                                             </div>
 
                                             <div className="flex items-center gap-2">
                                                 <div className="h-6 w-px bg-zinc-800 mx-1"></div>
                                                 <div className="relative group">
-                                                    <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-500 group-hover:opacity-80 transition-opacity cursor-pointer ring-offset-2 ring-offset-zinc-950 hover:scale-110 items-center flex justify-center">
+                                                    <div className="w-6 h-6 rounded-full group-hover:opacity-80 transition-opacity cursor-pointer ring-offset-2 ring-offset-zinc-950 hover:scale-110 items-center flex justify-center"
+                                                        style={{ background: 'conic-gradient(from 0deg, red, yellow, lime, aqua, blue, magenta, red)' }}
+                                                    >
                                                         {/* Show Indicator if Custom */}
-                                                        {!['transparent', '#ffffff', '#000000', '#3b82f6', '#ef4444'].includes(bgColor) && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />}
+                                                        {bgType === 'solid' && !['transparent', '#ffffff', '#000000', '#3b82f6', '#ef4444', '#d8b4fe'].includes(bgColor) && <div className="w-1.5 h-1.5 bg-white rounded-full shadow-sm" />}
                                                         <input
                                                             type="color"
                                                             value={bgColor === 'transparent' ? '#ffffff' : bgColor}
-                                                            onChange={(e) => setBgColor(e.target.value)}
+                                                            onChange={(e) => { setBgColor(e.target.value); setBgType('solid'); }}
                                                             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                                                             title="Custom Color"
                                                         />
@@ -1208,6 +1343,97 @@ export const ImageEditor: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Gradient Settings */}
+                                        {bgType === 'gradient' && (
+                                            <div className="mt-3 p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg space-y-3 animate-in fade-in slide-in-from-top-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-xs text-zinc-500 font-bold">Gradient Settings</span>
+                                                    <div className="flex gap-1 bg-zinc-900 p-0.5 rounded border border-zinc-800">
+                                                        <button
+                                                            onClick={() => setGradientType('linear')}
+                                                            className={`px-2 py-0.5 text-[10px] rounded transition-colors ${gradientType === 'linear' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                                        >
+                                                            Linear
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setGradientType('radial')}
+                                                            className={`px-2 py-0.5 text-[10px] rounded transition-colors ${gradientType === 'radial' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                                        >
+                                                            Radial
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {gradientType === 'linear' && (
+                                                    <SliderControl
+                                                        label="Angle"
+                                                        value={gradientAngle}
+                                                        min={0} max={360}
+                                                        unit="°"
+                                                        onChange={setGradientAngle}
+                                                    />
+                                                )}
+
+                                                {/* Gradient Bar Preview */}
+                                                <div className="h-4 w-full rounded relative border border-zinc-700"
+                                                    style={{
+                                                        background: `linear-gradient(to right, ${[...gradientStops].sort((a, b) => a.offset - b.offset).map(s => `${s.color} ${s.offset}%`).join(', ')})`
+                                                    }}
+                                                >
+                                                </div>
+
+                                                {/* Stops */}
+                                                <div className="space-y-2">
+                                                    {gradientStops.map((stop, index) => (
+                                                        <div key={stop.id} className="flex items-center gap-2">
+                                                            <div className="relative w-6 h-6 rounded border border-zinc-600 flex-shrink-0">
+                                                                <input
+                                                                    type="color"
+                                                                    value={stop.color}
+                                                                    onChange={(e) => {
+                                                                        setGradientStops(gradientStops.map(s => s.id === stop.id ? { ...s, color: e.target.value } : s));
+                                                                    }}
+                                                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                                                />
+                                                                <div className="w-full h-full rounded" style={{ backgroundColor: stop.color }} />
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <input
+                                                                    type="range"
+                                                                    min={0} max={100}
+                                                                    value={stop.offset}
+                                                                    onChange={(e) => {
+                                                                        setGradientStops(gradientStops.map(s => s.id === stop.id ? { ...s, offset: parseInt(e.target.value) } : s));
+                                                                    }}
+                                                                    className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:rounded-full"
+                                                                />
+                                                            </div>
+                                                            <button
+                                                                onClick={() => {
+                                                                    if (gradientStops.length > 2) {
+                                                                        setGradientStops(gradientStops.filter(s => s.id !== stop.id));
+                                                                    }
+                                                                }}
+                                                                disabled={gradientStops.length <= 2}
+                                                                className={`p-1 rounded ${gradientStops.length <= 2 ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-red-400 hover:bg-zinc-800'}`}
+                                                            >
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        onClick={() => {
+                                                            const newId = Math.random().toString(36).substr(2, 9);
+                                                            setGradientStops([...gradientStops, { id: newId, color: '#ffffff', offset: 50 }]);
+                                                        }}
+                                                        className="w-full py-1.5 text-xs bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded border border-zinc-700 transition-colors"
+                                                    >
+                                                        + Add Stop
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </section>
 
                                     {/* Canvas Transform Section */}
@@ -1970,10 +2196,10 @@ export const ImageEditor: React.FC = () => {
                             </div>
                         )}
                     </div>
-                </div>
+                </div >
 
                 {/* Export Button */}
-                <div className={`${isMobile ? 'p-4 border-t-0' : 'p-4 border-t border-zinc-800'} bg-zinc-950 mt-auto shrink-0 z-10 w-full`}>
+                < div className={`${isMobile ? 'p-4 border-t-0' : 'p-4 border-t border-zinc-800'} bg-zinc-950 mt-auto shrink-0 z-10 w-full`}>
                     <div className="flex items-center gap-2">
                         {!isMobile && (
                             <button
@@ -1994,16 +2220,16 @@ export const ImageEditor: React.FC = () => {
                             Export Image
                         </Button>
                     </div>
-                </div>
-            </div>
+                </div >
+            </div >
 
             {/* Main Canvas Area (Fixed Section on Mobile) */}
-            <div
+            < div
                 style={isMobile ? { height: `${mobileCanvasHeight}vh` } : {}}
                 className={`flex flex-col min-w-0 bg-zinc-950 overflow-hidden ${isMobile ? 'order-1 fixed top-16 left-0 right-0 z-40 border-b border-zinc-900 shadow-md' : 'flex-1 rounded-xl border border-zinc-800'}`}
             >
                 {/* Toolbar */}
-                <div className="h-12 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between px-4">
+                < div className="h-12 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between px-4" >
                     <div className="flex items-center gap-2">
                         <button onClick={() => setZoom(z => Math.max(0.1, z - 0.1))} className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white">
                             <ZoomOut size={18} />
@@ -2041,10 +2267,10 @@ export const ImageEditor: React.FC = () => {
 
 
                     </div>
-                </div>
+                </div >
 
                 {/* Canvas Container */}
-                <div
+                < div
                     ref={containerRef}
                     className="flex-1 overflow-auto bg-zinc-950 relative p-8 flex items-center justify-center origin-center"
                     onMouseDown={(e) => {
@@ -2056,9 +2282,9 @@ export const ImageEditor: React.FC = () => {
                     }}
                 >
                     {/* Dotted Background for the Workspace Area */}
-                    <div className="absolute inset-0 opacity-20 pointer-events-none"
+                    < div className="absolute inset-0 opacity-20 pointer-events-none"
                         style={{ backgroundImage: 'radial-gradient(#4b5563 1px, transparent 1px)', backgroundSize: '20px 20px' }}
-                    ></div>
+                    ></div >
 
                     <div
                         className="relative shadow-2xl shadow-black/50 transition-transform duration-200"
@@ -2147,9 +2373,19 @@ export const ImageEditor: React.FC = () => {
                                         x: x - clickedLayer.x,
                                         y: y - clickedLayer.y
                                     });
-                                    if (clickedLayer.type === 'shape') setActiveTab('edit'); // switch to edit for shapes too?
+                                    if (clickedLayer.type === 'shape') {
+                                        if (isMobile) setActiveTab('edit');
+                                        else { setRightTab('edit'); setShowRightSidebar(true); }
+                                    }
                                     if (clickedLayer.type === 'image') setActiveTab('canvas');
-                                    if (clickedLayer.type === 'text') setActiveTab('text');
+                                    if (clickedLayer.type === 'text') {
+                                        if (isMobile) setActiveTab('text');
+                                        else {
+                                            setActiveTab('text');
+                                            setRightTab('edit');
+                                            setShowRightSidebar(true);
+                                        }
+                                    }
                                 } else {
                                     // Clicked empty space
                                     setActiveLayerId(null);
@@ -2157,7 +2393,99 @@ export const ImageEditor: React.FC = () => {
                                     setIsContextMenuOpen(false);
                                 }
                             }}
+                            onDoubleClick={(e) => {
+                                if (isCanvasLocked) return;
+                                const rect = canvasRef.current?.getBoundingClientRect();
+                                const canvas = canvasRef.current;
+                                if (!rect || !canvas) return;
+
+                                const scaleX = canvasSize.width / rect.width;
+                                const scaleY = canvasSize.height / rect.height;
+                                const x = (e.clientX - rect.left) * scaleX;
+                                const y = (e.clientY - rect.top) * scaleY;
+
+                                const ctx = canvas.getContext('2d');
+                                if (!ctx) return;
+
+                                // Check for text layer hit
+                                const clickedLayer = layers.find(layer => {
+                                    if (!layer.visible || layer.locked || layer.type !== 'text' || !layer.text) return false;
+
+                                    ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize || 40}px ${layer.fontFamily || 'Arial'}`;
+                                    const metrics = ctx.measureText(layer.text);
+                                    const lW = metrics.width;
+                                    const lH = layer.fontSize || 40;
+
+                                    const left = layer.x - lW / 2;
+                                    const right = layer.x + lW / 2;
+                                    const top = layer.y - lH / 2;
+                                    const bottom = layer.y + lH / 2;
+
+                                    return x >= left && x <= right && y >= top && y <= bottom;
+                                });
+
+                                if (clickedLayer) {
+                                    setEditingTextLayerId(clickedLayer.id);
+                                    setEditingTextValue(clickedLayer.text || '');
+                                    setActiveLayerId(clickedLayer.id);
+                                }
+                            }}
                         />
+
+                        {/* Inline Text Editor Overlay */}
+                        {editingTextLayerId && (() => {
+                            const layer = layers.find(l => l.id === editingTextLayerId);
+                            if (!layer || layer.type !== 'text') return null;
+
+                            return (
+                                <textarea
+                                    value={editingTextValue}
+                                    autoFocus
+                                    onChange={(e) => {
+                                        const newVal = e.target.value;
+                                        setEditingTextValue(newVal);
+                                        updateLayer(layer.id, { text: newVal });
+                                    }}
+                                    onBlur={() => setEditingTextLayerId(null)}
+                                    // Make sure it doesn't propagate to canvas drag
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    style={{
+                                        position: 'absolute',
+                                        left: `${layer.x * zoom}px`,
+                                        top: `${layer.y * zoom}px`,
+                                        transform: `translate(-50%, -50%) rotate(${layer.rotation || 0}deg) scale(${layer.flipX ? -1 : 1}, ${layer.flipY ? -1 : 1})`,
+                                        fontSize: `${(layer.fontSize || 40) * zoom}px`,
+                                        fontFamily: layer.fontFamily,
+                                        fontWeight: layer.fontWeight,
+                                        fontStyle: layer.fontStyle,
+                                        color: layer.color,
+                                        opacity: layer.opacity,
+                                        textAlign: layer.textAlign || 'center',
+                                        background: 'transparent',
+                                        border: '1px dashed #3b82f6',
+                                        outline: 'none',
+                                        resize: 'none',
+                                        overflow: 'hidden',
+                                        whiteSpace: 'pre',
+                                        padding: 0,
+                                        margin: 0,
+                                        // Dynamic sizing based on content
+                                        width: (() => {
+                                            const ctx = canvasRef.current?.getContext('2d');
+                                            if (ctx) {
+                                                ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize || 40}px ${layer.fontFamily || 'Arial'}`;
+                                                // Add significant character buffer for caret and typing comfort
+                                                return `${(ctx.measureText(editingTextValue || ' ').width + (layer.fontSize || 40)) * zoom + 20}px`;
+                                            }
+                                            return 'auto';
+                                        })(),
+                                        height: `${(layer.fontSize || 40) * zoom * 1.2}px`, // 1.2 line height buffer
+                                        lineHeight: `${(layer.fontSize || 40) * zoom * 1.2}px`, // Vertically center 
+                                    }}
+                                    className="bg-transparent overflow-hidden place-content-center"
+                                />
+                            );
+                        })()}
 
                         {/* Selection & Resize Overlay */}
 
@@ -2369,7 +2697,7 @@ export const ImageEditor: React.FC = () => {
                         <div className="absolute inset-0 border-2 border-dashed border-zinc-600/50 pointer-events-none z-20"></div>
 
                         {/* Empty State Overlay - Click to Upload */}
-                        {layers.length === 0 && (
+                        {layers.length === 0 && bgType === 'solid' && bgColor === 'transparent' && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
@@ -2392,43 +2720,47 @@ export const ImageEditor: React.FC = () => {
                         {/* Simplified: Just a border for now */}
                         {/* This would be a div overlaying the canvas that matches active layer position * zoom */}
                     </div >
-                </div>
+                </div >
 
                 {/* Mobile Resize Handle */}
-                {isMobile && (
-                    <div
-                        className="h-6 w-full flex items-center justify-center bg-zinc-900 border-t border-zinc-800 absolute bottom-0 left-0 cursor-row-resize z-50 overflow-hidden"
-                        onTouchStart={(e) => {
-                            e.stopPropagation();
-                            setIsResizingMobileCanvas(true);
-                        }}
-                    >
-                        <div className="w-10 h-1 bg-zinc-700/50 rounded-full"></div>
-                    </div>
-                )}
-            </div>
+                {
+                    isMobile && (
+                        <div
+                            className="h-6 w-full flex items-center justify-center bg-zinc-900 border-t border-zinc-800 absolute bottom-0 left-0 cursor-row-resize z-50 overflow-hidden"
+                            onTouchStart={(e) => {
+                                e.stopPropagation();
+                                setIsResizingMobileCanvas(true);
+                            }}
+                        >
+                            <div className="w-10 h-1 bg-zinc-700/50 rounded-full"></div>
+                        </div>
+                    )
+                }
+            </div >
 
             {/* Bottom Navigation Navbar - Fixed on Mobile above App Navbar */}
-            {isMobile && (
-                <div className="order-3 h-16 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900 flex items-center justify-around shrink-0 z-40 fixed bottom-20 left-0 right-0 shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
-                    {['canvas', 'edit', 'text', 'shapes', 'layers'].map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab as any)}
-                            className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab ? 'text-indigo-500' : 'text-zinc-500 hover:text-zinc-300'}`}
-                        >
-                            <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab ? 'bg-indigo-500/10 scale-110' : ''}`}>
-                                {tab === 'canvas' && <Crop size={22} strokeWidth={2.5} />}
-                                {tab === 'edit' && <Sliders size={22} strokeWidth={2.5} />}
-                                {tab === 'text' && <Type size={22} strokeWidth={2.5} />}
-                                {tab === 'shapes' && <Shapes size={22} strokeWidth={2.5} />}
-                                {tab === 'layers' && <Layers size={22} strokeWidth={2.5} />}
-                            </div>
-                            <span className="text-[9px] font-bold uppercase tracking-widest">{tab}</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
+            {
+                isMobile && (
+                    <div className="order-3 h-16 bg-zinc-950/95 backdrop-blur-md border-t border-zinc-900 flex items-center justify-around shrink-0 z-40 fixed bottom-20 left-0 right-0 shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
+                        {['canvas', 'edit', 'text', 'shapes', 'layers'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab as any)}
+                                className={`flex flex-col items-center gap-1 transition-all ${activeTab === tab ? 'text-indigo-500' : 'text-zinc-500 hover:text-zinc-300'}`}
+                            >
+                                <div className={`p-1.5 rounded-xl transition-all ${activeTab === tab ? 'bg-indigo-500/10 scale-110' : ''}`}>
+                                    {tab === 'canvas' && <Crop size={22} strokeWidth={2.5} />}
+                                    {tab === 'edit' && <Sliders size={22} strokeWidth={2.5} />}
+                                    {tab === 'text' && <Type size={22} strokeWidth={2.5} />}
+                                    {tab === 'shapes' && <Shapes size={22} strokeWidth={2.5} />}
+                                    {tab === 'layers' && <Layers size={22} strokeWidth={2.5} />}
+                                </div>
+                                <span className="text-[9px] font-bold uppercase tracking-widest">{tab}</span>
+                            </button>
+                        ))}
+                    </div>
+                )
+            }
+        </div >
     );
 };

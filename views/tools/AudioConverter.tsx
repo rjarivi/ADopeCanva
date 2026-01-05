@@ -51,8 +51,8 @@ export const AudioConverter: React.FC = () => {
     const ffmpeg = ffmpegRef.current;
     // Handle files with spaces or special chars by using a safe name
     const ext = file.file.name.split('.').pop() || 'mp3';
-    const inputName = `input.${ext} `;
-    const outputName = `output.${format.toLowerCase()} `;
+    const inputName = `input.${ext}`;
+    const outputName = `output.${format.toLowerCase()}`;
     setConvertedUrl(null);
 
     try {
@@ -91,7 +91,10 @@ export const AudioConverter: React.FC = () => {
       args.push(outputName);
 
       setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')} `);
-      await ffmpeg.exec(args);
+      const ret = await ffmpeg.exec(args);
+      if (ret !== 0) {
+        throw new Error(`FFmpeg processing failed with code ${ret}. Check logs for details.`);
+      }
 
       const mimeMap: Record<string, string> = {
         'MP3': 'audio/mpeg',
@@ -125,7 +128,7 @@ export const AudioConverter: React.FC = () => {
     const a = document.createElement('a');
     a.href = convertedUrl;
     const nameWithoutExt = file?.file.name.substring(0, file.file.name.lastIndexOf('.')) || 'audio';
-    a.download = `${nameWithoutExt}.${format.toLowerCase()} `;
+    a.download = `${nameWithoutExt}.${format.toLowerCase()}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
