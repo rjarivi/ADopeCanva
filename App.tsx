@@ -7,6 +7,7 @@ import {
 import { Dashboard, TOOLS } from './views/Dashboard';
 import { ToolCategory } from './types';
 import { ProEditor } from './views/ProEditor';
+import { Feedback } from './components/Feedback';
 
 const ToolRenderer = () => {
     const isMobile = useIsMobile();
@@ -174,6 +175,7 @@ const App = () => {
                 setActiveCategory={setActiveCategory}
             >
                 {content}
+                <Feedback />
             </MobileLayout>
         );
     }
@@ -245,6 +247,8 @@ const App = () => {
             <main className={`flex-1 relative scroll-smooth bg-background dot-grid ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {content}
             </main>
+
+            <Feedback />
         </div>
     );
 };
