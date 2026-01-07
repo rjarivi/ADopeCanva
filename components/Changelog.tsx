@@ -19,9 +19,15 @@ const CHANGES: ChangeEntry[] = [
         items: [
             {
                 icon: Rocket,
-                title: 'New "Coming Soon" States',
-                description: 'Marked Image Editor and Studio features as in-development with a sleek new locked UI.',
+                title: 'Studio Guard',
+                description: 'Locked the advanced Studio features behind a "Coming Soon" splash page for later release.',
                 type: 'update'
+            },
+            {
+                icon: Sparkles,
+                title: 'Image Editor Fix & Launch',
+                description: 'The basic Image Editor is now LIVE with visibility fixes confirmed.',
+                type: 'feature'
             },
             {
                 icon: Bug,
@@ -100,9 +106,9 @@ export const Changelog = () => {
                                 <div key={i} className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 hover:border-zinc-700 transition-colors group">
                                     <div className="flex items-start gap-3">
                                         <div className={`p-2 rounded-xl shrink-0 ${item.type === 'feature' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                item.type === 'fix' ? 'bg-green-500/10 text-green-400' :
-                                                    item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
-                                                        'bg-zinc-800 text-zinc-400'
+                                            item.type === 'fix' ? 'bg-green-500/10 text-green-400' :
+                                                item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
+                                                    'bg-zinc-800 text-zinc-400'
                                             }`}>
                                             <item.icon size={18} />
                                         </div>

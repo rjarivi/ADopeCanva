@@ -43,8 +43,7 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <ImageEditor />,
-        popular: true,
-        comingSoon: true
+        popular: true
     },
     {
         id: 'gif-editor',
@@ -53,8 +52,7 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <GifEditor />,
-        popular: true,
-        comingSoon: true
+        popular: true
     },
     {
         id: 'video-to-gif',

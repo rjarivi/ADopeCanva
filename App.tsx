@@ -131,15 +131,12 @@ const App = () => {
                                     <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-4 border border-indigo-500/20 shadow-sm">HOT FEATURE</span>
                                     <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Pro Image Editor</h2>
                                     <p className="text-zinc-400 mb-6">Master your designs with layers, advanced filters, and professional tools.</p>
-                                    <div className="flex items-center gap-4">
-                                        <button
-                                            disabled
-                                            className="bg-zinc-800 text-zinc-500 px-6 py-2.5 rounded-xl font-bold cursor-not-allowed border border-zinc-700 shadow-lg"
-                                        >
-                                            Coming Soon
-                                        </button>
-                                        <span className="text-zinc-500 text-xs font-medium italic animate-pulse">Under Development</span>
-                                    </div>
+                                    <button
+                                        onClick={() => navigate('/image-editor')}
+                                        className="bg-white text-black px-6 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
+                                    >
+                                        Try it out
+                                    </button>
                                 </div>
                             </div>
                         )}
