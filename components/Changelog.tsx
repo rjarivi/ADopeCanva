@@ -97,27 +97,30 @@ export const Changelog = () => {
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-10 min-h-[300px]">
+            <div className="flex-1 overflow-y-auto pr-4 -mr-4 custom-scrollbar space-y-12 py-4">
                 {CHANGES.map((release, idx) => (
-                    <div key={release.version} className="relative pl-6 border-l border-zinc-800">
-                        {/* Dot on timeleline */}
-                        <div className="absolute left-[-5px] top-0 w-[9px] h-[9px] rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                    <div key={release.version} className="relative pl-8 border-l-2 border-zinc-800/50 ml-2">
+                        {/* Dot on timeline */}
+                        <div className="absolute left-[-9px] top-1.5 w-4 h-4 rounded-full bg-zinc-900 border-2 border-indigo-500/50 flex items-center justify-center">
+                            <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                        </div>
 
                         <div className="flex items-center gap-3 mb-6">
-                            <h4 className="text-lg font-bold text-white leading-none">v{release.version}</h4>
-                            <span className="text-xs font-medium text-zinc-500 px-2 py-0.5 bg-zinc-900 rounded-full border border-zinc-800">
+                            <h4 className="text-xl font-black text-white leading-none font-unbounded">v{release.version}</h4>
+                            <div className="h-px flex-1 bg-gradient-to-r from-zinc-800 to-transparent mx-2 opacity-50" />
+                            <span className="text-[10px] font-bold text-zinc-500 px-3 py-1 bg-zinc-900/50 rounded-full border border-zinc-800 uppercase tracking-wider">
                                 {release.date}
                             </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             {release.items.map((item, i) => (
                                 <div key={i} className={`bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-indigo-500/30 transition-all duration-300 group hover:bg-zinc-800/40 ${i === release.items.length - 1 && release.items.length % 2 !== 0 ? 'lg:col-span-2' : ''}`}>
                                     <div className="flex items-start gap-4">
                                         <div className={`p-3 rounded-xl shrink-0 transition-transform group-hover:scale-110 duration-300 ${item.type === 'feature' ? 'bg-indigo-500/10 text-indigo-400' :
-                                                item.type === 'fix' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                    item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
-                                                        'bg-zinc-800/50 text-zinc-400'
+                                            item.type === 'fix' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
+                                                    'bg-zinc-800/50 text-zinc-400'
                                             }`}>
                                             <item.icon size={20} />
                                         </div>
