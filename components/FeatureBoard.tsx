@@ -209,7 +209,7 @@ export const FeatureBoard = () => {
     }
 
     return (
-        <div className="space-y-4 animate-fade-in h-full flex flex-col">
+        <div className="space-y-4 animate-fade-in flex-1 flex flex-col overflow-hidden">
             <div className="flex items-center justify-between shrink-0">
                 <h3 className="text-lg font-bold text-white">Feature Roadmap</h3>
                 <Button size="sm" onClick={() => setShowAddForm(true)}>

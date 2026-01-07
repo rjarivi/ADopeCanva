@@ -62,8 +62,8 @@ export const Feedback = () => {
                     {/* Modal Content */}
                     <div
                         className={`
-                            relative w-full bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 animate-scale-in transition-all duration-300
-                            ${type === 'feature' || type === 'changelog' ? 'max-w-4xl h-[80vh]' : 'max-w-md'}
+                            relative w-full bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 animate-scale-in transition-all duration-300 flex flex-col overflow-hidden
+                            ${type === 'feature' || type === 'changelog' ? 'max-w-4xl h-[85vh]' : 'max-w-md'}
                         `}
                     >
                         <button
