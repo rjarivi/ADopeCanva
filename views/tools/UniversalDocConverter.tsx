@@ -450,6 +450,54 @@ export const UniversalDocConverter: React.FC = () => {
         </button>
     );
 
+    if (!file) {
+        return (
+            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+                {/* Header */}
+                <div className="flex-none space-y-3 mb-10">
+                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center justify-center gap-3 font-unbounded">
+                        <Layers size={32} /> Universal Doc Converter
+                    </h2>
+                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+                        Convert Ebooks, PDFs, Docs, and Images locally.
+                    </p>
+                </div>
+
+                {/* Upload Area */}
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FileUploader
+                        onFileSelect={handleFileSelect}
+                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
+                        label="Upload Document"
+                        description="DOCX, PDF, EPUB, HEIC, and more..."
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                    />
+                </div>
+
+                {/* Feature Highlights */}
+                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+                    {[
+                        { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW' },
+                        { icon: FileText, label: 'Documents', desc: 'Word, PDF, MD' },
+                        { icon: ImageIcon, label: 'Images', desc: 'HEIC, PNG, JPG' },
+                        { icon: Layers, label: 'Batch Ready', desc: 'Client-side Only' }
+                    ].map((feat, i) => (
+                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
+                                <feat.icon size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-10">
             {/* Hidden Preview Area for Canvas Rendering */}
@@ -462,9 +510,12 @@ export const UniversalDocConverter: React.FC = () => {
                     </div>
                     Universal Doc Converter
                 </h2>
-                <p className="text-zinc-400 text-base max-w-2xl mx-auto font-medium">
-                    The ultimate client-side tool for Ebooks, PDFs, Docs, and Images.
-                </p>
+                <button
+                    onClick={() => setFile(null)}
+                    className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full"
+                >
+                    Back to Upload
+                </button>
             </div>
 
             <div className="bg-surface rounded-[2rem] border border-zinc-800 overflow-hidden shadow-2xl flex flex-col lg:flex-row min-h-[520px] backdrop-blur-xl bg-opacity-80">

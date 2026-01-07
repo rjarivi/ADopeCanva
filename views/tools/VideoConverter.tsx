@@ -200,20 +200,47 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
 
   if (!file) {
     return (
-      <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
-            {title}
+      <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+        {/* Header */}
+        <div className="flex-none space-y-3 mb-10">
+          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+            <FileVideo size={32} /> {title}
           </h2>
-          <p className="text-zinc-400">Transform your videos to any format locally using WebAssembly.</p>
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+            Transform videos locally using WebAssembly. No server uploads.
+          </p>
         </div>
-        <div className="p-8 bg-surface rounded-3xl shadow-xl shadow-black/20 border border-zinc-800/50">
+
+        {/* Upload Area */}
+        <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <FileUploader
             onFileSelect={setFile}
             accept={accept}
-            label="Upload File"
+            label="Upload Video"
             description={description}
+            className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+          {[
+            { icon: FileVideo, label: 'All Formats', desc: 'MP4, MOV, MKV & more' },
+            { icon: CheckCircle, label: 'Offline', desc: 'Runs in browser' },
+            { icon: RefreshCcw, label: 'Universal', desc: 'Convert anything' },
+            { icon: Download, label: 'Fast Export', desc: 'Save instantly' }
+          ].map((feat, i) => (
+            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
+              <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
+                <feat.icon size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

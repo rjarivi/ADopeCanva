@@ -217,14 +217,13 @@ export const FeatureBoard = () => {
                 </Button>
             </div>
 
-            <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-[300px]">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-[300px]">
                 {/* Organize by status priority: In Progress -> Requested -> Completed */}
                 {['in-progress', 'requested', 'completed'].map(statusGroup => {
                     const groupFeatures = features.filter(f => f.status === statusGroup);
-                    if (groupFeatures.length === 0) return null;
 
                     return (
-                        <div key={statusGroup} className="space-y-2">
+                        <div key={statusGroup} className="flex flex-col gap-3 min-w-0">
                             <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider sticky top-0 bg-zinc-900 py-1 z-10 flex items-center gap-2">
                                 {getStatusIcon(statusGroup as FeatureStatus)}
                                 {statusGroup.replace('-', ' ')}

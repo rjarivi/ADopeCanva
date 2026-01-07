@@ -4,7 +4,7 @@ import {
     Upload, Layers, Type, Image as ImageIcon, Sliders,
     Download, Plus, X, Move, Trash2, Eye, EyeOff, Lock, Unlock,
     ZoomIn, ZoomOut, Check, Palette, Bold, Italic, Crop,
-    Smartphone, Monitor, Square, Minus, RectangleHorizontal, Layout,
+    Smartphone, Monitor, Square, Minus, RectangleHorizontal, Layout, LayoutTemplate,
     PanelLeft, PanelTop, PanelRight, Shapes, Circle, Triangle, Star, Hexagon, Octagon, Heart, MessageCircle, Smile,
     MoreHorizontal, RotateCw, RotateCcw, Trash, GripHorizontal, AlignLeft, AlignCenter, AlignRight, Underline,
     AlignCenterVertical, AlignCenterHorizontal, AlignStartHorizontal, AlignEndHorizontal, AlignStartVertical, AlignEndVertical,
@@ -200,7 +200,7 @@ export const ImageEditor: React.FC = () => {
     const replaceFileInputRef = useRef<HTMLInputElement>(null);
     const fontInputRef = useRef<HTMLInputElement>(null);
 
-    const [hasStarted, setHasStarted] = useState(true);
+    const [hasStarted, setHasStarted] = useState(false);
     const [customSize, setCustomSize] = useState({ width: 1080, height: 1080 });
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -644,6 +644,8 @@ export const ImageEditor: React.FC = () => {
                             ctx.drawImage(layer.image, layer.cropX || 0, layer.cropY || 0, layer.cropWidth || layer.image.width, layer.cropHeight || layer.image.height, layer.x, layer.y, layer.width || 0, layer.height || 0);
                         }
                     }
+                } else {
+                    ctx.drawImage(layer.image, layer.cropX || 0, layer.cropY || 0, layer.cropWidth || layer.image.width, layer.cropHeight || layer.image.height, layer.x, layer.y, layer.width || 0, layer.height || 0);
                 }
             } else if (layer.type === 'text' && layer.text) {
                 // SKIP RENDERING IF WE ARE CURRENTLY EDITING THIS TEXT LAYER
@@ -1085,6 +1087,69 @@ export const ImageEditor: React.FC = () => {
 
     const minMobileCanvasHeight = 15;
     const maxMobileCanvasHeight = 60;
+
+
+    if (!hasStarted) {
+        return (
+            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+                {/* Header */}
+                <div className="flex-none space-y-3 mb-10">
+                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400 flex items-center justify-center gap-3 font-unbounded">
+                        <ImageIcon size={32} /> Image Studio Pro
+                    </h2>
+                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+                        Advanced layer-based image editing in your browser.
+                    </p>
+                </div>
+
+                {/* Upload Area */}
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <FileUploader
+                        onFileSelect={(f) => {
+                            if (f) {
+                                handleFileUpload(f);
+                                setHasStarted(true);
+                            }
+                        }}
+                        accept="image/*"
+                        label="Open Image"
+                        description="JPG, PNG, WEBP, SVG"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                    />
+                </div>
+
+                {/* Start Blank Option & Features */}
+                <div className="flex-none max-w-4xl mx-auto w-full mt-10 space-y-8">
+                    <button
+                        onClick={handleCreateNew}
+                        className="group flex items-center justify-center gap-2 mx-auto text-zinc-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest px-6 py-3 border border-zinc-800 rounded-xl hover:bg-zinc-800 hover:border-zinc-700"
+                    >
+                        <LayoutTemplate size={16} /> Start with Blank Canvas
+                    </button>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            { icon: Layers, label: 'Layer Support', desc: 'Compositing made easy' },
+                            { icon: Type, label: 'Rich Text', desc: 'Custom fonts & styles' },
+                            { icon: Shapes, label: 'Vector Shapes', desc: 'Geometric primitives' },
+                            { icon: Sliders, label: 'Filters', desc: 'Professional adjustments' }
+                        ].map((feat, i) => (
+                            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
+                                <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
+                                    <feat.icon size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                                    <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className={`flex ${isMobile ? 'flex-col min-h-full bg-zinc-950' : 'flex-col lg:flex-row h-full gap-6'} animate-fade-in relative ${!isMobile && navMode === 'sidebar-right' ? 'lg:flex-row-reverse' : ''}`}>

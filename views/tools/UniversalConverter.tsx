@@ -178,27 +178,29 @@ export const UniversalConverter: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col space-y-6 animate-fade-in p-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                        <ArrowRightLeft className="text-blue-500" /> Universal Converter
-                    </h2>
-                    <p className="text-zinc-400 text-sm">Transform data between JSON, XML, CSV, and YAML.</p>
-                </div>
+        <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            {/* Header */}
+            <div className="flex-none space-y-3 mb-10">
+                <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+                    <ArrowRightLeft size={32} /> Universal Converter
+                </h2>
+                <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+                    Transform data between JSON, XML, CSV, and YAML.
+                </p>
             </div>
 
             {/* Error Banner */}
             {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3 animate-slide-up">
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center justify-center gap-3 animate-slide-up mb-6 max-w-2xl mx-auto">
                     <AlertCircle size={20} />
                     <span className="font-mono text-sm">{error}</span>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
+            {/* Main Converter Area */}
+            <div className="flex-1 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-[500px]">
                 {/* Input Panel */}
-                <div className="flex flex-col bg-surface rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Input</span>
@@ -212,13 +214,13 @@ export const UniversalConverter: React.FC = () => {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={`Paste your ${inputFormat.toUpperCase()} here...`}
-                        className="flex-1 w-full bg-zinc-950 p-4 text-sm font-mono text-zinc-300 outline-none resize-none placeholder:text-zinc-600"
+                        className="flex-1 w-full bg-zinc-950/50 p-6 text-sm font-mono text-zinc-300 outline-none resize-none placeholder:text-zinc-700"
                         spellCheck={false}
                     />
                 </div>
 
                 {/* Output Panel */}
-                <div className="flex flex-col bg-surface rounded-3xl border border-zinc-800 overflow-hidden">
+                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Output</span>
@@ -237,10 +239,29 @@ export const UniversalConverter: React.FC = () => {
                         value={output}
                         readOnly
                         placeholder={`Resulting ${outputFormat.toUpperCase()} will appear here...`}
-                        className="flex-1 w-full bg-black/20 p-4 text-sm font-mono text-blue-400 outline-none resize-none placeholder:text-zinc-700"
+                        className="flex-1 w-full bg-black/40 p-6 text-sm font-mono text-blue-400 outline-none resize-none placeholder:text-zinc-800"
                         spellCheck={false}
                     />
                 </div>
+            </div>
+
+            {/* Feature Highlights */}
+            <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                {[
+                    { icon: FileJson, label: 'JSON Parsing', desc: 'Validate & Format' },
+                    { icon: FileCode, label: 'XML Support', desc: 'Bi-directional' },
+                    { icon: FileSpreadsheet, label: 'CSV Tables', desc: 'Import from Excel' },
+                    { icon: FileText, label: 'YAML Config', desc: 'DevOps friendly' }
+                ].map((feat, i) => (
+                    <div key={i} className="flex flex-col items-center text-center space-y-2 p-2 rounded-xl hover:bg-zinc-900/50 transition-colors">
+                        <div className="text-blue-500/50">
+                            <feat.icon size={16} />
+                        </div>
+                        <div>
+                            <h3 className="text-xs font-bold text-zinc-400">{feat.label}</h3>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
