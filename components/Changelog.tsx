@@ -78,14 +78,23 @@ const CHANGES: ChangeEntry[] = [
 export const Changelog = () => {
     return (
         <div className="space-y-8 animate-fade-in h-full flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between shrink-0">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Rocket className="text-indigo-400" size={20} />
-                    What's New
-                </h3>
-                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded border border-zinc-700/50 uppercase tracking-widest">
-                    Version History
-                </span>
+            <div className="flex items-center justify-between shrink-0 mb-2">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                        <Rocket className="text-indigo-400" size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black text-white tracking-tight font-unbounded">
+                            What's New
+                        </h3>
+                        <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">Latest Updates & Fixes</p>
+                    </div>
+                </div>
+                <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-black text-zinc-500 bg-zinc-800/50 px-3 py-1 rounded-full border border-zinc-700/50 uppercase tracking-widest">
+                        v{CHANGES[0].version}
+                    </span>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-10 min-h-[300px]">
@@ -103,20 +112,20 @@ export const Changelog = () => {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {release.items.map((item, i) => (
-                                <div key={i} className="bg-zinc-900/50 border border-zinc-800/50 rounded-2xl p-4 hover:border-zinc-700 transition-colors group">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`p-2 rounded-xl shrink-0 ${item.type === 'feature' ? 'bg-indigo-500/10 text-indigo-400' :
-                                            item.type === 'fix' ? 'bg-green-500/10 text-green-400' :
-                                                item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
-                                                    'bg-zinc-800 text-zinc-400'
+                                <div key={i} className={`bg-zinc-900/40 border border-zinc-800/50 rounded-2xl p-4 hover:border-indigo-500/30 transition-all duration-300 group hover:bg-zinc-800/40 ${i === release.items.length - 1 && release.items.length % 2 !== 0 ? 'lg:col-span-2' : ''}`}>
+                                    <div className="flex items-start gap-4">
+                                        <div className={`p-3 rounded-xl shrink-0 transition-transform group-hover:scale-110 duration-300 ${item.type === 'feature' ? 'bg-indigo-500/10 text-indigo-400' :
+                                                item.type === 'fix' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                    item.type === 'security' ? 'bg-amber-500/10 text-amber-400' :
+                                                        'bg-zinc-800/50 text-zinc-400'
                                             }`}>
-                                            <item.icon size={18} />
+                                            <item.icon size={20} />
                                         </div>
-                                        <div>
-                                            <h5 className="text-sm font-bold text-zinc-200 mb-1 group-hover:text-white transition-colors">
+                                        <div className="min-w-0">
+                                            <h5 className="text-sm font-bold text-zinc-200 mb-1 group-hover:text-white transition-colors truncate">
                                                 {item.title}
                                             </h5>
-                                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                            <p className="text-[13px] text-zinc-500 leading-relaxed group-hover:text-zinc-400 transition-colors">
                                                 {item.description}
                                             </p>
                                         </div>
