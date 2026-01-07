@@ -5,14 +5,12 @@ declare global {
   interface Window {
     gtag: (command: string, id: string, config?: any) => void;
   }
-}
-
-interface ImportMetaEnv {
-  readonly VITE_FEEDBACK_API_URL: string;
-}
-
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
+  interface ImportMetaEnv {
+    readonly VITE_FEEDBACK_API_URL: string;
+  }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+  }
 }
 
 export enum ToolCategory {

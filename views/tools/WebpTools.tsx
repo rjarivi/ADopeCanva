@@ -7,7 +7,7 @@ import { ImageCompressor } from './ImageCompressor';
 
 // WebP Maker (Images to Animated WebP)
 export const WebpMaker: React.FC = () => {
-    return <GifMaker outputFormat="webp" />;
+    return <GifMaker initialOutputFormat="webp" />;
 };
 
 // Video to WebP
