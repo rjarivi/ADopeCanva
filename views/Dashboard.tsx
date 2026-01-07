@@ -32,6 +32,7 @@ import { UniversalDocConverter } from './tools/UniversalDocConverter';
 import { ApngMaker, VideoToApng, GifToApng, ApngToGif, ApngToWebp, ApngToMp4, MngToApng } from './tools/ApngTools';
 import { WebpMaker, VideoToWebp, GifToWebp, JpgToWebp, PngToWebp, AvifToWebp, WebpToGif, WebpToJpg, WebpToPng, WebpToMp4 } from './tools/WebpTools';
 import { SpreadsheetTools } from './tools/SpreadsheetTools';
+import { QuickVideoEditor } from './tools/QuickVideoEditor';
 import { Tooltip } from '../components/ui/Tooltip';
 
 export const TOOLS: ToolItem[] = [
@@ -42,7 +43,8 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <ImageEditor />,
-        popular: true
+        popular: true,
+        comingSoon: true
     },
     {
         id: 'gif-editor',
@@ -51,7 +53,8 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <GifEditor />,
-        popular: true
+        popular: true,
+        comingSoon: true
     },
     {
         id: 'video-to-gif',
@@ -356,6 +359,15 @@ export const TOOLS: ToolItem[] = [
         component: <JsonFormatter />
     },
     {
+        id: 'quick-video-editor',
+        title: 'Quick Video Editor',
+        description: 'Edit videos with trim, speed, and aspect ratio controls.',
+        category: ToolCategory.VIDEO,
+        icon: Film,
+        component: <QuickVideoEditor />,
+        popular: true
+    },
+    {
         id: 'text-cleaner',
         title: 'Text Cleaner',
         description: 'Remove repetitive phrases and clean formatting.',
@@ -398,6 +410,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
     }, [activeCategory, searchQuery]);
 
     const handleToolClick = (tool: ToolItem) => {
+        if (tool.comingSoon) return;
         navigate(`/${tool.id}`);
     };
 
@@ -423,7 +436,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                     <div
                         key={tool.id}
                         onClick={() => handleToolClick(tool)}
-                        className="group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 rounded-3xl transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5 relative flex flex-col h-full"
+                        className={`group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 rounded-3xl transition-all duration-300 relative flex flex-col h-full ${tool.comingSoon ? 'opacity-75 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5'}`}
                     >
                         {/* Background Glow Effect - Isolated in clipped container */}
                         <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
@@ -481,7 +494,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
                             </div>
 
                             <div className="mt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-primary transition-colors pt-2">
-                                Try now <span className="ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
+                                {tool.comingSoon ? (
+                                    <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] bg-zinc-800 px-2 py-1 rounded-md border border-zinc-700">Coming Soon</span>
+                                ) : (
+                                    <>Try now <span className="ml-1 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span></>
+                                )}
                             </div>
                         </div>
                     </div>

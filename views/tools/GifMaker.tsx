@@ -7,6 +7,7 @@ import { FileData } from '../../types';
 import { Image as ImageIcon, Film, Download, Trash2, Settings, RefreshCcw, Play, Loader2, AlertCircle, Plus, Zap, ChevronDown, ChevronRight, ZoomIn, ZoomOut, Maximize, Hand, Undo2, Copy } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { Select } from '../../components/ui/Select';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 
 // Helper function for drawing images (used in both preview and generation)
@@ -49,6 +50,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   const [isProMode, setIsProMode] = useState(false);
   const [isFramesCollapsed, setIsFramesCollapsed] = useState(false);
   const [isProCollapsed, setIsProCollapsed] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Viewport State
   const [zoom, setZoom] = useState(1);
@@ -215,6 +217,38 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       handleFilesSelect(newFiles);
       e.target.value = '';
     }
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    // Create a ghost image if needed, or stick to default
+    e.dataTransfer.effectAllowed = 'move';
+    // Hide the element being dragged slightly?
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault(); // Necessary to allow dropping
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    // Optional: Reorder immediately on hover (smoother)
+    // For now we'll stick to a simple swap on drop for safety, 
+    // or we can implement the immediate swap here.
+    // Let's do immediate swap for better UX as requested.
+
+    setFiles(prev => {
+      const newFiles = [...prev];
+      const draggedItem = newFiles[draggedIndex];
+      newFiles.splice(draggedIndex, 1);
+      newFiles.splice(index, 0, draggedItem);
+      return newFiles;
+    });
+    setDraggedIndex(index);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDraggedIndex(null);
   };
 
   // Interaction Handlers
@@ -439,21 +473,48 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
 
   if (files.length === 0) {
     return (
-      <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
-            {outputFormat === 'apng' ? 'APNG Maker' : 'GIF Maker'}
+      <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+        {/* Header */}
+        <div className="flex-none space-y-3 mb-10">
+          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+            <Film size={32} /> {outputFormat === 'apng' ? 'APNG Maker' : 'GIF Maker'}
           </h2>
-          <p className="text-zinc-400">Create animated {outputFormat.toUpperCase()}s from a series of images.</p>
+          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+            Create animated {outputFormat.toUpperCase()}s from a series of images.
+          </p>
         </div>
-        <div className="p-8 bg-surface rounded-3xl shadow-xl border border-zinc-800/50">
+
+        {/* Upload Area */}
+        <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <FileUploader
             onFilesSelect={handleFilesSelect}
             accept="image/*"
             label="Upload Images"
             description="Select multiple PNG, JPG files"
             multiple={true}
+            className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />
+        </div>
+
+        {/* Feature Highlights */}
+        <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+          {[
+            { icon: ImageIcon, label: 'Multi-Image', desc: 'Drag & drop sequence' },
+            { icon: Film, label: 'Animation', desc: 'Smooth frame control' },
+            { icon: Settings, label: 'Customize', desc: 'Delay & resize' },
+            { icon: Zap, label: 'Pro Effects', desc: 'Transition modes' }
+          ].map((feat, i) => (
+            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
+              <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
+                <feat.icon size={20} />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -463,7 +524,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 h-[85vh] shadow-2xl'}`}>
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-bold text-xs text-zinc-100 flex items-center gap-2.5 tracking-tight font-['Unbounded']">
+          <h2 className="font-bold text-xs text-zinc-100 flex items-center gap-2.5 tracking-tight font-unbounded">
             <Film size={16} className="text-indigo-400" /> {outputFormat === 'apng' ? 'Apng Maker' : outputFormat === 'webp' ? 'Webp Maker' : 'Gif Maker'}
           </h2>
           <button onClick={() => { setFiles([]); setResultGif(null); }} className="text-zinc-600 hover:text-red-400 transition-colors p-1.5 hover:bg-zinc-900 rounded-lg" title="Reset Project">
@@ -530,15 +591,15 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <select
+                <Select
                   value={outputFormat}
-                  onChange={(e) => setOutputFormat(e.target.value as any)}
-                  className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-xs font-bold uppercase text-zinc-400 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                >
-                  <option value="gif">Export GIF</option>
-                  <option value="apng">Export APNG</option>
-                  <option value="webp">Export WEBP</option>
-                </select>
+                  onChange={(val) => setOutputFormat(val as any)}
+                  options={[
+                    { value: 'gif', label: 'Export GIF' },
+                    { value: 'apng', label: 'Export APNG' },
+                    { value: 'webp', label: 'Export WEBP' }
+                  ]}
+                />
               </div>
 
               <div className="pt-2 border-t border-zinc-900">
@@ -598,9 +659,22 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
                 >
                   <Download size={18} className="mr-2" /> Download Output
                 </Button>
-                <Button variant="secondary" className="w-full h-14 border-zinc-800" onClick={() => { setFiles([]); setResultGif(null); }}>
-                  <RefreshCcw size={16} className="mr-2" /> New Project
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    variant="secondary"
+                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300"
+                    onClick={() => setResultGif(null)}
+                  >
+                    <Undo2 size={16} className="mr-2" /> Back to Editor
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-red-400 hover:text-red-300"
+                    onClick={() => { setFiles([]); setResultGif(null); }}
+                  >
+                    <RefreshCcw size={16} className="mr-2" /> New Project
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -727,8 +801,18 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
 
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar-h flex items-center gap-3">
               {files.map((file, i) => (
-                <div key={i} className="group relative h-24 aspect-square shrink-0 bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 transition-all hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5">
-                  <img src={file.previewUrl} className="w-full h-full object-cover" alt={`Frame ${i}`} />
+                <div
+                  key={file.previewUrl} // Use previewUrl as unique key to prevent render issues during swap
+                  className={`group relative h-24 aspect-square shrink-0 bg-zinc-900 rounded-xl overflow-hidden border transition-all 
+                    ${draggedIndex === i ? 'opacity-50 scale-95 border-indigo-500 dashed border-2' : 'border-zinc-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5'}
+                    cursor-grab active:cursor-grabbing
+                  `}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, i)}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDrop={handleDrop}
+                >
+                  <img src={file.previewUrl} className="w-full h-full object-cover pointer-events-none" alt={`Frame ${i}`} />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                     <button
                       onClick={() => duplicateFile(i)}
@@ -745,7 +829,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
                       <Trash2 size={13} />
                     </button>
                   </div>
-                  <div className="absolute top-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10">
+                  <div className="absolute top-1 left-1 bg-black/60 backdrop-blur px-1.5 py-0.5 rounded text-[10px] text-white font-mono border border-white/10 pointer-events-none">
                     #{i + 1}
                   </div>
                 </div>

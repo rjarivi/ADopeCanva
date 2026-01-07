@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Table, FileSpreadsheet, Download, RefreshCw, FileJson, FileCode, CheckCircle, Loader2, AlertCircle } from 'lucide-react';
+import { Table, FileSpreadsheet, Download, RefreshCw, FileJson, FileCode, CheckCircle, Loader2, AlertCircle, ArrowRightLeft } from 'lucide-react';
 
 type ConversionMode = 'excel-to-other' | 'other-to-excel';
 type TargetFormat = 'csv' | 'json' | 'html' | 'txt' | 'xlsx';
@@ -182,77 +182,80 @@ export const SpreadsheetTools: React.FC = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8 animate-fade-in">
+        <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
             {/* Header */}
-            <div className="text-center space-y-4">
-                <h2 className="text-3xl font-bold text-white">Spreadsheet Converter</h2>
-                <p className="text-zinc-400">Convert between Excel, CSV, JSON, and HTML formats instantly.</p>
+            <div className="flex-none space-y-3 mb-10">
+                <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600 flex items-center justify-center gap-3 font-unbounded">
+                    <Table size={32} /> Spreadsheet Converter
+                </h2>
+                <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
+                    Convert between Excel, CSV, JSON, and HTML formats instantly.
+                </p>
 
-                <div className="flex justify-center gap-4">
+                <div className="flex justify-center gap-4 mt-6">
                     <button
                         onClick={() => { setMode('excel-to-other'); setFile(null); setResult(null); }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${mode === 'excel-to-other' ? 'bg-green-600 border-green-500 text-white' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
                     >
                         Excel → Other
                     </button>
                     <button
                         onClick={() => { setMode('other-to-excel'); setFile(null); setResult(null); }}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${mode === 'other-to-excel' ? 'bg-green-600 border-green-500 text-white' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
                     >
                         Other → Excel
                     </button>
                 </div>
             </div>
 
-            <div className="bg-surface rounded-3xl border border-zinc-800 overflow-hidden shadow-xl flex flex-col md:flex-row">
+            {/* Upload Area */}
+            <div className={`flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-green-500/50 transition-colors shadow-2xl ${result ? 'hidden' : 'flex'}`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <FileUploader
+                    onFileSelect={handleFileSelect}
+                    accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
+                    label={mode === 'excel-to-other' ? "Upload Spreadsheet" : "Upload JSON/CSV"}
+                    description={mode === 'excel-to-other' ? "Supports XLSX, XLS, ODS, CSV" : "Supports JSON arrays or CSV text"}
+                    className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-green-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                />
+            </div>
 
-                {/* Input Section */}
-                <div className={`p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 ${result ? 'w-full md:w-1/3' : 'w-full'}`}>
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
-                        label={mode === 'excel-to-other' ? "Upload Spreadsheet" : "Upload JSON/CSV"}
-                        description={mode === 'excel-to-other' ? "Supports XLSX, XLS, ODS, CSV" : "Supports JSON arrays or CSV text"}
-                        compact={!!result}
-                    />
-
-                    {file && !result && (
-                        <div className="mt-6 w-full space-y-4">
-                            {mode === 'excel-to-other' && (
-                                <div className="grid grid-cols-2 gap-2">
-                                    {['csv', 'json', 'html', 'txt'].map(fmt => (
-                                        <button
-                                            key={fmt}
-                                            onClick={() => setTargetFormat(fmt as TargetFormat)}
-                                            className={`p-2 rounded-lg text-sm font-medium border transition-colors ${targetFormat === fmt ? 'bg-green-500/20 border-green-500 text-green-500' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'}`}
-                                        >
-                                            to {fmt.toUpperCase()}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-
-                            <Button
-                                onClick={mode === 'excel-to-other' ? processFile : processOtherToExcel}
-                                disabled={isProcessing}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white"
-                            >
-                                {isProcessing ? <Loader2 className="animate-spin mr-2" /> : <RefreshCw className="mr-2" />}
-                                Convert Now
-                            </Button>
-
-                            {error && (
-                                <div className="bg-red-500/10 text-red-400 p-3 rounded-lg text-xs flex items-center">
-                                    <AlertCircle size={16} className="mr-2" />
-                                    {error}
-                                </div>
-                            )}
+            {/* Feature Highlights (Only show when no result) */}
+            {!result && (
+                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+                    {[
+                        { icon: FileSpreadsheet, label: 'Excel Support', desc: 'XLSX, XLS & ODS' },
+                        { icon: ArrowRightLeft, label: 'Bi-Directional', desc: 'Import & Export' },
+                        { icon: FileJson, label: 'Data Formats', desc: 'JSON, CSV, HTML' },
+                        { icon: Download, label: 'Fast Process', desc: 'Browser-based' }
+                    ].map((feat, i) => (
+                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
+                            <div className="p-2 bg-green-500/10 rounded-full text-green-400">
+                                <feat.icon size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+                            </div>
                         </div>
-                    )}
+                    ))}
                 </div>
+            )}
 
-                {/* Output Section */}
-                {result && (
+            {/* Result Area Wrapper */}
+            {result && (
+                <div className="flex-1 w-full max-w-5xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full min-h-[500px]">
+                    <div className="p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-zinc-800 w-full md:w-1/3">
+                        <FileUploader
+                            onFileSelect={handleFileSelect}
+                            accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
+                            label="Change File"
+                            description="Upload new file"
+                            compact={true}
+                        />
+                    </div>
+
+                    {/* Output Section */}
                     <div className="flex-1 p-8 bg-zinc-900/10 flex flex-col">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-bold text-zinc-300">Conversion Result</h3>
@@ -277,8 +280,8 @@ export const SpreadsheetTools: React.FC = () => {
                             <button onClick={() => { setResult(null); setFile(null); }} className="text-zinc-400 hover:text-white">Convert another</button>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 };

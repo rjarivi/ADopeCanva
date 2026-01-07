@@ -28,7 +28,7 @@ export const TextCleaner: React.FC = () => {
             <div className="flex flex-col h-full bg-zinc-950/30 rounded-3xl border border-zinc-900 overflow-hidden shadow-2xl p-6 space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2">
+                        <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2 font-unbounded">
                             <RefreshCcw className="text-blue-500" />
                             Text Cleaner
                         </h2>

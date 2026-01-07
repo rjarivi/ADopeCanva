@@ -32,6 +32,7 @@ export interface ToolItem {
   category: ToolCategory;
   component: React.ReactNode;
   popular?: boolean;
+  comingSoon?: boolean;
 }
 
 export interface FileData {
