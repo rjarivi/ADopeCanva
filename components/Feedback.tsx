@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { MessageSquare, X, Send, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { FeatureBoard } from './FeatureBoard';
+import { Changelog } from './Changelog';
 import { submitFeedback } from '../utils/feedbackApi';
 
 export const Feedback = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [type, setType] = useState<'feedback' | 'feature' | 'bug'>('feedback');
+    const [type, setType] = useState<'feedback' | 'feature' | 'bug' | 'changelog'>('feedback');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [email, setEmail] = useState('');
@@ -16,7 +17,7 @@ export const Feedback = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        await submitFeedback(type, message, email);
+        await submitFeedback(type as any, message, email);
 
         console.log({ type, message, email });
 
@@ -62,7 +63,7 @@ export const Feedback = () => {
                     <div
                         className={`
                             relative w-full bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-6 animate-scale-in transition-all duration-300
-                            ${type === 'feature' ? 'max-w-4xl h-[80vh]' : 'max-w-md'}
+                            ${type === 'feature' || type === 'changelog' ? 'max-w-4xl h-[80vh]' : 'max-w-md'}
                         `}
                     >
                         <button
@@ -73,7 +74,7 @@ export const Feedback = () => {
                         </button>
 
                         <div className="flex bg-zinc-800/50 p-1 rounded-xl mb-6 relative z-10 w-fit">
-                            {(['feedback', 'feature', 'bug'] as const).map((t) => (
+                            {(['feedback', 'bug', 'feature', 'changelog'] as const).map((t) => (
                                 <button
                                     key={t}
                                     type="button"
@@ -86,13 +87,15 @@ export const Feedback = () => {
                                         }
                                     `}
                                 >
-                                    {t === 'feature' ? 'Roadmap' : t}
+                                    {t === 'feature' ? 'Roadmap' : t === 'changelog' ? 'Updates' : t}
                                 </button>
                             ))}
                         </div>
 
                         {type === 'feature' ? (
                             <FeatureBoard />
+                        ) : type === 'changelog' ? (
+                            <Changelog />
                         ) : !showSuccess ? (
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
