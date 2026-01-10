@@ -34,8 +34,8 @@ export const GifSuite: React.FC = () => {
                 {/* Sidebar Navigation */}
                 <div className="w-full lg:w-72 flex-shrink-0 space-y-8">
                     <div className="px-2">
-                        <h2 className="text-2xl font-bold text-white flex items-center gap-2 mb-2 font-unbounded">
-                            <LayoutGrid className="text-pink-500" /> GIF Studio
+                        <h2 className="text-2xl font-black text-white flex items-center gap-2 mb-2 font-unbounded uppercase tracking-wider">
+                            <LayoutGrid size={24} className="text-pink-400" /> GIF Studio
                         </h2>
                         <p className="text-zinc-500 text-sm">Professional GIF toolkit</p>
                     </div>

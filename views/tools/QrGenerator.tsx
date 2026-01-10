@@ -54,7 +54,7 @@ export const QrGenerator: React.FC = () => {
             {/* Controls */}
             <div className="bg-surface rounded-3xl border border-zinc-800 p-8 flex flex-col justify-center space-y-8">
                 <div className="space-y-2">
-                    <h2 className="text-3xl font-bold text-white flex items-center gap-3 font-unbounded">
+                    <h2 className="text-3xl font-black text-white flex items-center gap-3 font-unbounded">
                         <QrCode className="text-white" size={32} /> QR Generator
                     </h2>
                     <p className="text-zinc-400">Generate high-quality QR codes for URLs, text, or data.</p>

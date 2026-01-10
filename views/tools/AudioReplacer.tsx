@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Music, Video, Volume2, Download, CheckCircle, RefreshCcw, Trash2, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Music, Video, Volume2, Download, CheckCircle, RefreshCcw, Trash2, ArrowRight, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
@@ -183,7 +183,9 @@ export const AudioReplacer: React.FC = () => {
         return (
             <div className="max-w-3xl mx-auto space-y-8 animate-slide-up">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-white">Select New Audio</h2>
+                    <h2 className="text-2xl font-black text-white flex items-center gap-3 font-unbounded">
+                        <Music size={24} className="text-violet-400" /> Select Audio
+                    </h2>
                     <Button variant="ghost" size="sm" onClick={() => setVideoFile(null)}>
                         Back to Video
                     </Button>
@@ -223,7 +225,9 @@ export const AudioReplacer: React.FC = () => {
                 <div className="space-y-6">
                     <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6">
                         <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-bold text-white">Configuration</h3>
+                            <h3 className="text-lg font-black text-white flex items-center gap-2 font-unbounded">
+                                <Settings size={18} className="text-violet-500" /> Configuration
+                            </h3>
                             <Button variant="ghost" size="sm" onClick={resetAll} disabled={isProcessing}>
                                 <RefreshCcw size={16} className="mr-2" /> Reset
                             </Button>

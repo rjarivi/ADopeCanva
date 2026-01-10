@@ -203,7 +203,9 @@ export const UniversalConverter: React.FC = () => {
                 <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Input</span>
+                            <span className="text-xs font-black text-blue-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
+                                <ArrowRightLeft size={16} /> Input
+                            </span>
                             <FormatSelector value={inputFormat} onChange={setInputFormat} />
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => { setInput(''); setOutput(''); setError(null); }}>
@@ -223,7 +225,9 @@ export const UniversalConverter: React.FC = () => {
                 <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Output</span>
+                            <span className="text-xs font-black text-indigo-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
+                                <FileText size={16} /> Output
+                            </span>
                             <FormatSelector value={outputFormat} onChange={setOutputFormat} />
                         </div>
                         <div className="flex items-center gap-2">

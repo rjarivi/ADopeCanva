@@ -327,7 +327,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
               <div className="w-full max-w-xs space-y-6 relative z-10">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-                  <h4 className="text-xl font-bold text-white mt-4">Transcoding...</h4>
+                  <h4 className="text-xl font-black text-white mt-4 font-unbounded uppercase tracking-wider">Transcoding...</h4>
                   <p className="text-xs text-zinc-500">This happens in your browser</p>
                 </div>
                 <div className="space-y-2">
@@ -349,7 +349,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                   <FileVideo size={48} />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white">Ready!</h3>
+                  <h3 className="text-2xl font-black text-white font-unbounded uppercase tracking-wider">Ready!</h3>
                   <p className="text-zinc-500 mt-1">
                     {file.file.name.split('.')[0]}_converted.{targetFormat.toLowerCase()}
                   </p>

@@ -497,8 +497,9 @@ export const ImageEditor: React.FC = () => {
 
             // Delete
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                // Don't delete if editing text? Basic check:
-                if ((e.target as HTMLElement).tagName === 'INPUT') return;
+                // Don't delete if editing text
+                const target = e.target as HTMLElement;
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
                 deleteLayer(activeLayerId);
             }
 
@@ -654,13 +655,21 @@ export const ImageEditor: React.FC = () => {
                     ctx.fillStyle = layer.color || '#ffffff';
                     ctx.textAlign = layer.textAlign || 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(layer.text, layer.x, layer.y);
-                    if (layer.textDecoration === 'underline') {
-                        const metrics = ctx.measureText(layer.text);
-                        const width = metrics.width;
-                        const height = layer.fontSize || 40;
-                        ctx.fillRect(layer.x - width / 2, layer.y + height / 2, width, height / 10);
-                    }
+
+                    const lines = layer.text.split('\n');
+                    const lineHeight = (layer.fontSize || 40) * 1.2;
+                    const initialY = layer.y - ((lines.length - 1) * lineHeight) / 2;
+
+                    lines.forEach((line, i) => {
+                        const lineY = initialY + i * lineHeight;
+                        ctx.fillText(line, layer.x, lineY);
+                        if (layer.textDecoration === 'underline') {
+                            const metrics = ctx.measureText(line);
+                            const width = metrics.width;
+                            const height = layer.fontSize || 40;
+                            ctx.fillRect(layer.x - width / 2, lineY + height / 2, width, height / 10);
+                        }
+                    });
                 }
             } else if (layer.type === 'shape') {
                 ctx.fillStyle = layer.fillColor || '#000000';
@@ -1236,11 +1245,16 @@ export const ImageEditor: React.FC = () => {
                             </div>
 
                             {/* Title Header (Sidebar Mode Desktop) */}
-                            {navMode.startsWith('sidebar') && (
-                                <div className="hidden lg:flex items-center justify-between mb-6 pl-1">
-                                    <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">{activeTab}</h2>
-                                </div>
-                            )}
+                            <div className="hidden lg:flex items-center justify-between mb-6 pl-1 pr-4">
+                                <h2 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                                    {activeTab === 'canvas' && <Monitor size={20} />}
+                                    {activeTab === 'edit' && <Sliders size={20} />}
+                                    {activeTab === 'text' && <Type size={20} />}
+                                    {activeTab === 'shapes' && <Shapes size={20} />}
+                                    {activeTab === 'layers' && <Layers size={20} />}
+                                    {activeTab} Settings
+                                </h2>
+                            </div>
                         </div>
 
                         {/* Content area */}
@@ -2397,9 +2411,14 @@ export const ImageEditor: React.FC = () => {
                                     if (layer.type === 'text' && layer.text) {
                                         // Dynamic measurement for improved accuracy
                                         ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize || 40}px ${layer.fontFamily || 'Arial'}`;
-                                        const metrics = ctx.measureText(layer.text);
-                                        lW = metrics.width;
-                                        lH = layer.fontSize || 40; // Approximate height
+                                        const lines = layer.text.split('\n');
+                                        let maxWidth = 0;
+                                        lines.forEach(line => {
+                                            const w = ctx.measureText(line).width;
+                                            if (w > maxWidth) maxWidth = w;
+                                        });
+                                        lW = maxWidth;
+                                        lH = ((layer.fontSize || 40) * 1.2) * lines.length;
 
                                         // Text is drawn centered at x,y
                                         // ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -2477,9 +2496,14 @@ export const ImageEditor: React.FC = () => {
                                     if (!layer.visible || layer.locked || layer.type !== 'text' || !layer.text) return false;
 
                                     ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize || 40}px ${layer.fontFamily || 'Arial'}`;
-                                    const metrics = ctx.measureText(layer.text);
-                                    const lW = metrics.width;
-                                    const lH = layer.fontSize || 40;
+                                    const lines = layer.text.split('\n');
+                                    let maxWidth = 0;
+                                    lines.forEach(line => {
+                                        const w = ctx.measureText(line).width;
+                                        if (w > maxWidth) maxWidth = w;
+                                    });
+                                    const lW = maxWidth;
+                                    const lH = ((layer.fontSize || 40) * 1.2) * lines.length;
 
                                     const left = layer.x - lW / 2;
                                     const right = layer.x + lW / 2;
@@ -2563,7 +2587,28 @@ export const ImageEditor: React.FC = () => {
                                 let top = y;
 
                                 if (type === 'text') {
-                                    top = y - height / 2;
+                                    // Calculate dynamic dimensions for text
+                                    const canvas = canvasRef.current;
+                                    const ctx = canvas?.getContext('2d');
+                                    let lW = width;
+                                    let lH = height;
+
+                                    if (ctx && activeLayer.text) {
+                                        ctx.font = `${activeLayer.fontStyle || 'normal'} ${activeLayer.fontWeight || 'normal'} ${activeLayer.fontSize || 40}px ${activeLayer.fontFamily || 'Arial'}`;
+                                        const lines = activeLayer.text.split('\n');
+                                        let maxWidth = 0;
+                                        lines.forEach(line => {
+                                            const w = ctx.measureText(line).width;
+                                            if (w > maxWidth) maxWidth = w;
+                                        });
+                                        lW = maxWidth;
+                                        lH = ((activeLayer.fontSize || 40) * 1.2) * lines.length;
+                                    }
+
+                                    top = y - lH / 2;
+                                    width = lW;
+                                    height = lH;
+
                                     if (textAlign === 'center') left = x - width / 2;
                                     else if (textAlign === 'right') left = x - width;
                                 }

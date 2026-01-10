@@ -479,9 +479,14 @@ export const GifEditor: React.FC = () => {
             {/* Settings Side Panel */}
             <div className={`${isMobile ? 'order-2 w-full border-b max-h-[400px]' : 'w-80 border-r h-full'} border-zinc-800 p-6 flex flex-col bg-[#0c0c0e] shrink-0 overflow-y-auto custom-scrollbar`}>
                 <div className="mb-6 flex items-center justify-between">
-                    <h3 className="font-bold text-white text-lg tracking-tight uppercase text-xs text-zinc-500">
-                        {activeTool}
-                    </h3>
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        {activeTool === 'crop' && <Crop size={20} />}
+                        {activeTool === 'transform' && <RotateCw size={20} />}
+                        {activeTool === 'text' && <Type size={20} />}
+                        {activeTool === 'trim' && <Scissors size={20} />}
+                        {activeTool === 'sprite' && <Grid size={20} />}
+                        {activeTool} Settings
+                    </h2>
                 </div>
 
                 <div className="flex-1 space-y-6">

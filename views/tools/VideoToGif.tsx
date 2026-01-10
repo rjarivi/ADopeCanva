@@ -303,9 +303,9 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       {/* 2. Settings Panel */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h3 className="flex items-center gap-2 font-bold text-[10px] text-zinc-500 uppercase tracking-widest">
-            <Film size={14} className="text-indigo-500" /> {outputFormat.toUpperCase()} Generator
-          </h3>
+          <h2 className="flex items-center gap-2 font-black text-xs text-indigo-400 uppercase tracking-widest font-unbounded">
+            <Film size={20} /> {outputFormat.toUpperCase()} Generator
+          </h2>
           <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); setGifUrl(null); }}>
             <RefreshCcw size={14} />
           </Button>

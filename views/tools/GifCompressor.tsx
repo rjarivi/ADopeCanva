@@ -175,9 +175,9 @@ export const GifCompressor: React.FC = () => {
             {/* 1. Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-1 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h3 className="font-bold text-white text-xs uppercase tracking-widest flex items-center gap-2">
-                        <Zap size={14} className="text-indigo-500" /> Optimize
-                    </h3>
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        <Zap size={20} /> Optimize
+                    </h2>
                     <Button variant="ghost" size="sm" onClick={() => { setFile(null); setResultUrl(null); }}>
                         <RefreshCcw size={14} />
                     </Button>

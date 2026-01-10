@@ -50,15 +50,10 @@ export const JsonFormatter: React.FC = () => {
     return (
         <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] min-h-[600px] flex flex-col animate-slide-up">
             <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-xl flex items-center justify-center">
-                        <FileJson size={24} />
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-white font-unbounded">JSON Formatter</h2>
-                        <p className="text-xs text-zinc-500">Validate, Beautify, and Minify</p>
-                    </div>
-                </div>
+                <h2 className="text-2xl font-black text-white font-unbounded flex items-center gap-3">
+                    <FileJson size={32} className="text-yellow-500" /> JSON Formatter
+                </h2>
+                <p className="text-xs text-zinc-500 ml-11">Validate, Beautify, and Minify</p>
 
                 <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => setInput('')} size="sm">

@@ -383,9 +383,10 @@ import { useIsMobile } from '../hooks/useIsMobile';
 
 interface DashboardProps {
     activeCategory: string;
+    setActiveCategory?: (category: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveCategory }) => {
     const navigate = useNavigate();
     const isMobile = useIsMobile();
     const [searchQuery, setSearchQuery] = useState('');
@@ -409,6 +410,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory }) => {
 
     const handleToolClick = (tool: ToolItem) => {
         if (tool.comingSoon) return;
+        if (setActiveCategory) {
+            setActiveCategory(tool.category);
+        }
         navigate(`/${tool.id}`);
     };
 
