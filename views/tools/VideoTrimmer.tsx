@@ -271,8 +271,8 @@ export const VideoTrimmer: React.FC = () => {
             {/* 2. Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <Scissors size={14} className="text-indigo-500" /> Video Editor
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        <Scissors size={20} /> Video Editor
                     </h2>
                     <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors">
                         <Trash2 size={14} />

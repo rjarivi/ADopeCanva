@@ -504,15 +504,12 @@ export const UniversalDocConverter: React.FC = () => {
             <div className="fixed -left-[9999px] top-0 w-[800px] bg-white text-black z-[-1]" ref={previewRef}></div>
 
             <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold text-white flex items-center justify-center gap-3">
-                    <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-500 shadow-inner">
-                        <Layers size={24} />
-                    </div>
-                    Universal Doc Converter
+                <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+                    <Layers size={32} /> Universal Doc Converter
                 </h2>
                 <button
                     onClick={() => setFile(null)}
-                    className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full"
+                    className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full uppercase font-bold tracking-widest text-[10px]"
                 >
                     Back to Upload
                 </button>

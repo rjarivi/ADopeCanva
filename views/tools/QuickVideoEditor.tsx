@@ -319,8 +319,8 @@ export const QuickVideoEditor: React.FC = () => {
             {/* Sidebar: Controls */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-bold text-sm text-zinc-100 flex items-center gap-2">
-                        <Layers size={16} className="text-indigo-500" /> Editor
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        <Layers size={20} /> Studio Editor
                     </h2>
                     <button onClick={() => setFile(null)} className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors">
                         <Trash2 size={16} />

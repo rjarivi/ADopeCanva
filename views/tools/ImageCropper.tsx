@@ -438,7 +438,7 @@ export const ImageCropper: React.FC = () => {
                 <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-green-500/20">
                     <Check size={40} />
                 </div>
-                <h2 className="text-3xl font-bold text-white">Image Ready!</h2>
+                <h2 className="text-3xl font-black text-white font-unbounded">Image Ready!</h2>
                 <div className="bg-surface p-2 rounded-2xl border border-zinc-800 inline-block shadow-2xl relative bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
                     <img
                         src={croppedImage}
@@ -488,8 +488,8 @@ export const ImageCropper: React.FC = () => {
 
             <aside className={`${isMobile ? 'order-2 w-full h-[55vh]' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-bold text-xs text-zinc-100 uppercase tracking-widest flex items-center gap-2">
-                        <Settings size={16} className="text-blue-400" /> Cropper Settings
+                    <h2 className="font-black text-xs text-blue-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        <Crop size={20} /> Cropper Settings
                     </h2>
                     <div className="flex items-center gap-3">
                         <button

@@ -258,7 +258,9 @@ export const SpreadsheetTools: React.FC = () => {
                     {/* Output Section */}
                     <div className="flex-1 p-8 bg-zinc-900/10 flex flex-col">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-zinc-300">Conversion Result</h3>
+                            <h3 className="font-black text-white flex items-center gap-2 font-unbounded text-lg uppercase tracking-wider">
+                                <FileSpreadsheet size={20} className="text-green-500" /> Result
+                            </h3>
                             {downloadUrl && (
                                 <a
                                     href={downloadUrl}

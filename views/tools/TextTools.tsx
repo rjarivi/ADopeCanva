@@ -273,7 +273,7 @@ export const TextTools: React.FC = () => {
         <div className={`max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in ${isMobile ? 'h-full flex flex-col' : 'h-[calc(100vh-100px)]'} space-y-6`}>
             {!isMobile && (
                 <div className="text-center space-y-2 mb-4">
-                    <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
                         <Type size={32} /> Fancy Text Tools
                     </h2>
                     <p className="text-zinc-400">Transform your text into stylish unicode formats.</p>
@@ -314,7 +314,9 @@ export const TextTools: React.FC = () => {
                 {/* Sidebar - Desktop Only */}
                 {!isMobile && (
                     <div className="w-full lg:w-72 flex-shrink-0 bg-surface rounded-2xl border border-zinc-800 p-2 lg:p-4 space-y-1 lg:space-y-2 h-fit lg:h-full overflow-y-auto custom-scrollbar">
-                        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider px-3 mb-4 mt-2 hidden lg:block">Categories</h3>
+                        <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest px-3 mb-4 mt-2 hidden lg:flex items-center gap-2 font-unbounded">
+                            <Menu size={16} /> Categories
+                        </h3>
 
                         {CATEGORIES.map(cat => (
                             <button

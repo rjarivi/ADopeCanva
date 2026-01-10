@@ -9,7 +9,7 @@ import { ToolCategory } from './types';
 import { ProEditor } from './views/ProEditor';
 import { Feedback } from './components/Feedback';
 
-const ToolRenderer = () => {
+const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
     const { toolId } = useParams();
     const tool = TOOLS.find(t => t.id === toolId);
@@ -18,7 +18,7 @@ const ToolRenderer = () => {
         return <Navigate to="/" replace />;
     }
 
-    // Set document title and meta description for SEO
+    // Set document title, meta description, and active category
     useEffect(() => {
         const originalTitle = document.title;
         const metaDesc = document.querySelector('meta[name="description"]');
@@ -29,13 +29,16 @@ const ToolRenderer = () => {
             metaDesc.setAttribute('content', tool.description);
         }
 
+        // Sync active category
+        setActiveCategory(tool.category);
+
         return () => {
             document.title = originalTitle;
             if (metaDesc) {
                 metaDesc.setAttribute('content', originalDesc);
             }
         };
-    }, [tool]);
+    }, [tool, setActiveCategory]);
 
     return (
         <div className={`animate-fade-in h-full ${isMobile ? 'p-0' : 'p-4 md:p-6'}`}>
@@ -72,7 +75,7 @@ const App = () => {
     }, [location]);
 
     // Sync Pro Mode with URL
-    useEffect(() => {
+    React.useLayoutEffect(() => {
         if (location.pathname === '/studio') {
             if (isMobile) {
                 navigate('/', { replace: true });
@@ -143,7 +146,7 @@ const App = () => {
 
                         {/* Tool Grid */}
                         <div className="flex flex-col gap-4">
-                            <Dashboard activeCategory={activeCategory} />
+                            <Dashboard activeCategory={activeCategory} setActiveCategory={setActiveCategory} />
                         </div>
 
                         {!isMobile && (
@@ -175,7 +178,7 @@ const App = () => {
                     </div>
                 } />
 
-                <Route path="/:toolId" element={<ToolRenderer />} />
+                <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
             </Routes>
         </div>
     );

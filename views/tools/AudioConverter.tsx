@@ -238,8 +238,8 @@ export const AudioConverter: React.FC = () => {
           {/* Controls */}
           <div className="space-y-8">
             <div className="space-y-4">
-              <label className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-                <Settings2 size={16} /> Output Settings
+              <label className="text-sm font-black text-indigo-400 flex items-center gap-2 font-unbounded uppercase tracking-widest">
+                <Settings2 size={18} /> Output Settings
               </label>
 
               <div className="space-y-3">
@@ -325,7 +325,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
               <div className="z-10 w-full max-w-[200px] space-y-4">
                 <div className="w-16 h-16 mx-auto border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                 <div className="space-y-1">
-                  <p className="text-white font-medium">Converting...</p>
+                  <p className="text-white font-black font-unbounded uppercase tracking-wider text-sm">Converting...</p>
                   <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}% ` }}></div>
                   </div>
@@ -337,7 +337,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
                   <CheckCircle size={40} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">Ready!</h3>
+                  <h3 className="text-xl font-black text-white font-unbounded uppercase tracking-wider">Ready!</h3>
                   <p className="text-zinc-500 mt-1">
                     {file.file.name.split('.')[0]}_converted.{format.toLowerCase()}
                   </p>

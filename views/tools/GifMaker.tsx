@@ -524,8 +524,8 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 h-[85vh] shadow-2xl'}`}>
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-bold text-xs text-zinc-100 flex items-center gap-2.5 tracking-tight font-unbounded">
-            <Film size={16} className="text-indigo-400" /> {outputFormat === 'apng' ? 'Apng Maker' : outputFormat === 'webp' ? 'Webp Maker' : 'Gif Maker'}
+          <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2.5 font-unbounded">
+            <Film size={20} /> {outputFormat === 'apng' ? 'Apng Maker' : outputFormat === 'webp' ? 'Webp Maker' : 'Gif Maker'}
           </h2>
           <button onClick={() => { setFiles([]); setResultGif(null); }} className="text-zinc-600 hover:text-red-400 transition-colors p-1.5 hover:bg-zinc-900 rounded-lg" title="Reset Project">
             <RefreshCcw size={14} />
@@ -662,17 +662,17 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
                 <div className="flex gap-3">
                   <Button
                     variant="secondary"
-                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300"
+                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 whitespace-nowrap"
                     onClick={() => setResultGif(null)}
                   >
-                    <Undo2 size={16} className="mr-2" /> Back to Editor
+                    <Undo2 size={16} className="mr-2" /> Redo
                   </Button>
                   <Button
                     variant="secondary"
-                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-red-400 hover:text-red-300"
+                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-red-400 hover:text-red-300 whitespace-nowrap"
                     onClick={() => { setFiles([]); setResultGif(null); }}
                   >
-                    <RefreshCcw size={16} className="mr-2" /> New Project
+                    <RefreshCcw size={16} className="mr-2" /> New GIF
                   </Button>
                 </div>
               </div>

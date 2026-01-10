@@ -160,8 +160,8 @@ export const AudioMerger: React.FC = () => {
       <div className="lg:col-span-2 space-y-6">
         <div className="bg-surface rounded-3xl border border-zinc-800 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-2">
-              <ListMusic size={14} className="text-indigo-500" /> Tracks ({files.length})
+            <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+              <ListMusic size={20} /> Tracks ({files.length})
             </h3>
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => { setFiles([]); setMergedBlobUrl(null); }}>Clear All</Button>
@@ -202,7 +202,7 @@ export const AudioMerger: React.FC = () => {
       {/* Settings & Action */}
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6 sticky top-6">
-          <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Action</h3>
+          <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest font-unbounded">Action</h3>
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg text-sm text-red-400 flex items-start gap-2">
@@ -224,7 +224,7 @@ export const AudioMerger: React.FC = () => {
               </Button>
             ) : (
               <div className="space-y-4 animate-fade-in">
-                <div className="flex items-center gap-2 text-green-400 justify-center font-medium bg-green-500/10 p-3 rounded-xl border border-green-500/20">
+                <div className="flex items-center gap-2 text-green-400 justify-center font-black bg-green-500/10 p-3 rounded-xl border border-green-500/20 font-unbounded uppercase tracking-wider text-xs">
                   <CheckCircle size={18} /> Merge Successful
                 </div>
                 <a

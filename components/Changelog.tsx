@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,30 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.2.1',
+        date: 'Jan 10, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'Text Tool Power-Up',
+                description: 'Added support for multi-line text (Enter key) and fixed a critical layer deletion bug when using backspace.',
+                type: 'feature'
+            },
+            {
+                icon: Music,
+                title: 'Audio Precision Control',
+                description: 'Introduced a new dual-handle slider for the Video/Audio Trimmer for frame-perfect loop selection.',
+                type: 'feature'
+            },
+            {
+                icon: Bug,
+                title: 'Navigation & UI Polish',
+                description: 'Fixed header tab syncing when navigating to tools and refined button layouts in the Sidebar.',
+                type: 'fix'
+            }
+        ]
+    },
     {
         version: '1.2.0',
         date: 'Jan 07, 2026',

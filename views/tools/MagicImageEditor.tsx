@@ -174,8 +174,8 @@ export const MagicImageEditor: React.FC = () => {
       {/* 2. Settings Panel (Middle) */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden transition-all' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-          <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-            <Sparkles size={14} className="text-indigo-400" /> Magic Editor
+          <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+            <Sparkles size={20} /> Magic Editor
           </h2>
           <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
             <RefreshCcw size={14} />

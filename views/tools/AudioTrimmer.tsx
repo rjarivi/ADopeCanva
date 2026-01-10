@@ -27,6 +27,8 @@ export const AudioTrimmer: React.FC = () => {
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const ffmpegRef = useRef<FFmpeg | null>(null);
+    const sliderRef = useRef<HTMLDivElement>(null);
+    const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
 
     // Audio Visualizer Canvas
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -97,6 +99,39 @@ export const AudioTrimmer: React.FC = () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current);
         };
     }, [isPlaying]);
+
+    // Handle Global Dragging
+    useEffect(() => {
+        if (!draggingHandle) return;
+
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!sliderRef.current) return;
+            const rect = sliderRef.current.getBoundingClientRect();
+            const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            const percentage = (x / rect.width) * 100;
+
+            if (draggingHandle === 'start') {
+                const newStart = Math.min(percentage, range.end - 1);
+                setRange(prev => ({ ...prev, start: newStart }));
+            } else {
+                const newEnd = Math.max(percentage, range.start + 1);
+                setRange(prev => ({ ...prev, end: newEnd }));
+            }
+            setTrimmedUrl(null);
+        };
+
+        const handleMouseUp = () => {
+            setDraggingHandle(null);
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [draggingHandle, range]);
 
     const togglePlay = () => {
         if (!audioRef.current) return;
@@ -268,8 +303,8 @@ export const AudioTrimmer: React.FC = () => {
             {/* Sidebar Controls */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-semibold text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-2">
-                        <Scissors size={14} className="text-indigo-500" /> Audio Editor
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                        <Scissors size={20} /> Audio Editor
                     </h2>
                     <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors">
                         <Trash2 size={14} />
@@ -340,23 +375,50 @@ export const AudioTrimmer: React.FC = () => {
                             </div>
 
                             {/* Range Slider */}
-                            <div className="relative h-12 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center group">
-                                <div className="absolute left-4 right-4 h-1.5 bg-zinc-800 rounded-full">
+                            <div
+                                className="relative h-12 bg-zinc-900/50 rounded-xl border border-zinc-800 flex items-center group cursor-pointer"
+                                ref={sliderRef}
+                                onMouseDown={(e) => {
+                                    if (!sliderRef.current) return;
+                                    const rect = sliderRef.current.getBoundingClientRect();
+                                    const x = e.clientX - rect.left;
+                                    const percentage = (x / rect.width) * 100;
+
+                                    // Determine closest handle
+                                    const distStart = Math.abs(percentage - range.start);
+                                    const distEnd = Math.abs(percentage - range.end);
+
+                                    if (distStart < distEnd) {
+                                        setRange(prev => ({ ...prev, start: Math.min(percentage, prev.end - 1) }));
+                                        setDraggingHandle('start');
+                                    } else {
+                                        setRange(prev => ({ ...prev, end: Math.max(percentage, prev.start + 1) }));
+                                        setDraggingHandle('end');
+                                    }
+                                }}
+                            >
+                                <div className="absolute left-4 right-4 h-1.5 bg-zinc-800 rounded-full pointer-events-none">
                                     <div
-                                        className="absolute h-full bg-indigo-500/50 rounded-full transition-all duration-100"
+                                        className="absolute h-full bg-indigo-500/50 rounded-full transition-all duration-75"
                                         style={{ left: `${range.start}%`, width: `${range.end - range.start}%` }}
                                     />
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
-                                        style={{ left: `${range.start}%` }}
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 cursor-grab active:cursor-grabbing pointer-events-auto hover:scale-125 transition-transform"
+                                        style={{ left: `${range.start}%`, zIndex: 10 }}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setDraggingHandle('start');
+                                        }}
                                     />
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 pointer-events-none transition-all duration-100"
-                                        style={{ left: `${range.end}%` }}
+                                        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-indigo-500 shadow-lg -translate-x-1/2 cursor-grab active:cursor-grabbing pointer-events-auto hover:scale-125 transition-transform"
+                                        style={{ left: `${range.end}%`, zIndex: 10 }}
+                                        onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setDraggingHandle('end');
+                                        }}
                                     />
                                 </div>
-                                <input type="range" min="0" max="100" value={range.start} onChange={(e) => { setRange(prev => ({ ...prev, start: Math.min(parseInt(e.target.value), prev.end - 1) })); setTrimmedUrl(null); }} className="absolute left-4 right-4 h-full opacity-0 cursor-pointer z-10" />
-                                <input type="range" min="0" max="100" value={range.end} onChange={(e) => { setRange(prev => ({ ...prev, end: Math.max(parseInt(e.target.value), prev.start + 1) })); setTrimmedUrl(null); }} className="absolute left-4 right-4 h-full opacity-0 cursor-pointer z-10" />
                             </div>
                         </section>
 
