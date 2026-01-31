@@ -52,10 +52,11 @@ export const SliderControl: React.FC<{
     value: number,
     min: number,
     max: number,
+    step?: number,
     onChange: (val: number) => void,
     label: string,
     unit?: string
-}> = ({ value, min, max, onChange, label, unit = '' }) => (
+}> = ({ value, min, max, step = 1, onChange, label, unit = '' }) => (
     <div className="group">
         <div className="flex justify-between items-center mb-2">
             <span className="text-xs text-zinc-400">{label}</span>
@@ -63,7 +64,7 @@ export const SliderControl: React.FC<{
         </div>
         <div className="flex items-center gap-3">
             <button
-                onClick={() => onChange(Math.max(min, value - 1))}
+                onClick={() => onChange(Math.max(min, value - step))}
                 className="text-zinc-600 hover:text-white transition-colors p-1 hover:bg-zinc-800 rounded touch-manipulation"
             >
                 <Minus size={12} />
@@ -73,13 +74,14 @@ export const SliderControl: React.FC<{
                     type="range"
                     min={min}
                     max={max}
+                    step={step}
                     value={value}
-                    onChange={(e) => onChange(parseInt(e.target.value))}
+                    onChange={(e) => onChange(parseFloat(e.target.value))}
                     className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:active:scale-110 [&::-webkit-slider-thumb]:hover:bg-white"
                 />
             </div>
             <button
-                onClick={() => onChange(Math.min(max, value + 1))}
+                onClick={() => onChange(Math.min(max, value + step))}
                 className="text-zinc-600 hover:text-white transition-colors p-1 hover:bg-zinc-800 rounded touch-manipulation"
             >
                 <Plus size={12} />

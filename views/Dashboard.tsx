@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -16,7 +16,7 @@ import { AudioConverter } from './tools/AudioConverter';
 import { AudioTrimmer } from './tools/AudioTrimmer';
 import { ImageCropper } from './tools/ImageCropper';
 import { PdfSuite } from './tools/DocSuite';
-import { JsonFormatter } from './tools/JsonFormatter';
+import { CodeFormatter } from './tools/CodeFormatter';
 import { MagicImageEditor } from './tools/MagicImageEditor';
 import { GifSuite } from './tools/GifSuite';
 import { GifMaker } from './tools/GifMaker';
@@ -33,9 +33,34 @@ import { ApngMaker, VideoToApng, GifToApng, ApngToGif, ApngToWebp, ApngToMp4, Mn
 import { WebpMaker, VideoToWebp, GifToWebp, JpgToWebp, PngToWebp, AvifToWebp, WebpToGif, WebpToJpg, WebpToPng, WebpToMp4 } from './tools/WebpTools';
 import { SpreadsheetTools } from './tools/SpreadsheetTools';
 import { QuickVideoEditor } from './tools/QuickVideoEditor';
+import { PdfToText } from './tools/PdfToText';
+import { TextToPdf } from './tools/TextToPdf';
+import { ImageResizer } from './tools/ImageResizer';
+import { PdfToJpg } from './tools/PdfToJpg';
+import { SignatureGenerator } from './tools/SignatureGenerator';
+import { TextUtilities } from './tools/TextUtilities';
 import { Tooltip } from '../components/ui/Tooltip';
+import { ImageConverter } from './tools/ImageConverter';
 
 export const TOOLS: ToolItem[] = [
+    {
+        id: 'image-converter',
+        title: 'Image Converter',
+        description: 'Batch convert images between PNG, JPG, and WebP.',
+        category: ToolCategory.IMAGE,
+        icon: RefreshCcw,
+        component: <ImageConverter />,
+        popular: true
+    },
+    {
+        id: 'signature-generator',
+        title: 'Sign to Gif',
+        description: 'Create animated signatures and export as GIF/MP4.',
+        category: ToolCategory.VIDEO,
+        icon: PenTool,
+        component: <SignatureGenerator />,
+        popular: true
+    },
     {
         id: 'image-editor',
         title: 'Image Editor',
@@ -349,12 +374,12 @@ export const TOOLS: ToolItem[] = [
         component: <WebpToMp4 />
     },
     {
-        id: 'json-parser',
-        title: 'JSON Formatter',
-        description: 'Beautify, minify, and validate JSON code.',
+        id: 'code-formatter',
+        title: 'Code Formatter',
+        description: 'Beautify and minify JSON, HTML, CSS, and XML.',
         category: ToolCategory.DEV,
-        icon: FileJson,
-        component: <JsonFormatter />
+        icon: Code,
+        component: <CodeFormatter />
     },
     {
         id: 'quick-video-editor',
@@ -372,6 +397,50 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.TEXT,
         icon: RefreshCcw,
         component: <TextCleaner />
+    },
+    {
+        id: 'pdf-to-text',
+        title: 'PDF to Text',
+        description: 'Extract text content from PDF documents.',
+        category: ToolCategory.DOCS,
+        icon: FileText,
+        component: <PdfToText />,
+        popular: true
+    },
+    {
+        id: 'text-to-pdf',
+        title: 'Text to PDF',
+        description: 'Convert plain text to PDF documents.',
+        category: ToolCategory.DOCS,
+        icon: FileText,
+        component: <TextToPdf />
+    },
+    {
+        id: 'text-utilities',
+        title: 'Text Utility Suite',
+        description: 'Word count, case converter, slug generator & more.',
+        category: ToolCategory.TEXT,
+        icon: FileText,
+        component: <TextUtilities />,
+        popular: true
+    },
+    {
+        id: 'image-resizer',
+        title: 'Image Resizer',
+        description: 'Resize images with precise dimension control.',
+        category: ToolCategory.IMAGE,
+        icon: Maximize2,
+        component: <ImageResizer />,
+        popular: true
+    },
+    {
+        id: 'pdf-to-jpg',
+        title: 'PDF to JPG',
+        description: 'Convert PDF pages to high-quality JPG images.',
+        category: ToolCategory.DOCS,
+        icon: FileText,
+        component: <PdfToJpg />,
+        popular: true
     },
 ];
 
