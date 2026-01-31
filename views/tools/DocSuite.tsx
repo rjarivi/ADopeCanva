@@ -172,16 +172,17 @@ export const PdfSuite: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500 flex items-center justify-center gap-3 font-unbounded uppercase">
-                        <FileText size={40} /> PDF Studio
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500 flex items-center justify-center gap-3 font-unbounded">
+                        <FileText size={42} /> PDF Studio
                     </h1>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
-                        A professional-grade toolkit to merge, split, and rotate PDF documents with high-performance browser-side processing.
+                        Professional toolkit to merge, split, and rotate PDF documents.
                     </p>
                 </div>
 
                 {/* Upload Area */}
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-red-500/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
                     <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFilesSelect={handleFileSelect}
@@ -190,25 +191,25 @@ export const PdfSuite: React.FC = () => {
                         label={`Upload PDF${mode === 'merge' ? 's' : ''}`}
                         description={mode === 'merge' ? 'Select multiple documents to combine' : 'Select a document to extract or rotate pages'}
                         multiple={mode === 'merge'}
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-red-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-red-500/50 bg-transparent rounded-2xl transition-all"
                     />
                 </div>
 
                 {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                     {[
-                        { icon: Layers, label: 'Merge', desc: 'Combine multiple files' },
-                        { icon: Scissors, label: 'Split', desc: 'Extract specific pages' },
-                        { icon: RotateCw, label: 'Rotate', desc: 'Fix orientation' },
-                        { icon: Download, label: 'Export', desc: 'High quality output' }
+                        { icon: Layers, label: 'Merge', desc: 'Combine Files' },
+                        { icon: Scissors, label: 'Split', desc: 'Extract Pages' },
+                        { icon: RotateCw, label: 'Rotate', desc: 'Fix Orientation' },
+                        { icon: Download, label: 'Export', desc: 'High Quality' }
                     ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-red-500/10 rounded-full text-red-500">
+                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors group">
+                            <div className="p-3 bg-zinc-900 rounded-full text-red-500 group-hover:scale-110 transition-transform shadow-inner">
                                 <feat.icon size={20} />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
+                                <h3 className="text-xs font-black text-zinc-300 uppercase tracking-wider font-unbounded">{feat.label}</h3>
+                                <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{feat.desc}</p>
                             </div>
                         </div>
                     ))}

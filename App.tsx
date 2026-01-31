@@ -160,23 +160,7 @@ const App = () => {
                     </div>
                 } />
 
-                <Route path="/studio" element={
-                    <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center space-y-6">
-                        <div className="w-20 h-20 rounded-3xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-2xl shadow-indigo-500/10">
-                            <Wand2 size={40} className="text-indigo-400 animate-pulse" />
-                        </div>
-                        <div className="space-y-2">
-                            <h2 className="text-4xl font-black tracking-tight text-white font-unbounded">Studio is Coming Soon</h2>
-                            <p className="text-zinc-400 max-w-md mx-auto">We're putting the finishing touches on our professional video editor. Stay tuned for advanced timeline-based editing!</p>
-                        </div>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="bg-white text-black px-8 py-3 rounded-2xl font-bold hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/10"
-                        >
-                            Back to Tools
-                        </button>
-                    </div>
-                } />
+                <Route path="/studio" element={<ProEditor />} />
 
                 <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
             </Routes>
@@ -190,7 +174,7 @@ const App = () => {
                 setActiveCategory={setActiveCategory}
             >
                 {content}
-                <Feedback />
+                {!isProMode && <Feedback />}
             </MobileLayout>
         );
     }
@@ -263,7 +247,7 @@ const App = () => {
                 {content}
             </main>
 
-            <Feedback />
+            {!isProMode && <Feedback />}
         </div>
     );
 };

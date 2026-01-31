@@ -8,7 +8,7 @@ import {
     Download, RefreshCcw, Play, Pause, MonitorPlay,
     Layers, FastForward, Film, Search, X, Loader2,
     Settings2, Crop, CheckCircle, AlertCircle, Trash2, Plus,
-    Undo2, Redo2, SkipBack, SkipForward, Folder, Monitor, Maximize
+    Undo2, Redo2, SkipBack, SkipForward, Folder, Monitor, Maximize, Diamond
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../utils/ffmpeg';
@@ -45,13 +45,20 @@ const RangeControl: React.FC<{ label: string, value: number, min: number, max: n
     </div>
 );
 
+const formatTime = (seconds: number) => {
+    const min = Math.floor(seconds / 60);
+    const sec = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${min}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+};
+
 // Filters & Tools Types
-type EditorTool = 'trim' | 'adjust' | 'transform' | 'text' | 'speed' | 'audio';
+type EditorTool = 'trim' | 'adjust' | 'transform' | 'text' | 'speed' | 'audio' | 'track';
 type SidebarTab = 'files' | 'text' | 'canvas' | 'edit';
 
 interface VideoClip {
     id: string;
-    type: 'video';
+    type: 'video' | 'audio' | 'adjustment';
     file: File;
     url: string; // Blob URL
     start: number; // Timeline start time (seconds)
@@ -67,6 +74,26 @@ interface VideoClip {
     flipV: boolean;
     opacity: number;
     zOrder: number;
+    trackId: string;
+    keyframes?: Keyframe[];
+}
+
+interface Keyframe {
+    id: string;
+    time: number; // relative to clip start (seconds)
+    value: number;
+    property: 'opacity' | 'scale' | 'x' | 'y' | 'rotation';
+    easing?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+}
+
+interface TimelineTrack {
+    id: string;
+    name: string;
+    type: 'video' | 'audio' | 'adjustment';
+    isVisible: boolean;
+    isMuted: boolean;
+    isLocked: boolean;
+    height: number;
 }
 
 interface ProjectSettings {
@@ -75,6 +102,14 @@ interface ProjectSettings {
     backgroundColor: string;
     zoom: number; // Timeline zoom (pixels per second)
 }
+
+const FONT_PRESETS = [
+    { name: 'Roboto', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf', family: 'sans-serif' },
+    { name: 'Oswald', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/oswald/Oswald%5Bwght%5D.ttf', family: 'sans-serif' },
+    { name: 'Dancing Script', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf', family: 'cursive' },
+    { name: 'Permanent Marker', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/permanentmarker/PermanentMarker-Regular.ttf', family: 'cursive' },
+    { name: 'Press Start 2P', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf', family: 'monospace' },
+];
 
 export const ProEditor: React.FC = () => {
     // Core State
@@ -103,31 +138,120 @@ export const ProEditor: React.FC = () => {
 
     // Edit Parameters
     const [videoClips, setVideoClips] = useState<VideoClip[]>([]);
-    const clipsRef = useRef<VideoClip[]>([]); // Ref for access in event listeners
     const fileInputRef = useRef<HTMLInputElement>(null);
-    useEffect(() => { clipsRef.current = videoClips; }, [videoClips]);
 
     const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
     const [thumbnails, setThumbnails] = useState<string[]>([]);
 
-    // SEO
+    const [showSafeZones, setShowSafeZones] = useState(false);
+    const safeZonesRef = useRef(false);
+
+    useEffect(() => { safeZonesRef.current = showSafeZones; }, [showSafeZones]);
+
+    const [waveforms, setWaveforms] = useState<Record<string, number[]>>({});
+    const waveformsRef = useRef<Record<string, number[]>>({});
+    useEffect(() => { waveformsRef.current = waveforms; }, [waveforms]);
+
+    const getInterpolatedValue = (clip: VideoClip, property: Keyframe['property'], currentTime: number) => {
+        const defaultValue = property === 'opacity' || property === 'scale' ? 1 : 0;
+        if (!clip.keyframes || clip.keyframes.length === 0) return (clip as any)[property] ?? defaultValue;
+
+        const propKeyframes = clip.keyframes
+            .filter(k => k.property === property)
+            .sort((a, b) => a.time - b.time);
+
+        if (propKeyframes.length === 0) return (clip as any)[property] ?? defaultValue;
+
+        const relativeTime = currentTime - clip.start;
+
+        // Find surrounding keyframes
+        const nextIdx = propKeyframes.findIndex(k => k.time > relativeTime);
+        if (nextIdx === -1) return propKeyframes[propKeyframes.length - 1].value;
+        if (nextIdx === 0) return propKeyframes[0].value;
+
+        const k1 = propKeyframes[nextIdx - 1];
+        const k2 = propKeyframes[nextIdx];
+
+        const t = (relativeTime - k1.time) / (k2.time - k1.time);
+        // Basic linear interpolation
+        return k1.value + (k2.value - k1.value) * t;
+    };
+
+    // Timeline Tracks State
+    const [tracks, setTracks] = useState<TimelineTrack[]>([
+        { id: 'track-v1', name: 'Video 1', type: 'video', isVisible: true, isMuted: false, isLocked: false, height: 56 },
+        { id: 'track-v2', name: 'Adjustment Layer', type: 'adjustment', isVisible: true, isMuted: false, isLocked: false, height: 56 },
+        { id: 'track-a1', name: 'Audio 1', type: 'audio', isVisible: true, isMuted: false, isLocked: false, height: 56 }
+    ]);
+
+    // Editing States (Moved up to avoid TDZ issues)
+    const [brightness, setBrightness] = useState(0);
+    const [contrast, setContrast] = useState(1.0);
+    const [saturation, setSaturation] = useState(1.0);
+    const [hue, setHue] = useState(0);
+    const [rotation, setRotation] = useState(0);
+    const [flipH, setFlipH] = useState(false);
+    const [flipV, setFlipV] = useState(false);
+    const [speed, setSpeed] = useState(1.0);
+    const [volume, setVolume] = useState(100);
+    const [textOverlay, setTextOverlay] = useState<{
+        text: string;
+        size: number;
+        color: string;
+        x: number;
+        y: number;
+        font: string;
+        start: number;
+        end: number | null;
+    }>({ text: '', size: 60, color: '#ffffff', x: 50, y: 50, font: 'Roboto', start: 0, end: null });
+
+    // Performance Refs for Render Loop
+    const filtersRef = useRef({ brightness, contrast, saturation, hue });
+    const textRef = useRef(textOverlay);
+
     useEffect(() => {
-        const originalTitle = document.title;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        const originalDesc = metaDesc?.getAttribute('content') || '';
+        filtersRef.current = { brightness, contrast, saturation, hue };
+    }, [brightness, contrast, saturation, hue]);
+    useEffect(() => { textRef.current = textOverlay; }, [textOverlay]);
 
-        document.title = 'Studio | AdopeCanva - Professional Video Editor';
-        if (metaDesc) {
-            metaDesc.setAttribute('content', 'Advanced browser-based video editor. Trim, split, adjust, and add text to your videos with professional-grade tools.');
-        }
-
-        return () => {
-            document.title = originalTitle;
-            if (metaDesc) {
-                metaDesc.setAttribute('content', originalDesc);
-            }
+    const addTrack = (type: 'video' | 'audio' | 'adjustment') => {
+        if (tracks.length >= 8) return; // Browser limit
+        const newTrack: TimelineTrack = {
+            id: `track-${type}-${Date.now()}`,
+            name: `${type.charAt(0).toUpperCase() + type.slice(1)} ${tracks.filter(t => t.type === type).length + 1}`,
+            type,
+            isVisible: true,
+            isMuted: false,
+            isLocked: false,
+            height: 56
         };
-    }, []);
+        setTracks(prev => [...prev, newTrack]);
+    };
+
+    const toggleKeyframe = (property: Keyframe['property'], value: number) => {
+        if (!selectedClipId) return;
+        const clip = videoClips.find(c => c.id === selectedClipId);
+        if (!clip) return;
+
+        const relativeTime = currentTime - clip.start;
+        const existingIdx = clip.keyframes?.findIndex(k => k.property === property && Math.abs(k.time - relativeTime) < 0.1) ?? -1;
+
+        setVideoClips(prev => prev.map(c => {
+            if (c.id !== selectedClipId) return c;
+            const newKeyframes = [...(c.keyframes || [])];
+            if (existingIdx !== -1) {
+                newKeyframes.splice(existingIdx, 1);
+            } else {
+                newKeyframes.push({
+                    id: `k-${Date.now()}`,
+                    time: relativeTime,
+                    property,
+                    value
+                });
+            }
+            return { ...c, keyframes: newKeyframes };
+        }));
+    };
 
     // Auto-switch to Edit tab when clip is selected
     useEffect(() => {
@@ -147,10 +271,12 @@ export const ProEditor: React.FC = () => {
 
     // Studio V3 Layout State
     const [sidebarWidth, setSidebarWidth] = useState(320);
-    const [timelineHeight, setTimelineHeight] = useState(260);
+    const [timelineHeight, setTimelineHeight] = useState(360);
     const [sidebarPosition, setSidebarPosition] = useState<'left' | 'right'>('left');
     const [isResizingSidebar, setIsResizingSidebar] = useState(false);
     const [isResizingTimeline, setIsResizingTimeline] = useState(false);
+    const [resizingTrackId, setResizingTrackId] = useState<string | null>(null);
+    const trackResizeStartRef = useRef({ y: 0, h: 0 });
 
     // History (Undo/Redo)
     const [history, setHistory] = useState<VideoClip[][]>([]);
@@ -181,52 +307,56 @@ export const ProEditor: React.FC = () => {
     }, [history, historyIndex]);
 
     // Timeline Interaction State
-    const [draggingHandle, setDraggingHandle] = useState<{ clipId: string, side: 'start' | 'end' } | null>(null);
+    const [draggingHandle, setDraggingHandle] = useState<{ clipId: string, side: 'start' | 'end' | 'playhead' } | null>(null);
     const timelineTrackRef = useRef<HTMLDivElement>(null);
+    const trackLabelRef = useRef<HTMLDivElement>(null);
 
 
-    // Drag Logic
+    // Drag Logic (Clips & Playhead)
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent) => {
             if (!draggingHandle || !timelineTrackRef.current) return;
+            const container = timelineTrackRef.current;
+            const rect = container.getBoundingClientRect();
+            const scrollLeft = container.scrollLeft;
+            const zoom = projectSettings.zoom;
 
-            const rect = timelineTrackRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const percentage = Math.max(0, Math.min(1, x / rect.width));
-            const newTime = percentage * duration;
+            // Calculate absolute x position in the timeline grid
+            const x = (e.clientX - rect.left) + scrollLeft;
+            const newTime = Math.max(0, x / zoom);
+
+            if (draggingHandle.side === 'playhead') {
+                setCurrentTime(newTime);
+                if (videoRef.current) videoRef.current.currentTime = newTime;
+                return;
+            }
 
             setVideoClips(prev => {
-                const newClips = [...prev];
-                const index = newClips.findIndex(c => c.id === draggingHandle.clipId);
-                if (index === -1) return prev;
+                const clipIndex = prev.findIndex(c => c.id === draggingHandle.clipId);
+                if (clipIndex === -1) return prev;
 
-                const clip = { ...newClips[index] };
-                const minDuration = 0.5; // Minimum clip length
+                const clip = { ...prev[clipIndex] };
+                const minDuration = 0.1;
 
                 if (draggingHandle.side === 'start') {
                     const delta = newTime - clip.start;
-
-                    if (clip.duration - delta < minDuration) return prev;
+                    const possibleDuration = clip.duration - delta;
+                    if (possibleDuration < minDuration) return prev;
                     if (clip.offset + delta < 0) return prev;
 
                     clip.start = newTime;
-                    clip.duration -= delta;
+                    clip.duration = possibleDuration;
                     clip.offset += delta;
                 } else if (draggingHandle.side === 'end') {
                     const newDur = newTime - clip.start;
                     if (newDur < minDuration) return prev;
-                    if (clip.offset + newDur > duration) {
-                        if (clip.offset + newDur > duration) return prev;
-                    }
                     clip.duration = newDur;
                 }
-                newClips[index] = clip;
-                newClips[index] = clip;
+
+                const newClips = [...prev];
+                newClips[clipIndex] = clip;
                 return newClips;
             });
-
-            // Real-time preview: Seek to the trim point
-            setCurrentTime(newTime);
         };
 
         const handleMouseUp = () => {
@@ -242,7 +372,7 @@ export const ProEditor: React.FC = () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [draggingHandle, duration]);
+    }, [draggingHandle, duration, projectSettings.zoom]);
 
 
 
@@ -252,6 +382,54 @@ export const ProEditor: React.FC = () => {
 
 
 
+
+    const audioPoolRef = useRef<Record<string, HTMLAudioElement>>({});
+
+    // Multi-Track Audio Synchronization
+    useEffect(() => {
+        const clips = clipsRef.current;
+        const tracksGrid = tracksRef.current;
+        const mainIsPlaying = isPlaying;
+        const mainTime = currentTime;
+
+        // Cleanup stale audio elements
+        Object.keys(audioPoolRef.current).forEach(clipId => {
+            if (!clips.find(c => c.id === clipId)) {
+                audioPoolRef.current[clipId].pause();
+                delete audioPoolRef.current[clipId];
+            }
+        });
+
+        clips.forEach(clip => {
+            if (clip.type === 'audio') {
+                let audio = audioPoolRef.current[clip.id];
+                if (!audio) {
+                    audio = new Audio(clip.url);
+                    audioPoolRef.current[clip.id] = audio;
+                }
+
+                // Sync Volume
+                audio.volume = volume / 100;
+
+                const isWithinRange = mainTime >= clip.start && mainTime < clip.start + clip.duration;
+                if (isWithinRange) {
+                    const targetTime = (mainTime - clip.start) + clip.offset;
+                    // Sync Seek
+                    if (Math.abs(audio.currentTime - targetTime) > 0.1) {
+                        audio.currentTime = targetTime;
+                    }
+                    // Sync Playback State
+                    if (mainIsPlaying && audio.paused) {
+                        audio.play().catch(() => { }); // Handle auto-play restrictions
+                    } else if (!mainIsPlaying && !audio.paused) {
+                        audio.pause();
+                    }
+                } else {
+                    if (!audio.paused) audio.pause();
+                }
+            }
+        });
+    }, [isPlaying, currentTime, videoClips, volume]);
 
     // Layout Resizing Effect
     useEffect(() => {
@@ -261,20 +439,25 @@ export const ProEditor: React.FC = () => {
                 setSidebarWidth(Math.max(200, Math.min(600, newWidth)));
             } else if (isResizingTimeline) {
                 const newHeight = window.innerHeight - e.clientY;
-                setTimelineHeight(Math.max(150, Math.min(500, newHeight)));
+                setTimelineHeight(Math.max(150, Math.min(600, newHeight)));
+            } else if (resizingTrackId) {
+                const deltaY = e.clientY - trackResizeStartRef.current.y;
+                setTracks(prev => prev.map(t => t.id === resizingTrackId ? { ...t, height: Math.max(32, trackResizeStartRef.current.h + deltaY) } : t));
             }
         };
 
         const handleMouseUp = () => {
             setIsResizingSidebar(false);
             setIsResizingTimeline(false);
+            setResizingTrackId(null);
             document.body.style.cursor = 'default';
         };
 
-        if (isResizingSidebar || isResizingTimeline) {
+        if (isResizingSidebar || isResizingTimeline || resizingTrackId) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
-            document.body.style.cursor = isResizingSidebar ? 'col-resize' : 'row-resize';
+            if (isResizingSidebar) document.body.style.cursor = 'col-resize';
+            else if (isResizingTimeline || resizingTrackId) document.body.style.cursor = 'row-resize';
         }
 
         return () => {
@@ -291,81 +474,34 @@ export const ProEditor: React.FC = () => {
         }
     }, [videoClips, history.length]);
 
-    // Canvas Render Loop
+    // Playhead Ref
+    const timeRef = useRef(0);
+    const settingsRef = useRef(projectSettings);
+    const clipsRef = useRef<VideoClip[]>([]);
+    const tracksRef = useRef<TimelineTrack[]>([]);
+
+    useEffect(() => { timeRef.current = currentTime; }, [currentTime]);
+    useEffect(() => { settingsRef.current = projectSettings; }, [projectSettings]);
+    useEffect(() => { clipsRef.current = videoClips; }, [videoClips]);
+    useEffect(() => { tracksRef.current = tracks; }, [tracks]);
+
+    // Sync vertical scroll between track labels and timeline
     useEffect(() => {
-        let animationFrameId: number;
+        const labels = trackLabelRef.current;
+        const tracksGrid = timelineTrackRef.current;
+        if (!labels || !tracksGrid) return;
 
-        const render = () => {
-            const canvas = canvasRef.current;
-            const ctx = canvas?.getContext('2d');
-            const video = videoRef.current; // Hidden source
-
-            if (!canvas || !ctx || !video) return;
-
-            // Sync canvas size
-            if (canvas.width !== projectSettings.width) canvas.width = projectSettings.width;
-            if (canvas.height !== projectSettings.height) canvas.height = projectSettings.height;
-
-            // 1. Clear & Background
-            ctx.fillStyle = projectSettings.backgroundColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // 2. Find Active Clip
-            const activeClip = clipsRef.current.find(c => currentTime >= c.start && currentTime < c.start + c.duration);
-
-            if (activeClip) {
-                // 3. Draw Video Layer
-                // Sync video time if needed (simple sync for now, optimizing seeking is complex)
-                // We rely on the fact that if playing, video.currentTime is moving. 
-                // If paused, we might need to seek. 
-                // For now, we assume videoRef is the SOURCE.
-                // Issue: Source video element is linear file. Clip is a slice.
-                // We must set video.currentTime = activeClip.offset + (currentTime - activeClip.start)
-
-                const targetTime = activeClip.offset + (currentTime - activeClip.start);
-
-                // Only seek if significantly off (to avoid stutter on playback) or if paused/seeking
-                if (Math.abs(video.currentTime - targetTime) > 0.3) {
-                    video.currentTime = targetTime;
-                }
-
-                ctx.save();
-                // Center origin
-                const cx = canvas.width / 2;
-                const cy = canvas.height / 2;
-
-                ctx.translate(cx + activeClip.x, cy + activeClip.y);
-                ctx.rotate((activeClip.rotation * Math.PI) / 180);
-                ctx.scale(activeClip.scale * (activeClip.flipH ? -1 : 1), activeClip.scale * (activeClip.flipV ? -1 : 1));
-                ctx.globalAlpha = activeClip.opacity;
-
-                // Draw Image centered
-                // We use videoWidth/Height to keep aspect ratio of source
-                const vw = video.videoWidth;
-                const vh = video.videoHeight;
-                ctx.drawImage(video, -vw / 2, -vh / 2, vw, vh);
-
-                ctx.restore();
+        const handleTracksScroll = () => {
+            if (labels.scrollTop !== tracksGrid.scrollTop) {
+                labels.scrollTop = tracksGrid.scrollTop;
             }
-
-            animationFrameId = requestAnimationFrame(render);
         };
 
-        render();
-        return () => cancelAnimationFrame(animationFrameId);
-    }, [currentTime, projectSettings]); // Dep on currentTime to trigger re-checks, but Loop runs 60fps? 
-    // Actually, if we use requestAnimationFrame, we don't strictly need dependency on currentTime, BUT we need it to be fresh. 
-    // We used refs for clips, need ref for currentTime or just let React re-bind. 
-    // Re-binding on every currentTime change (every seek) is fine. For playback, we need a standard loop.
-    // Better: Effect with empty dep [] that uses refs for everything? 
-    // For this iteration, simpler to depend on [currentTime] (scrubbing) + pure animation frame for playback (isPlaying).
-    // Let's stick to standard loop that reads refs.
+        tracksGrid.addEventListener('scroll', handleTracksScroll);
+        return () => tracksGrid.removeEventListener('scroll', handleTracksScroll);
+    }, []);
 
-    // We need a ref for currentTime to avoid tearing/stutter if we want a stable loop.
-    const timeRef = useRef(0);
-    useEffect(() => { timeRef.current = currentTime; }, [currentTime]);
-
-    // Redoing the effect to be cleaner and robust:
+    // Unified Canvas Render Loop
     useEffect(() => {
         let id: number;
         const render = () => {
@@ -374,39 +510,108 @@ export const ProEditor: React.FC = () => {
             const video = videoRef.current;
 
             if (canvas && ctx) {
-                // Resize check (debounce or just set style width vs attr width)
-                // We set attr width/height once or on change.
-                if (canvas.width !== projectSettings.width) canvas.width = projectSettings.width;
-                if (canvas.height !== projectSettings.height) canvas.height = projectSettings.height;
+                const settings = settingsRef.current;
+                const filters = filtersRef.current;
+                const text = textRef.current;
+                const t = timeRef.current;
+                const clips = clipsRef.current;
 
-                // 1. Clear
-                ctx.fillStyle = projectSettings.backgroundColor;
+                // Sync canvas size
+                if (canvas.width !== settings.width) canvas.width = settings.width;
+                if (canvas.height !== settings.height) canvas.height = settings.height;
+
+                // 1. Clear & Background
+                ctx.fillStyle = settings.backgroundColor;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // 2. Active Clip at CURRENT TIME
-                // Use timeRef for loop access
-                const t = timeRef.current;
-                const activeClip = clipsRef.current.find(c => t >= c.start && t < c.start + c.duration);
+                // 2. Draw Tracks in Reverse Order (Bottom to Top)
+                const visibleTracks = [...tracksRef.current].reverse().filter(t => t.isVisible);
 
-                if (activeClip && video && video.readyState >= 2) {
-                    // Sync source video
-                    const targetSourceTime = activeClip.offset + (t - activeClip.start);
-                    // If playing, the video element 'should' be playing? 
-                    // Actually, dragging the timeline seeks the video. 
-                    // If we have one source file, we just seek it.
-                    // Precise sync:
-                    if (Math.abs(video.currentTime - targetSourceTime) > 0.25) {
-                        video.currentTime = targetSourceTime;
+                visibleTracks.forEach(track => {
+                    const activeClip = clips.find(c => c.trackId === track.id && t >= c.start && t < c.start + c.duration);
+
+                    if (activeClip) {
+                        // For simplicity, we only use the primary video element for the FIRST video track found
+                        // Future: Multiple video elements for concurrent playback
+                        const isPrimaryVideo = track.type === 'video' && video && video.getAttribute('src') === activeClip.url;
+
+                        if (isPrimaryVideo && video.readyState >= 2) {
+                            const targetSourceTime = activeClip.offset + (t - activeClip.start);
+                            if (Math.abs(video.currentTime - targetSourceTime) > 0.3) {
+                                video.currentTime = targetSourceTime;
+                            }
+
+                            const opacity = getInterpolatedValue(activeClip, 'opacity', t);
+                            const scale = getInterpolatedValue(activeClip, 'scale', t);
+                            const rotation = getInterpolatedValue(activeClip, 'rotation', t);
+                            const x = getInterpolatedValue(activeClip, 'x', t);
+                            const y = getInterpolatedValue(activeClip, 'y', t);
+
+                            ctx.save();
+                            ctx.filter = `brightness(${1 + filters.brightness}) contrast(${filters.contrast}) saturate(${filters.saturation}) hue-rotate(${filters.hue}deg)`;
+                            ctx.translate((canvas.width / 2) + x, (canvas.height / 2) + y);
+                            ctx.rotate((rotation * Math.PI) / 180);
+                            ctx.scale(scale * (activeClip.flipH ? -1 : 1), scale * (activeClip.flipV ? -1 : 1));
+                            ctx.globalAlpha = opacity;
+                            ctx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
+                            ctx.restore();
+                        } else if (track.type !== 'audio') {
+                            // Placeholder for non-video visual clips (Stickers, GIFs, etc.)
+                            // Or video clips on secondary tracks that aren't the primary sync source
+                            ctx.save();
+                            ctx.fillStyle = track.type === 'adjustment' ? 'rgba(255,165,0,0.1)' : 'rgba(50,50,50,0.5)';
+                            ctx.translate((canvas.width / 2) + activeClip.x, (canvas.height / 2) + activeClip.y);
+                            ctx.fillRect(-100, -100, 200, 200); // Visual placeholder
+                            ctx.restore();
+                        }
                     }
+                });
 
+                // 3. Draw Text Overlay (Directly on Canvas)
+                if (text.text && ((text.start === 0 && text.end === null) || (t >= text.start && (text.end === null || t <= text.end)))) {
                     ctx.save();
-                    ctx.translate((canvas.width / 2) + activeClip.x, (canvas.height / 2) + activeClip.y);
-                    ctx.rotate((activeClip.rotation * Math.PI) / 180);
-                    ctx.scale(activeClip.scale * (activeClip.flipH ? -1 : 1), activeClip.scale * (activeClip.flipV ? -1 : 1));
-                    ctx.globalAlpha = activeClip.opacity;
+                    const fontPreset = FONT_PRESETS.find(f => f.name === text.font);
+                    ctx.font = `bold ${text.size}px ${fontPreset?.family || 'sans-serif'}`;
+                    ctx.fillStyle = text.color;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
 
-                    // Draw centered
-                    ctx.drawImage(video, -video.videoWidth / 2, -video.videoHeight / 2);
+                    // Shadow for readability
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                    ctx.shadowBlur = 4;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+
+                    const tx = (canvas.width * text.x) / 100;
+                    const ty = (canvas.height * text.y) / 100;
+
+                    ctx.fillText(text.text, tx, ty);
+                    ctx.restore();
+                }
+                // 4. Draw Safe Zone Overlays (If enabled)
+                if (safeZonesRef.current) {
+                    const ctx = canvas.getContext('2d')!;
+                    ctx.save();
+
+                    // Main Margin Safe Zone (10% inward)
+                    const margin = canvas.width * 0.1;
+                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)'; // indigo-500 equivalent
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(margin, margin, canvas.width - margin * 2, canvas.height - margin * 2);
+
+                    // Center Guides
+                    ctx.beginPath();
+                    ctx.moveTo(canvas.width / 2, 0); ctx.lineTo(canvas.width / 2, canvas.height);
+                    ctx.moveTo(0, canvas.height / 2); ctx.lineTo(canvas.width, canvas.height / 2);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.setLineDash([]);
+                    ctx.stroke();
+
+                    // Label
+                    ctx.fillStyle = 'rgba(99, 102, 241, 0.6)';
+                    ctx.font = 'bold 12px Inter';
+                    ctx.fillText('SAFE ZONE', margin + 10, margin + 20);
+
                     ctx.restore();
                 }
             }
@@ -414,94 +619,39 @@ export const ProEditor: React.FC = () => {
         };
         render();
         return () => cancelAnimationFrame(id);
-    }, [projectSettings]); // Only restart if settings change. Time/Clips accessed via Ref.
+    }, []); // Run once, values accessed via Ref
 
 
-    // 2. Adjustments
-    const [brightness, setBrightness] = useState(0); // -1.0 to 1.0
-    const [contrast, setContrast] = useState(1.0); // 0.0 to 2.0
-    const [saturation, setSaturation] = useState(1.0); // 0.0 to 3.0
-    const [hue, setHue] = useState(0); // -180 to 180 (degrees implied, but eq filter uses different scale, we'll map 0-360 approx or just basic hue shift)
-
-    // 3. Transform
-    const [rotation, setRotation] = useState(0); // 0, 90, 180, 270
-    const [flipH, setFlipH] = useState(false);
-    const [flipV, setFlipV] = useState(false);
-
-    // 4. Speed
-    const [speed, setSpeed] = useState(1.0);
-
-    // 5. Audio
-    const [volume, setVolume] = useState(100); // Percentage
-
-    // 6. Text
-    const [textOverlay, setTextOverlay] = useState<{
-        text: string;
-        size: number;
-        color: string;
-        x: number; // 0-100%
-        y: number; // 0-100%
-        font: string; // 'preset-name' or 'custom'
-        start: number; // seconds
-        end: number | null; // seconds (null = until end)
-    }>({ text: '', size: 60, color: '#ffffff', x: 50, y: 50, font: 'Roboto', start: 0, end: null });
 
     // Font State
     const [customFontFile, setCustomFontFile] = useState<File | null>(null);
 
-    const FONT_PRESETS = [
-        { name: 'Roboto', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf', family: 'sans-serif' },
-        { name: 'Oswald', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/oswald/Oswald%5Bwght%5D.ttf', family: 'sans-serif' },
-        { name: 'Dancing Script', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf', family: 'cursive' },
-        { name: 'Permanent Marker', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/permanentmarker/PermanentMarker-Regular.ttf', family: 'cursive' },
-        { name: 'Press Start 2P', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf', family: 'monospace' },
-    ];
 
     // Timeline CSS
     const timelineStyle = `
-        .thumb-input::-webkit-slider-thumb {
-            pointer-events: auto;
-            -webkit-appearance: none;
-            height: 4rem;
-            width: 24px;
+        .timeline-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
             background: transparent;
-            cursor: ew-resize;
-            z-index: 50;
         }
-        .thumb-input::-moz-range-thumb {
-            pointer-events: auto;
-            height: 4rem;
-            width: 24px;
-            border: none;
-            background: transparent;
-            cursor: ew-resize;
-            z-index: 50;
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
         }
-        /* Custom styled range slider for standard controls */
-        .styled-range {
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
-            cursor: pointer;
+        .timeline-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
         }
-        .styled-range::-webkit-slider-runnable-track {
-            background: rgba(82, 82, 91, 0.5); /* zinc-600/50 */
-            border-radius: 9999px;
-            height: 0.5rem;
+        
+        /* Advanced Playhead Styles */
+        .playhead-glow {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
         }
-        .styled-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            margin-top: -4px; /* center thumb */
-            background-color: white;
-            border: 2px solid currentColor; /* Uses text color */
-            height: 1rem;
-            width: 1rem;
-            border-radius: 50%;
-            transition: transform 0.1s;
-        }
-        .styled-range:hover::-webkit-slider-thumb {
-            transform: scale(1.2);
+        
+        /* Clip Edge Interaction */
+        .clip-handle-active {
+            background: #6366f1 !important;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
     `;
 
@@ -534,28 +684,89 @@ export const ProEditor: React.FC = () => {
         }
     };
 
-    const handleFileSelect = (fileData: FileData) => {
-        setFile(fileData);
+    const handleFileSelect = async (fileData: FileData) => {
         const url = URL.createObjectURL(fileData.file);
-        setVideoUrl(url);
+        const isAudio = fileData.type.startsWith('audio/');
 
-        // Reset all states
-        setVideoClips([]);
-        setThumbnails([]);
-        setSelectedClipId(null);
-        setDuration(0);
-        setCurrentTime(0);
+        let fileDuration = 0;
+        if (isAudio) {
+            const tempAudio = new Audio(url);
+            await new Promise((resolve) => {
+                tempAudio.onloadedmetadata = () => resolve(true);
+            });
+            fileDuration = tempAudio.duration;
+        } else {
+            const tempVideo = document.createElement('video');
+            tempVideo.src = url;
+            await new Promise((resolve) => {
+                tempVideo.onloadedmetadata = () => resolve(true);
+            });
+            fileDuration = tempVideo.duration;
+        }
 
-        setBrightness(0);
-        setContrast(1.0);
-        setSaturation(1.0);
-        setRotation(0);
-        setFlipH(false);
-        setFlipV(false);
-        setSpeed(1.0);
-        setVolume(100);
-        setTextOverlay({ text: '', size: 36, color: '#ffffff', x: 50, y: 80, font: 'Roboto', start: 0, end: null });
-        setResultUrl(null);
+        const lastClipEnd = videoClips.length > 0
+            ? Math.max(...videoClips.map(c => c.start + c.duration))
+            : 0;
+
+        const newClip: VideoClip = {
+            id: `${isAudio ? 'a' : 'v'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            type: isAudio ? 'audio' as any : 'video',
+            file: fileData.file,
+            url,
+            start: lastClipEnd,
+            duration: fileDuration,
+            offset: 0,
+            x: 0,
+            y: 0,
+            scale: 1.0,
+            rotation: 0,
+            flipH: false,
+            flipV: false,
+            opacity: 1.0,
+            zOrder: videoClips.length,
+            trackId: isAudio
+                ? (tracks.find(t => t.type === 'audio')?.id || 'track-a1')
+                : (tracks.find(t => t.type === 'video')?.id || 'track-v1')
+        };
+
+        if (!isAudio) {
+            setFile(fileData);
+            setVideoUrl(url);
+            if (videoClips.length === 0) {
+                generateThumbnails(url, fileDuration);
+            }
+        }
+
+        const newClips = [...videoClips, newClip];
+        setVideoClips(newClips);
+        setSelectedClipId(newClip.id);
+        setDuration(prev => Math.max(prev, lastClipEnd + fileDuration));
+
+        if (isAudio) {
+            generateAudioWaveform(fileData.file, newClip.id);
+        }
+    };
+
+    const generateAudioWaveform = async (file: File, clipId: string) => {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const arrayBuffer = await file.arrayBuffer();
+        const decodeData = await audioCtx.decodeAudioData(arrayBuffer);
+        const rawData = decodeData.getChannelData(0); // Use first channel
+        const samples = 200; // Number of bars
+        const blockSize = Math.floor(rawData.length / samples);
+        const filteredData = [];
+        for (let i = 0; i < samples; i++) {
+            let blockStart = blockSize * i;
+            let sum = 0;
+            for (let j = 0; j < blockSize; j++) {
+                sum = sum + Math.abs(rawData[blockStart + j]);
+            }
+            filteredData.push(sum / blockSize);
+        }
+        // Normalize
+        const maxVal = Math.max(...filteredData);
+        const multiplier = maxVal > 0 ? Math.pow(maxVal, -1) : 0; // Avoid division by zero
+        setWaveforms(prev => ({ ...prev, [clipId]: filteredData.map(n => n * multiplier) }));
     };
 
     const generateThumbnails = async (url: string, dur: number) => {
@@ -640,7 +851,8 @@ export const ProEditor: React.FC = () => {
                     duration: dur,
                     offset: 0,
                     x: 0, y: 0, scale: 1, rotation: 0,
-                    flipH: false, flipV: false, opacity: 1, zOrder: 1
+                    flipH: false, flipV: false, opacity: 1, zOrder: 1,
+                    trackId: tracks.find(t => t.type === 'video')?.id || 'track-v1'
                 };
                 setVideoClips([initialClip]);
                 setSelectedClipId(initialClip.id);
@@ -690,85 +902,52 @@ export const ProEditor: React.FC = () => {
     };
 
     const handleExport = async () => {
-        if (!file || !ffmpegRef.current) return;
+        if (videoClips.length === 0 || !ffmpegRef.current) return;
         setIsProcessing(true);
         const ffmpeg = ffmpegRef.current;
-        const inputName = 'input.mp4';
-        const outputName = 'output.mp4';
+        const outputName = `export_${Date.now()}.mp4`;
 
         try {
-            await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+            // 1. Map Unique Files to Indices
+            const uniqueFiles = Array.from(new Set(videoClips.map(c => c.file)));
+            const fileToIndex = new Map(uniqueFiles.map((file, i) => [file, i]));
 
-            // Construct Filter Complex
+            // 2. Upload all unique files to FFmpeg
+            for (let i = 0; i < uniqueFiles.length; i++) {
+                await writeFileToFFmpeg(ffmpeg, `input_${i}.mp4`, uniqueFiles[i]);
+            }
+
+            // 3. Construct Filter Complex
             const filters: string[] = [];
+            const concatInputs: string[] = [];
 
-            // 1. Trim (if needed) - Actually trim is complex with audio sync. 
-            // Better to use -ss and -t as input args or output args for speed? 
-            // For complex filter chain, 'trim' filter is safer but needs atrim too.
-            // Let's use 'trim' + 'atrim' and 'setpts' / 'asetpts'.
+            videoClips.forEach((clip, i) => {
+                const inputIdx = fileToIndex.get(clip.file);
+                // Video Trim & Transform for this clip
+                // Logic: input -> trim -> [vClip_i]
+                let vSegment = `[v_segment_${i}]`;
 
-            // Video Chain
-            // We need to construct a chain that handles multiple clips
-            // Logic:
-            // 1. For each clip, trim source [0:v] and [0:a]
-            // 2. Concat all segments
-            // 3. Apply effects to the concatenated stream
+                // Base Trim
+                filters.push(`[${inputIdx}:v]trim=start=${clip.offset}:duration=${clip.duration},setpts=PTS-STARTPTS${vSegment}`);
+
+                // Add to concat list
+                filters.push(`[${inputIdx}:a]atrim=start=${clip.offset}:duration=${clip.duration},asetpts=PTS-STARTPTS[a_segment_${i}]`);
+                concatInputs.push(`${vSegment}[a_segment_${i}]`);
+            });
+
+            // Concat all segments
+            filters.push(`${concatInputs.join('')}concat=n=${videoClips.length}:v=1:a=1[vJoined][aJoined]`);
 
             let vChain = '[vJoined]';
             let aChain = '[aJoined]';
 
-            if (videoClips.length === 0) throw new Error("No clips to export");
-
-            // Build Trim & Concat Chain
-
-            const concatInputs: string[] = [];
-
-            videoClips.forEach((clip, i) => {
-                // Video Trim
-                filters.push(`[0:v]trim=start=${clip.offset}:duration=${clip.duration},setpts=PTS-STARTPTS[v${i}]`);
-                // Audio Trim
-                filters.push(`[0:a]atrim=start=${clip.offset}:duration=${clip.duration},asetpts=PTS-STARTPTS[a${i}]`);
-
-                concatInputs.push(`[v${i}][a${i}]`);
-            });
-
-            // Concat
-            filters.push(`${concatInputs.join('')}concat=n=${videoClips.length}:v=1:a=1[vJoined][aJoined]`);
-
-            // Adjustments (eq)
-            // eq=contrast=1.0:brightness=0.0:saturation=1.0
-            if (brightness !== 0 || contrast !== 1 || saturation !== 1) {
-                filters.push(`${vChain}eq=contrast=${contrast}:brightness=${brightness}:saturation=${saturation}[vAdj]`);
+            // 4. Global Adjustments (Applied after join for consistency)
+            if (brightness !== 0 || contrast !== 1 || saturation !== 1 || hue !== 0) {
+                filters.push(`${vChain}eq=contrast=${contrast}:brightness=${brightness}:saturation=${saturation}:hue=${hue}[vAdj]`);
                 vChain = `[vAdj]`;
             }
 
-
-            // Transform
-            if (rotation !== 0 || flipH || flipV) {
-                let transFilters: string[] = [];
-                if (rotation === 90) transFilters.push('transpose=1');
-                else if (rotation === 180) transFilters.push('transpose=1,transpose=1');
-                else if (rotation === 270) transFilters.push('transpose=2');
-
-                if (flipH) transFilters.push('hflip');
-                if (flipV) transFilters.push('vflip');
-
-                filters.push(`${vChain}${transFilters.join(',')}[vTrans]`);
-                vChain = `[vTrans]`;
-            }
-
-            // Speed - Video: setpts, Audio: atempo
-            // setpts=(1/speed)*PTS
-            if (speed !== 1.0) {
-                filters.push(`${vChain}setpts=${1 / speed}*PTS[vSpeed]`);
-                // atempo limit is 0.5 to 2.0. Chain for more.
-                // Simple logic for < 0.5 or > 2.0 omitted for brevity, asserting range 0.5-2.0 or slightly more.
-                filters.push(`${aChain}atempo=${speed}[aSpeed]`);
-                vChain = `[vSpeed]`;
-                aChain = `[aSpeed]`;
-            }
-
-            // Text
+            // 5. Global Text Overlays
             if (textOverlay.text) {
                 const fontReady = await loadFont(ffmpeg);
                 if (fontReady) {
@@ -776,9 +955,8 @@ export const ProEditor: React.FC = () => {
                     const xPos = `(w-text_w)*${textOverlay.x}/100`;
                     const yPos = `(h-text_h)*${textOverlay.y}/100`;
 
-                    // Timing
                     let enableExpr = '';
-                    if (textOverlay.start > 0 || (textOverlay.end !== null && textOverlay.end < duration)) {
+                    if (textOverlay.start > 0 || textOverlay.end !== null) {
                         const endT = textOverlay.end !== null ? textOverlay.end : duration;
                         enableExpr = `:enable='between(t,${textOverlay.start},${endT})'`;
                     }
@@ -788,54 +966,21 @@ export const ProEditor: React.FC = () => {
                 }
             }
 
-            // Audio Volume
+            // 6. Global Audio
             if (volume !== 100) {
                 filters.push(`${aChain}volume=${volume / 100}[aVol]`);
                 aChain = `[aVol]`;
             }
 
-            // Final Mapping
-            // If we didn't add filters beyond Trim, we have simple chains. 
-            // We need to verify if filters array is empty.
-            // But complex filter syntax requires mapped labels if we used them.
+            // 7. Execute FFmpeg
+            const cmdArgs = ['-y'];
+            uniqueFiles.forEach((_, i) => {
+                cmdArgs.push('-i', `input_${i}.mp4`);
+            });
 
-            // Let's refine the filter construction:
-            // We will build a SINGLE chain string for video and audio separately if possible, or mapping.
-            // Actually, chaining straightforwardly with commas `filter1,filter2` is easier if we don't branch.
-            // BUT trim breaks this because it creates new streams needing [label].
-
-            // Revised approach: Use -vf and -af unless trim is involved.
-            // Trim is essential. 
-
-            // Let's build a unified complex filter string.
-            // We already pushed lines to `filters` array like `[in]filter[out]`.
-            // We just need to join them with semicolon `;`.
-            // And use `-map "[vFinal]"` `-map "[aFinal]"`
-
-            // Rename final outputs to generic 'vOut' and 'aOut' for cleaner mapping
-            const lastV = vChain !== `[0:v]` ? vChain : `[0:v]`; // Use input if untouched? No, map needs label or index.
-            const lastA = aChain !== `[0:a]` ? aChain : `[0:a]`;
-
-            // Wait, if NO processing happened on audio, we can't map a non-existent label [a1] etc.
-            // We need to ensure labels exist or fallback to 0:a.
-
-            const cmdArgs = ['-y', '-i', inputName];
-
-            if (filters.length > 0) {
-                cmdArgs.push('-filter_complex', filters.join(';'));
-                // map the last defined labels
-                // We need to know what the last label IS.
-                // vChain holds the name of the *input* for next stage, which means it IS the output of previous.
-                // e.g. [vText]
-
-                // Case: Unmodified streams
-                // If vChain is [0:v], we map 0:v.
-                cmdArgs.push('-map', vChain.replace('[', '').replace(']', ''));
-                cmdArgs.push('-map', aChain.replace('[', '').replace(']', ''));
-            }
-
-            // libx264 for compatibility
-            cmdArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', outputName);
+            cmdArgs.push('-filter_complex', filters.join(';'));
+            cmdArgs.push('-map', vChain.replace('[', '').replace(']', ''), '-map', aChain.replace('[', '').replace(']', ''));
+            cmdArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '128k', outputName);
 
             await ffmpeg.exec(cmdArgs);
 
@@ -843,12 +988,14 @@ export const ProEditor: React.FC = () => {
             setResultUrl(url);
 
             // Cleanup
-            await ffmpeg.deleteFile(inputName);
+            for (let i = 0; i < uniqueFiles.length; i++) {
+                await ffmpeg.deleteFile(`input_${i}.mp4`);
+            }
             await ffmpeg.deleteFile(outputName);
 
         } catch (e) {
-            console.error(e);
-            alert("Export failed. Check console.");
+            console.error("Export Error:", e);
+            alert("Export failed. Check console for details.");
         } finally {
             setIsProcessing(false);
         }
@@ -1010,37 +1157,110 @@ export const ProEditor: React.FC = () => {
                                                 className="w-full h-24 bg-black/40 border border-zinc-800 rounded-lg p-3 text-xs text-white focus:ring-1 focus:ring-indigo-500 outline-none resize-none placeholder:text-zinc-600"
                                             />
                                         </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Font Settings</label>
-                                            <RangeControl label="Size" value={textOverlay.size} min={12} max={120} step={1} onChange={(v) => setTextOverlay(p => ({ ...p, size: v }))} unit="px" />
-                                            {/* Future: Font Family Selector, Color Picker */}
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Typography & Style</label>
+                                            <RangeControl label="Size" value={textOverlay.size} min={12} max={300} step={1} onChange={(v) => setTextOverlay(p => ({ ...p, size: v }))} unit="px" />
+
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="text-[10px] font-bold text-zinc-600 uppercase">Font Color</label>
+                                                    <div className="w-5 h-5 rounded border border-zinc-700" style={{ backgroundColor: textOverlay.color }} />
+                                                </div>
+                                                <input
+                                                    type="color"
+                                                    value={textOverlay.color}
+                                                    onChange={(e) => setTextOverlay(p => ({ ...p, color: e.target.value }))}
+                                                    className="w-full h-8 rounded bg-transparent cursor-pointer"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-3 pt-2 border-t border-zinc-800/50">
+                                                <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Positioning (%)</label>
+                                                <RangeControl label="Horizontal" value={textOverlay.x} min={0} max={100} step={1} onChange={(v) => setTextOverlay(p => ({ ...p, x: v }))} unit="%" />
+                                                <RangeControl label="Vertical" value={textOverlay.y} min={0} max={100} step={1} onChange={(v) => setTextOverlay(p => ({ ...p, y: v }))} unit="%" />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
 
                                 {/* CANVAS TAB */}
                                 {activeTab === 'canvas' && (
-                                    <div className="space-y-5">
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Dimensions</label>
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Canvas Presets</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-black/20 border border-zinc-800 rounded px-3 py-2">
-                                                    <span className="text-[10px] text-zinc-500 block">Width</span>
-                                                    <span className="text-xs font-mono text-zinc-300">{projectSettings.width}px</span>
+                                                {[
+                                                    { label: 'YouTube (16:9)', w: 1920, h: 1080 },
+                                                    { label: 'TikTok (9:16)', w: 1080, h: 1920 },
+                                                    { label: 'Instagram (1:1)', w: 1080, h: 1080 },
+                                                    { label: 'Portrait (4:5)', w: 1080, h: 1350 },
+                                                ].map(preset => (
+                                                    <button
+                                                        key={preset.label}
+                                                        onClick={() => setProjectSettings(p => ({ ...p, width: preset.w, height: preset.h }))}
+                                                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all gap-2
+                                                            ${projectSettings.width === preset.w && projectSettings.height === preset.h
+                                                                ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
+                                                                : 'bg-black/20 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                                                            }`}
+                                                    >
+                                                        <div
+                                                            className="border-2 border-current rounded-sm opacity-50"
+                                                            style={{
+                                                                width: preset.w > preset.h ? '24px' : (24 * preset.w / preset.h) + 'px',
+                                                                height: preset.h > preset.w ? '24px' : (24 * preset.h / preset.w) + 'px'
+                                                            }}
+                                                        />
+                                                        <span className="text-[10px] font-medium whitespace-nowrap">{preset.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4 pt-4 border-t border-zinc-800/50">
+                                            <div className="flex items-center justify-between px-1">
+                                                <label className="text-[10px] uppercase font-bold text-zinc-600">Safe Zone Overlays</label>
+                                                <button
+                                                    onClick={() => setShowSafeZones(!showSafeZones)}
+                                                    className={`w-10 h-5 rounded-full relative transition-all duration-300 ${showSafeZones ? 'bg-indigo-500' : 'bg-zinc-800'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-300 ${showSafeZones ? 'left-6' : 'left-1'}`} />
+                                                </button>
+                                            </div>
+                                            <p className="text-[10px] text-zinc-500 leading-relaxed px-1">Enable guides for title-safe and action-safe framing on social media.</p>
+                                        </div>
+
+                                        <div className="space-y-3 pt-4 border-t border-zinc-800/50">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Custom Dimensions</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-black/20 border border-zinc-800 rounded px-3 py-2 flex flex-col">
+                                                    <span className="text-[10px] text-zinc-500">Width</span>
+                                                    <input
+                                                        type="number"
+                                                        value={projectSettings.width}
+                                                        onChange={(e) => setProjectSettings(p => ({ ...p, width: parseInt(e.target.value) }))}
+                                                        className="bg-transparent border-none outline-none text-xs font-mono text-white p-0"
+                                                    />
                                                 </div>
-                                                <div className="bg-black/20 border border-zinc-800 rounded px-3 py-2">
-                                                    <span className="text-[10px] text-zinc-500 block">Height</span>
-                                                    <span className="text-xs font-mono text-zinc-300">{projectSettings.height}px</span>
+                                                <div className="bg-black/20 border border-zinc-800 rounded px-3 py-2 flex flex-col">
+                                                    <span className="text-[10px] text-zinc-500">Height</span>
+                                                    <input
+                                                        type="number"
+                                                        value={projectSettings.height}
+                                                        onChange={(e) => setProjectSettings(p => ({ ...p, height: parseInt(e.target.value) }))}
+                                                        className="bg-transparent border-none outline-none text-xs font-mono text-white p-0"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="space-y-3">
-                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Background</label>
+
+                                        <div className="space-y-2 pt-4 border-t border-zinc-800/50">
+                                            <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Background Color</label>
                                             <input
                                                 type="color"
                                                 value={projectSettings.backgroundColor}
                                                 onChange={(e) => setProjectSettings(p => ({ ...p, backgroundColor: e.target.value }))}
-                                                className="w-full h-8 rounded bg-transparent cursor-pointer"
+                                                className="w-full h-10 rounded-lg bg-black/40 border border-zinc-800 cursor-pointer p-1"
                                             />
                                         </div>
                                     </div>
@@ -1054,6 +1274,7 @@ export const ProEditor: React.FC = () => {
                                             <ToolButton icon={Scissors} label="Trim" active={activeTool === 'trim'} onClick={() => setActiveTool('trim')} />
                                             <ToolButton icon={Sliders} label="Adjust" active={activeTool === 'adjust'} onClick={() => setActiveTool('adjust')} />
                                             <ToolButton icon={RotateCw} label="Crop" active={activeTool === 'transform'} onClick={() => setActiveTool('transform')} />
+                                            <ToolButton icon={Layers} label="Track" active={activeTool === 'track'} onClick={() => setActiveTool('track')} />
                                             <ToolButton icon={FastForward} label="Speed" active={activeTool === 'speed'} onClick={() => setActiveTool('speed')} />
                                             <ToolButton icon={Volume2} label="Audio" active={activeTool === 'audio'} onClick={() => setActiveTool('audio')} />
                                         </div>
@@ -1092,6 +1313,30 @@ export const ProEditor: React.FC = () => {
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <button onClick={() => setFlipH(!flipH)} className={`py-2 rounded border text-xs transition-all ${flipH ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-black/20 border-zinc-800 text-zinc-400'}`}>Flip H</button>
                                                         <button onClick={() => setFlipV(!flipV)} className={`py-2 rounded border text-xs transition-all ${flipV ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400' : 'bg-black/20 border-zinc-800 text-zinc-400'}`}>Flip V</button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {activeTool === 'track' && (
+                                                <div className="space-y-4">
+                                                    <label className="text-[10px] uppercase font-bold text-zinc-600 px-1">Move to Track</label>
+                                                    <div className="space-y-2">
+                                                        {tracks.map(t => (
+                                                            <button
+                                                                key={t.id}
+                                                                onClick={() => {
+                                                                    if (!selectedClipId) return;
+                                                                    setVideoClips(prev => prev.map(c => c.id === selectedClipId ? { ...c, trackId: t.id } : c));
+                                                                }}
+                                                                className={`w-full p-3 rounded-xl border flex items-center justify-between transition-all
+                                                                    ${videoClips.find(c => c.id === selectedClipId)?.trackId === t.id
+                                                                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
+                                                                        : 'bg-black/20 border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                                                            >
+                                                                <span className="text-xs font-medium">{t.name}</span>
+                                                                {t.type === 'video' ? <Film size={12} /> : t.type === 'audio' ? <Volume2 size={12} /> : <Wand2 size={12} />}
+                                                            </button>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             )}
@@ -1217,16 +1462,6 @@ export const ProEditor: React.FC = () => {
                                         }
                                     }}
                                 />
-                                {/* Text Overlay Render */}
-                                {textOverlay.text && (
-                                    (textOverlay.start === 0 && textOverlay.end === null) ||
-                                    (currentTime >= textOverlay.start && (textOverlay.end === null || currentTime <= textOverlay.end))
-                                ) && (
-                                        <div className="absolute font-bold text-center select-none pointer-events-none drop-shadow-lg"
-                                            style={{ left: `${textOverlay.x}%`, top: `${textOverlay.y}%`, transform: 'translate(-50%, -50%)', color: textOverlay.color, fontSize: `${textOverlay.size}px`, fontFamily: textOverlay.font === 'custom' ? 'inherit' : (FONT_PRESETS.find(f => f.name === textOverlay.font)?.family || 'sans-serif') }}>
-                                            {textOverlay.text}
-                                        </div>
-                                    )}
                             </div>
                         )}
                     </div>
@@ -1244,244 +1479,319 @@ export const ProEditor: React.FC = () => {
             {/* 4. Timeline Section (Resizable) */}
             <div
                 style={{ height: timelineHeight }}
-                className="shrink-0 bg-zinc-900 border-t border-zinc-800/50 flex flex-col z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.4)]"
+                className="shrink-0 bg-zinc-900 border-t border-white/5 flex flex-col z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.4)]"
             >
-                {/* 1. Timeline Toolbar (Refactored) */}
-                <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900 shrink-0 relative">
+                {/* 1. Timeline Toolbar */}
+                <div className="h-12 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900 shrink-0 relative">
                     {/* Left Actions */}
-                    <div className="flex items-center gap-2 w-1/3">
-                        <button onClick={handleSplit} className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors text-xs font-medium" title="Split">
-                            <Scissors size={14} /> <span className="hidden sm:inline">Split</span>
+                    <div className="flex items-center gap-3 w-1/3">
+                        <button onClick={handleSplit} className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-all text-[10px] uppercase font-bold tracking-wider" title="Split (S)">
+                            <Scissors size={14} /> <span>Split</span>
                         </button>
-                        <button onClick={handleDeleteClip} className="p-1.5 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-red-400 transition-colors" title="Delete">
+                        <button onClick={handleDeleteClip} className="p-2 bg-zinc-800/50 hover:bg-red-500/20 rounded-lg text-zinc-400 hover:text-red-400 transition-all" title="Delete (Del)">
                             <Trash2 size={14} />
                         </button>
                     </div>
 
                     {/* Center Playback */}
-                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-6">
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-8">
                         <button
-                            className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-zinc-800/50 rounded-full"
+                            className="text-zinc-500 hover:text-white transition-all p-2 hover:bg-zinc-800/50 rounded-full"
                             onClick={() => { if (videoRef.current) videoRef.current.currentTime -= 5; }}
                         >
-                            <SkipBack size={18} fill="currentColor" className="opacity-70" />
+                            <SkipBack size={20} fill="currentColor" className="opacity-50 hover:opacity-100" />
                         </button>
                         <button
                             onClick={togglePlay}
-                            className="flex items-center justify-center w-10 h-10 bg-zinc-100 text-black rounded-full hover:scale-105 transition-all shadow-lg shadow-white/5"
+                            className={`flex items-center justify-center w-11 h-11 rounded-full transition-all shadow-xl active:scale-95 
+                                ${isPlaying ? 'bg-zinc-800 text-white' : 'bg-white text-black hover:scale-105'}`}
                         >
-                            {isPlaying ? <Pause size={18} fill="black" /> : <Play size={18} fill="black" className="ml-0.5" />}
+                            {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="ml-1" />}
                         </button>
                         <button
-                            className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-zinc-800/50 rounded-full"
+                            className="text-zinc-500 hover:text-white transition-all p-2 hover:bg-zinc-800/50 rounded-full"
                             onClick={() => { if (videoRef.current) videoRef.current.currentTime += 5; }}
                         >
-                            <SkipForward size={18} fill="currentColor" className="opacity-70" />
+                            <SkipForward size={20} fill="currentColor" className="opacity-50 hover:opacity-100" />
                         </button>
                     </div>
 
                     {/* Right Zoom */}
-                    <div className="flex items-center justify-end gap-2 w-1/3">
-                        <button
-                            className="p-1.5 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors"
-                            onClick={handleZoomToFit}
-                            title="Zoom to Fit"
-                        >
-                            <Maximize size={14} />
-                        </button>
-                        <span className="text-[10px] uppercase font-bold text-zinc-600">Zoom</span>
-                        <input
-                            type="range"
-                            min="10"
-                            max="200"
-                            step="10"
-                            value={projectSettings.zoom}
-                            onChange={(e) => setProjectSettings(prev => ({ ...prev, zoom: parseInt(e.target.value) }))}
-                            className="w-24 accent-indigo-500 h-1 bg-zinc-700/50 rounded-lg appearance-none cursor-pointer hover:bg-zinc-700 transition-colors"
-                        />
+                    <div className="flex items-center justify-end gap-3 w-1/3">
+                        <div className="flex items-center gap-2 bg-black/20 px-2 py-1.5 rounded-lg border border-zinc-800/50">
+                            <Maximize size={12} className="text-zinc-600" />
+                            <input
+                                type="range"
+                                min="10"
+                                max="500"
+                                step="10"
+                                value={projectSettings.zoom}
+                                onChange={(e) => setProjectSettings(prev => ({ ...prev, zoom: parseInt(e.target.value) }))}
+                                className="w-24 accent-indigo-500 h-1 bg-zinc-700/30 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* 2. Tracks Area */}
-                <div id="timeline-tracks-container" className="flex-1 relative p-4 overflow-x-auto overflow-y-hidden select-none bg-zinc-950/50 custom-scrollbar" >
-                    <style>{timelineStyle}</style>
-
-                    {/* Container for scrollable tracks - simplistic for now */}
+                <div className="flex-1 flex overflow-hidden select-none bg-zinc-950/20">
+                    {/* Track Labels Sidebar */}
                     <div
-                        className="relative h-full"
-                        style={{
-                            width: `${Math.max(100, duration * projectSettings.zoom)}px`,
-                            minWidth: '100%'
-                        }}
+                        ref={trackLabelRef}
+                        className="w-52 shrink-0 border-r border-white/5 bg-zinc-900/50 flex flex-col pt-8 overflow-y-hidden select-none z-40 transition-all custom-scrollbar"
                     >
-                        {/* Ruler & Tracks - Only show if file exists */}
-                        {file && (
-                            <>
-                                {/* Ruler */}
-                                <div className="absolute top-0 left-0 right-0 h-4 border-b border-zinc-800 flex text-[9px] text-zinc-600 font-mono select-none pointer-events-none">
-                                    {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => {
-                                        if (i % 5 !== 0 && projectSettings.zoom < 20) return null;
-                                        return (
-                                            <div key={i} className="absolute bottom-0 border-l border-zinc-800 pl-1 pb-0.5 flex items-end" style={{ left: `${(i / duration) * 100}%` }}>
-                                                {i % 5 === 0 && <span>{formatTime(i)}</span>}
-                                                {i % 5 !== 0 && <div className="h-1 w-px bg-zinc-800" />}
-                                            </div>
-                                        )
-                                    })}
+                        {tracks.map(track => (
+                            <div key={track.id}
+                                className="border-b border-white/5 px-3 py-2 flex flex-col justify-between bg-zinc-900/30 hover:bg-zinc-800/40 transition-colors shrink-0 relative group/track-label"
+                                style={{ height: track.height }}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className={`p-1 rounded bg-zinc-800/80 ${track.type === 'video' ? 'text-indigo-400' : track.type === 'audio' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                            {track.type === 'video' ? <Film size={10} /> : track.type === 'audio' ? <Volume2 size={10} /> : <Wand2 size={10} />}
+                                        </div>
+                                        <span className="text-[10px] font-bold text-zinc-300 truncate tracking-tight">{track.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 opacity-0 group-hover/track-label:opacity-100 transition-opacity">
+                                        <button className="p-1 hover:text-white text-zinc-600 transition-colors" title="Lock">
+                                            {track.isLocked ? <Monitor size={10} className="text-amber-500" /> : <div className="w-2.5 h-2.5" />}
+                                        </button>
+                                        <button
+                                            onClick={() => setTracks(prev => prev.map(t => t.id === track.id ? { ...t, isVisible: !t.isVisible } : t))}
+                                            className={`p-1 hover:text-white transition-colors ${track.isVisible ? 'text-zinc-400' : 'text-zinc-700'}`}
+                                        >
+                                            {track.isVisible ? <Monitor size={10} /> : <div className="w-2.5 h-2.5 border border-current rounded-full" />}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {/* Track 1: Video (Main) */}
+                                {/* Track Resize Handle */}
                                 <div
-                                    ref={timelineTrackRef}
-                                    className="absolute top-6 left-0 right-0 h-10 bg-zinc-900 rounded border border-zinc-700/50 overflow-hidden group/track"
-                                    style={{
-                                        backgroundImage: `repeating-linear-gradient(45deg, #18181b 25%, transparent 25%, transparent 50%, #18181b 50%, #18181b 75%, transparent 75%, transparent)`,
-                                        backgroundSize: '10px 10px'
+                                    className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize bg-transparent hover:bg-indigo-500/50 active:bg-indigo-500 transition-colors z-50"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setResizingTrackId(track.id);
+                                        trackResizeStartRef.current = { y: e.clientY, h: track.height };
+                                    }}
+                                />
+                            </div>
+                        ))}
+                        <div className="p-3 mt-auto sticky bottom-0 bg-zinc-900/80 backdrop-blur-md border-t border-white/5">
+                            {tracks.length < 8 ? (
+                                <button
+                                    onClick={() => addTrack('video')}
+                                    className="w-full py-2 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:text-white bg-zinc-800/30 hover:bg-zinc-800/50 rounded-lg border border-white/5 transition-all"
+                                >
+                                    <Plus size={12} /> Add Track
+                                </button>
+                            ) : (
+                                <div className="text-[8px] text-zinc-600 text-center py-2 uppercase font-bold tracking-widest opacity-50">Track Limit Reached</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Timeline Tracks Grid */}
+                    <div
+                        id="timeline-tracks-container"
+                        className="flex-1 relative overflow-x-auto overflow-y-auto timeline-scroll custom-scrollbar scroll-smooth"
+                        ref={timelineTrackRef}
+                    >
+                        <style>{timelineStyle}</style>
+
+                        <div
+                            className="relative"
+                            style={{
+                                width: `${Math.max(100, duration * projectSettings.zoom)}px`,
+                                minWidth: '100%',
+                                minHeight: '100%'
+                            }}
+                        >
+                            {/* Ruler (Sticky) */}
+                            <div className="h-8 border-b border-white/5 bg-zinc-900/80 sticky top-0 z-30 overflow-hidden backdrop-blur-sm">
+                                <div
+                                    className="absolute inset-0 z-10 cursor-pointer"
+                                    onClick={(e) => {
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const x = (e.clientX - rect.left) + e.currentTarget.parentElement!.parentElement!.scrollLeft;
+                                        const p = x / (duration * projectSettings.zoom);
+                                        const newTime = Math.max(0, Math.min(duration, p * duration));
+                                        setCurrentTime(newTime);
+                                        if (videoRef.current) videoRef.current.currentTime = newTime;
+                                    }}
+                                />
+                                {Array.from({ length: Math.ceil(duration) + 1 }).map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="absolute bottom-0 flex flex-col items-center"
+                                        style={{ left: `${i * projectSettings.zoom}px` }}
+                                    >
+                                        <span className="text-[9px] text-zinc-600 font-mono mb-1 select-none">
+                                            {i % 5 === 0 ? formatTime(i).split('.')[0] : ''}
+                                        </span>
+                                        <div className={`w-px ${i % 5 === 0 ? 'h-3 bg-zinc-700' : 'h-1.5 bg-zinc-800'}`} />
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Multi-Track System */}
+                            <div className="flex flex-col relative">
+                                {tracks.map(track => (
+                                    <div key={track.id}
+                                        className="relative border-b border-white/5 group/track overflow-hidden"
+                                        style={{ height: track.height }}
+                                    >
+                                        <div className="absolute inset-0 bg-zinc-900/5 group-hover/track:bg-white/[0.02] transition-colors pointer-events-none" />
+
+                                        {/* Tracks Overlay Grid Lines */}
+                                        <div className="absolute inset-x-0 top-0 bottom-0 pointer-events-none opacity-[0.03]"
+                                            style={{ backgroundImage: `linear-gradient(90deg, #fff 1px, transparent 1px)`, backgroundSize: `${projectSettings.zoom}px 100%` }}
+                                        />
+
+                                        {videoClips.filter(c => c.trackId === track.id).map((clip) => {
+                                            const isSelected = selectedClipId === clip.id;
+                                            return (
+                                                <div
+                                                    key={clip.id}
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedClipId(clip.id); }}
+                                                    className={`absolute top-1/2 -translate-y-1/2 h-[calc(100%-12px)] cursor-pointer rounded-xl transition-all group border-2
+                                                        ${isSelected ? 'z-30 border-indigo-500 shadow-2xl shadow-indigo-500/20 ring-2 ring-indigo-500/10' : 'z-20 border-zinc-700 hover:border-zinc-500 bg-zinc-800/80'}
+                                                    `}
+                                                    style={{
+                                                        left: `${clip.start * projectSettings.zoom}px`,
+                                                        width: `${clip.duration * projectSettings.zoom}px`,
+                                                        height: Math.min(track.height - 12, 44),
+                                                        background: isSelected
+                                                            ? 'linear-gradient(135deg, rgba(79, 70, 229, 0.2) 0%, rgba(55, 48, 163, 0.3) 100%)'
+                                                            : undefined
+                                                    }}
+                                                >
+                                                    <div className="absolute inset-0 flex items-center px-4 gap-3 overflow-hidden pointer-events-none">
+                                                        {track.type === 'audio' && waveforms[clip.id] ? (
+                                                            <div className="flex items-center gap-0.5 h-full py-4 opacity-50">
+                                                                {waveforms[clip.id].map((v, i) => (
+                                                                    <div key={i} className="w-1 bg-emerald-400 rounded-full" style={{ height: `${v * 100}%` }} />
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-900 text-zinc-500'}`}>
+                                                                    {track.type === 'video' ? <Film size={12} /> : track.type === 'audio' ? <Volume2 size={12} /> : <Wand2 size={12} />}
+                                                                </div>
+                                                                <span className={`text-[10px] font-bold truncate ${isSelected ? 'text-white' : 'text-zinc-400'}`}>
+                                                                    {clip.file.name}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+
+                                                    {isSelected && (
+                                                        <>
+                                                            <div
+                                                                className="absolute left-0 inset-y-0 w-3 bg-indigo-500 hover:bg-white cursor-ew-resize flex items-center justify-center transition-all rounded-l-lg"
+                                                                onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle({ clipId: clip.id, side: 'start' }); }}
+                                                            >
+                                                                <div className="w-0.5 h-6 bg-indigo-900/40 rounded-full" />
+                                                            </div>
+                                                            <div
+                                                                className="absolute right-0 inset-y-0 w-3 bg-indigo-500 hover:bg-white cursor-ew-resize flex items-center justify-center transition-all rounded-r-lg"
+                                                                onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle({ clipId: clip.id, side: 'end' }); }}
+                                                            >
+                                                                <div className="w-0.5 h-6 bg-indigo-900/40 rounded-full" />
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* PLAYHEAD (Sticky Container for full height) */}
+                            {file && (
+                                <div
+                                    className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-50 cursor-ew-resize group/playhead playhead-glow"
+                                    style={{ left: `${currentTime * projectSettings.zoom}px` }}
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        setIsPlaying(false);
+                                        setDraggingHandle({ clipId: 'playhead', side: 'playhead' });
                                     }}
                                 >
-                                    <div className="absolute inset-x-0 bottom-0 h-full flex">
-                                        <div className="flex w-full h-full opacity-30 pointer-events-none">
-                                            {thumbnails.map((src, i) => (
-                                                <img key={i} src={src} className="h-full object-cover flex-1" alt="" />
-                                            ))}
-                                        </div>
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -mt-1 w-6 h-7 bg-red-500 rounded-b-lg border-x border-b border-white/20 flex items-center justify-center shadow-2xl transition-transform hover:scale-110 active:scale-125 z-[60]">
+                                        <div className="w-0.5 h-3 bg-white/40 rounded-full" />
                                     </div>
-
-                                    {videoClips.map((clip) => (
-                                        <div
-                                            key={clip.id}
-                                            className={`absolute top-1 bottom-1 border-r border-transparent overflow-hidden cursor-pointer group/clip rounded-sm transition-all
-                                                          ${selectedClipId === clip.id ? 'ring-2 ring-indigo-500 z-30 shadow-lg' : 'hover:ring-1 hover:ring-indigo-400/50 z-20'}
-                                                      `}
-                                            style={{
-                                                left: `${(clip.start / duration) * 100}%`,
-                                                width: `${(clip.duration / duration) * 100}%`,
-                                                backgroundColor: selectedClipId === clip.id ? 'rgba(99, 102, 241, 0.25)' : 'rgba(63, 63, 70, 0.6)'
-                                            }}
-                                            onClick={(e) => { e.stopPropagation(); setSelectedClipId(clip.id); }}
-                                        >
-                                            <div className="absolute top-1 left-2 text-[10px] text-white/90 font-bold uppercase truncate max-w-[90%] drop-shadow-md">Video</div>
-
-                                            {selectedClipId === clip.id && (
-                                                <>
-                                                    <div
-                                                        className="absolute left-0 top-0 bottom-0 w-4 -ml-2 cursor-w-resize hover:bg-indigo-500/20 z-40 flex items-center justify-center group/handle transition-colors"
-                                                        onMouseDown={(e) => { e.stopPropagation(); setIsPlaying(false); setDraggingHandle({ clipId: clip.id, side: 'start' }); }}
-                                                    >
-                                                        <div className="w-1.5 h-8 bg-white/90 rounded-full shadow-sm group-hover/handle:scale-110 transition-transform"></div>
-                                                    </div>
-                                                    <div
-                                                        className="absolute right-0 top-0 bottom-0 w-4 -mr-2 cursor-e-resize hover:bg-indigo-500/20 z-40 flex items-center justify-center group/handle transition-colors"
-                                                        onMouseDown={(e) => { e.stopPropagation(); setIsPlaying(false); setDraggingHandle({ clipId: clip.id, side: 'end' }); }}
-                                                    >
-                                                        <div className="w-1.5 h-8 bg-white/90 rounded-full shadow-sm group-hover/handle:scale-110 transition-transform"></div>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    ))}
+                                    <div className="absolute inset-y-0 -left-2 -right-2 group-hover:bg-red-500/5 transition-colors" />
                                 </div>
-
-                                {/* Track 2: Text */}
-                                {textOverlay.text && (
-                                    <div className="absolute top-20 left-0 right-0 h-8 mt-1 z-20 pointer-events-none">
-                                        <div
-                                            className="absolute h-full bg-green-500/20 border border-green-500/50 rounded flex items-center px-2 text-[10px] text-green-300 cursor-move hover:bg-green-500/30 transition-colors pointer-events-auto"
-                                            style={{
-                                                left: `${(textOverlay.start / duration) * 100}%`,
-                                                width: `${((textOverlay.end !== null ? textOverlay.end : duration) - textOverlay.start) / duration * 100}%`
-                                            }}
-                                        >
-                                            <Type size={10} className="mr-1" /> {textOverlay.text}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Playhead */}
-                                <div
-                                    className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none"
-                                    style={{ left: `${(currentTime / duration) * 100}%` }}
-                                >
-                                    <div className="absolute top-0 -translate-x-1/2 bg-red-500 w-3 h-3 text-[8px] flex items-center justify-center text-white rounded-b-sm">▼</div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Invisible Click-to-Seek Layer */}
-                        <div className="absolute inset-0 z-10 cursor-pointer" onClick={(e) => {
-                            // Seek logic
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            const x = e.clientX - rect.left;
-                            const p = x / rect.width;
-                            if (videoRef.current) videoRef.current.currentTime = p * duration;
-                        }}></div>
-
-                        {/* Empty State Overlay */}
-                        {!file && (
-                            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="pointer-events-auto flex flex-col items-center gap-3 text-zinc-500 hover:text-white transition-all group scale-90 hover:scale-100"
-                                >
-                                    <div className="w-10 h-10 rounded-full border border-zinc-700 bg-zinc-900/80 flex items-center justify-center group-hover:border-indigo-500 group-hover:bg-indigo-500/10 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all">
-                                        <Plus size={20} className="group-hover:text-indigo-400" />
-                                    </div>
-                                    <span className="text-[10px] font-medium uppercase tracking-wider bg-zinc-950/50 px-2 py-1 rounded-full border border-zinc-800 backdrop-blur-sm group-hover:border-indigo-500/30">Add Media</span>
-                                </button>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Result Modal Overlay */}
-            {
-                resultUrl && (
-                    <div className="absolute inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-8 animate-in fade-in zoom-in duration-300">
-                        <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                            <div className="relative aspect-video bg-black rounded-3xl border border-zinc-800 shadow-2xl overflow-hidden group">
-                                <video src={resultUrl} controls className="w-full h-full object-contain" />
+            {/* Global Overlay for Processing/Results */}
+            {isProcessing && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+                    <div className="relative w-24 h-24">
+                        <div className="absolute inset-0 rounded-full border-4 border-indigo-500/20" />
+                        <div className="absolute inset-0 rounded-full border-4 border-t-indigo-500 animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <MonitorPlay size={32} className="text-indigo-400" />
+                        </div>
+                    </div>
+                    <div className="text-center space-y-2">
+                        <h3 className="text-xl font-bold text-white tracking-tight">Rendering Magic</h3>
+                        <p className="text-zinc-400 text-sm max-w-md">Applying your professional grades and effects. This won't take long...</p>
+                    </div>
+                </div>
+            )}
+
+            {resultUrl && (
+                <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-8 animate-in fade-in zoom-in duration-300">
+                    <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        <div className="relative aspect-video bg-black rounded-[2rem] border border-zinc-800 shadow-2xl overflow-hidden group p-1 ring-1 ring-white/5">
+                            <video src={resultUrl} controls className="w-full h-full object-contain rounded-[1.8rem]" />
+                        </div>
+
+                        <div className="flex flex-col space-y-8">
+                            <div>
+                                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/20 text-indigo-400 mb-6 border border-indigo-500/20 shadow-xl shadow-indigo-500/5">
+                                    <CheckCircle size={28} />
+                                </div>
+                                <h2 className="text-4xl font-bold text-white mb-3 tracking-tight">Master Ready!</h2>
+                                <p className="text-zinc-400 text-sm leading-relaxed">Your professional edit is waiting. Download it now to share with the world.</p>
                             </div>
 
-                            <div className="flex flex-col space-y-8">
-                                <div>
-                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 mb-6 border border-indigo-500/20">
-                                        <CheckCircle size={24} />
-                                    </div>
-                                    <h2 className="text-3xl font-bold text-white mb-2">Export Complete</h2>
-                                    <p className="text-zinc-400 text-sm leading-relaxed">Your professional edit is ready for download.</p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Button
-                                        className="w-full h-12 bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20"
-                                        onClick={() => {
-                                            const a = document.createElement('a');
-                                            a.href = resultUrl;
-                                            a.download = `studio_export_${Date.now()}.mp4`;
-                                            a.click();
-                                        }}
-                                    >
-                                        <Download size={18} className="mr-2" /> Download Video
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        className="w-full h-12 text-zinc-400 hover:text-white hover:bg-white/5"
-                                        onClick={() => setResultUrl(null)}
-                                    >
-                                        Continue Editing
-                                    </Button>
-                                </div>
+                            <div className="space-y-4">
+                                <Button
+                                    className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-2xl shadow-indigo-500/40 text-lg font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                    onClick={() => {
+                                        const a = document.createElement('a');
+                                        a.href = resultUrl;
+                                        a.download = `omniedit_pro_${Date.now()}.mp4`;
+                                        a.click();
+                                    }}
+                                >
+                                    <Download size={20} className="mr-3" /> Download Video
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    className="w-full h-14 text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl text-sm font-medium"
+                                    onClick={() => setResultUrl(null)}
+                                >
+                                    Continue Editing
+                                </Button>
                             </div>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
+
             <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
-                accept="video/*"
+                accept="video/*,audio/*"
                 onChange={handleHiddenInputChange}
             />
         </div>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import { QrCode, Download, Copy, RefreshCcw } from 'lucide-react';
+import QRious from 'qrious';
 
 export const QrGenerator: React.FC = () => {
     const [text, setText] = useState('');
@@ -9,14 +10,14 @@ export const QrGenerator: React.FC = () => {
     const [background, setBackground] = useState('#ffffff');
     const [foreground, setForeground] = useState('#000000');
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [qrInstance, setQrInstance] = useState<any>(null);
+    const [qrInstance, setQrInstance] = useState<QRious | null>(null);
 
     useEffect(() => {
-        // Initialize QRious
-        if (canvasRef.current && (window as any).QRious) {
-            const qr = new (window as any).QRious({
+        // Initialize QRious - using local npm package (no CDN)
+        if (canvasRef.current) {
+            const qr = new QRious({
                 element: canvasRef.current,
-                value: 'https://omniedit.app',
+                value: 'https://adopecanva.com',
                 size: size,
                 background: background,
                 foreground: foreground,
@@ -29,7 +30,7 @@ export const QrGenerator: React.FC = () => {
     useEffect(() => {
         if (qrInstance) {
             qrInstance.set({
-                value: text || 'https://omniedit.app',
+                value: text || 'https://adopecanva.com',
                 size: size,
                 background: background,
                 foreground: foreground
