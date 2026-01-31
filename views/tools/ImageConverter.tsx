@@ -96,8 +96,11 @@ export const ImageConverter: React.FC = () => {
 
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-500 flex items-center justify-center gap-3 font-unbounded">
-                        <ArrowRightRightLeft size={42} /> Format Shifter
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-4 font-unbounded">
+                        <div className="text-teal-500"><ArrowRightRightLeft size={42} /></div>
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-500">
+                            Format Shifter
+                        </span>
                     </h1>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
                         Convert images between PNG, JPG, and WebP formats instantly.
