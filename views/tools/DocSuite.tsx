@@ -172,8 +172,11 @@ export const PdfSuite: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500 flex items-center justify-center gap-3 font-unbounded">
-                        <FileText size={42} /> PDF Studio
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
+                        <div className="text-red-500"><FileText size={42} /></div>
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500">
+                            PDF Studio
+                        </span>
                     </h1>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
                         Professional toolkit to merge, split, and rotate PDF documents.

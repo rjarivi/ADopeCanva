@@ -111,8 +111,11 @@ export const ImageCompressor: React.FC = () => {
       <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400 flex items-center justify-center gap-3 font-unbounded">
-            <Zap size={32} /> Smart Image Compressor
+          <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
+            <div className="text-blue-400"><Zap size={32} /></div>
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-violet-400">
+              Smart Image Compressor
+            </span>
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
             Reduce file size without losing visible quality.
