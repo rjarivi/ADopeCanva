@@ -14,6 +14,30 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.3.0',
+        date: 'Jan 31, 2026',
+        items: [
+            {
+                icon: Zap,
+                title: 'New Efficiency Tools',
+                description: 'Launched 4 new power tools: Image Converter, Text Utilities, Code Formatter, and Signature Generator.',
+                type: 'feature'
+            },
+            {
+                icon: Sparkles,
+                title: 'Design System Unification',
+                description: 'Standardized the UI across all 20+ tools with a consistent "Unbounded" header style and modern aesthetic.',
+                type: 'update'
+            },
+            {
+                icon: Layers,
+                title: 'PDF & Media Studio Polish',
+                description: 'Refined the PDF Suite and Audio tools with cleaner layouts, invisible icon fixes, and better spacing.',
+                type: 'fix'
+            }
+        ]
+    },
+    {
         version: '1.2.1',
         date: 'Jan 10, 2026',
         items: [
