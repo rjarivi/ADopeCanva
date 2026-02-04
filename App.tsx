@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
 import { ToolCategory } from './types';
-import { ProEditor } from './views/ProEditor';
+// import { ProEditor } from './views/ProEditor';
+import { ComingSoon } from './views/ComingSoon';
 import { Feedback } from './components/Feedback';
 
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
@@ -160,7 +161,7 @@ const App = () => {
                     </div>
                 } />
 
-                <Route path="/studio" element={<ProEditor />} />
+                <Route path="/studio" element={<ComingSoon />} />
 
                 <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
             </Routes>
