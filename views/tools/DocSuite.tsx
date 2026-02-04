@@ -4,11 +4,16 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { FileText, Layers, Scissors, RotateCw, Download, Trash2, CheckCircle, Plus, Loader2, Settings, Share2, Undo2, LayoutGrid, FilePlus, RefreshCcw, Zap } from 'lucide-react';
-import { SectionLabel } from '../../components/EditorControls';
+import { FileText, Layers, Scissors, RotateCw, Download, Trash2, CheckCircle, Plus, Loader2, Settings, Share2, Undo2, LayoutGrid, FilePlus, RefreshCcw, Zap, Shrink } from 'lucide-react';
+import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { PDFDocument, degrees } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+import { jsPDF } from 'jspdf';
 
-type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure';
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+
+type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure' | 'compress';
 
 export const PdfSuite: React.FC = () => {
     const isMobile = useIsMobile();
@@ -24,6 +29,9 @@ export const PdfSuite: React.FC = () => {
     const [rotation, setRotation] = useState<number>(0);
     const [password, setPassword] = useState<string>('');
     const [reorderOrder, setReorderOrder] = useState<number[]>([]);
+
+    // Compression state
+    const [compressionQuality, setCompressionQuality] = useState<number>(70); // 0-100
 
     const handleModeChange = (newMode: Mode) => {
         setMode(newMode);
@@ -126,6 +134,60 @@ export const PdfSuite: React.FC = () => {
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
+            } else if (mode === 'compress') {
+                const srcFile = files[0].file;
+                const arrayBuffer = await srcFile.arrayBuffer();
+
+                // Load PDF with PDF.js
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+                // Create new jsPDF
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'px',
+                    hotfixes: ['px_scaling']
+                });
+
+                const totalPages = pdf.numPages;
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 }); // 1.5x scale
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+
+                    if (!ctx) throw new Error('Canvas context not available');
+
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    } as any).promise;
+
+                    const imgData = canvas.toDataURL('image/jpeg', compressionQuality / 100);
+
+                    // Add Page
+                    if (i > 1) {
+                        doc.addPage([viewport.width, viewport.height]);
+                    } else {
+                        // Set first page size
+                        doc.internal.pageSize.width = viewport.width;
+                        doc.internal.pageSize.height = viewport.height;
+                        // doc.deletePage(1); // jsPDF starts with 1 page.
+                        // Actually, if we just set size, it's fine.
+                    }
+
+                    doc.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
+                }
+
+                const blob = doc.output('blob');
+                const resultBuffer = await blob.arrayBuffer();
+                setResultBytes(new Uint8Array(resultBuffer));
+                setIsDone(true);
+                setIsProcessing(false);
+                return;
             } else if (mode === 'secure') {
                 const srcFile = files[0].file;
                 const arrayBuffer = await srcFile.arrayBuffer();
@@ -159,7 +221,7 @@ export const PdfSuite: React.FC = () => {
         const a = document.createElement('a');
         a.href = url;
         const name = files[0]?.file.name.replace('.pdf', '') || 'document';
-        const suffix = mode === 'merge' ? 'merged' : mode === 'split' ? 'extracted' : 'rotated';
+        const suffix = mode === 'merge' ? 'merged' : mode === 'split' ? 'extracted' : mode === 'compress' ? 'compressed' : 'rotated';
         a.download = `${name}_${suffix}.pdf`;
         document.body.appendChild(a);
         a.click();
@@ -224,8 +286,8 @@ export const PdfSuite: React.FC = () => {
     return (
         <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-red-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
 
-            {/* 1. Sidebar - Unified Controls */}
-            <aside className={`${isMobile ? 'order-2 h-1/2' : 'order-1 w-85 border-r'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
+            {/* 1. Sidebar - Unified Controls - MOVED TO RIGHT */}
+            <aside className={`${isMobile ? 'order-3 h-1/2' : 'order-2 w-72 border-l'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
                 <div className="h-16 px-6 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#0c0c0e]/80 backdrop-blur-md">
                     <h2 className="font-black text-xs text-red-500 uppercase tracking-[0.2em] flex items-center gap-3 font-unbounded">
                         <Settings size={18} /> CONFIGURATION
@@ -243,30 +305,25 @@ export const PdfSuite: React.FC = () => {
                     {/* Section 1: Utility Modes */}
                     <section className="space-y-4">
                         <SectionLabel>Utility Mode</SectionLabel>
-                        <div className="grid grid-cols-1 gap-2.5">
+                        <div className="grid grid-cols-3 gap-2">
                             {[
-                                { id: 'merge', icon: Layers, label: 'Merge', desc: 'Combine documents' },
-                                { id: 'split', icon: Scissors, label: 'Extract', desc: 'Save specific pages' },
-                                { id: 'remove', icon: Trash2, label: 'Delete', desc: 'Remove unwanted pages' },
-                                { id: 'reorder', icon: LayoutGrid, label: 'Reorder', desc: 'Move pages around' },
-                                { id: 'rotate', icon: RotateCw, label: 'Rotate', desc: 'Fix orientation' },
-                                { id: 'secure', icon: Settings, label: 'Secure', desc: 'Add permissions' }
+                                { id: 'merge', icon: Layers, label: 'Merge', desc: 'Combine' },
+                                { id: 'split', icon: Scissors, label: 'Split', desc: 'Extract' },
+                                { id: 'remove', icon: Trash2, label: 'Remove', desc: 'Delete' },
+                                { id: 'reorder', icon: LayoutGrid, label: 'Order', desc: 'Sort' },
+                                { id: 'rotate', icon: RotateCw, label: 'Rotate', desc: 'Turn' },
+                                { id: 'compress', icon: Shrink, label: 'Size', desc: 'Shrink' }
                             ].map((m) => (
                                 <button
                                     key={m.id}
                                     onClick={() => handleModeChange(m.id as Mode)}
-                                    className={`flex items-center gap-3 p-3 rounded-2xl border transition-all text-left group relative overflow-hidden ${mode === m.id
-                                        ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.1)]'
-                                        : 'bg-[#121214] border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                                    className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1.5 ${mode === m.id
+                                        ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                                        : 'bg-[#121214] border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 hover:bg-zinc-800'
                                         }`}
                                 >
-                                    <div className={`p-2 rounded-xl transition-all duration-300 ${mode === m.id ? 'bg-red-500/20 scale-110' : 'bg-zinc-800 group-hover:bg-zinc-700'}`}>
-                                        <m.icon size={16} />
-                                    </div>
-                                    <div className="min-w-0">
-                                        <span className="font-black uppercase tracking-wider text-[9px] font-unbounded block truncate">{m.label}</span>
-                                    </div>
-                                    {mode === m.id && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-red-500" />}
+                                    <m.icon size={16} className={mode === m.id ? 'text-red-500' : 'opacity-70'} />
+                                    <span className="font-bold uppercase text-[9px] font-unbounded">{m.label}</span>
                                 </button>
                             ))}
                         </div>
@@ -339,6 +396,23 @@ export const PdfSuite: React.FC = () => {
                                             {r}°
                                         </button>
                                     ))}
+                                </div>
+                            </>
+                        ) : mode === 'compress' ? (
+                            <>
+                                <SectionLabel>Compression Level</SectionLabel>
+                                <div className="bg-[#121214] border border-zinc-800/50 p-4 rounded-2xl space-y-4">
+                                    <SliderControl
+                                        label="Image Quality"
+                                        value={compressionQuality}
+                                        min={10}
+                                        max={100}
+                                        onChange={setCompressionQuality}
+                                        unit="%"
+                                    />
+                                    <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight leading-relaxed">
+                                        Note: Compression works by rasterizing pages to images. Text will no longer be selectable, but file size will be significantly reduced.
+                                    </p>
                                 </div>
                             </>
                         ) : mode === 'secure' ? (
@@ -454,7 +528,7 @@ export const PdfSuite: React.FC = () => {
             </aside>
 
             {/* 2. Main Workspace */}
-            <main className={`order-3 ${isMobile ? 'h-1/2' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 shadow-inner`}>
+            <main className={`order-1 ${isMobile ? 'h-1/2' : 'flex-1'} relative bg-[#09090b] flex items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 shadow-inner`}>
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
