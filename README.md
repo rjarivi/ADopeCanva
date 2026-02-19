@@ -76,6 +76,19 @@ Unlike other online tools, ADopeCanva processes your files **locally in your bro
     ```
     Open `http://localhost:5173` to view the app.
 
+### 🌐 Deployment (Cloudflare Pages)
+
+1. **Build and Deploy via CLI**
+   ```bash
+   npm run deploy
+   ```
+   *Note: This will build the project and deploy it directly to Cloudflare Pages using Wrangler.*
+
+2. **Manual Setup**
+   - Connect your GitHub repository to [Cloudflare Pages](https://dash.cloudflare.com/).
+   - Set the build command to `npm run build` and the output directory to `dist`.
+   - Add your `GEMINI_API_KEY` in the Cloudflare Dashboard under **Settings > Environment Variables**.
+
 ## 🛠️ Built With
 
 *   **[React 19](https://react.dev/)**: The library for web and native user interfaces.

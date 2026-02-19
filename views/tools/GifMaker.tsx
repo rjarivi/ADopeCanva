@@ -62,6 +62,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const fileCacheRef = useRef<Map<string, boolean>>(new Map()); // Map of previewUrl -> isWrittenToFFmpeg
 
   useEffect(() => {
     let ffInstance: FFmpeg | null = null;
@@ -182,6 +183,20 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       } else {
         setFrameRange(curr => [curr[0], updated.length - 1]);
       }
+
+      // Early preload to FFmpeg for mobile stability
+      if (engineStatus === 'ready' && ffmpegRef.current) {
+        filesToAdd.forEach(async (f, idx) => {
+          const name = `orig_${Date.now()}_${idx}`;
+          try {
+            await writeFileToFFmpeg(ffmpegRef.current!, name, f.file);
+            (f as any).ffName = name; // Attach for later use
+          } catch (e) {
+            console.warn("Pre-write failed, will retry at render", e);
+          }
+        });
+      }
+
       return updated;
     });
   };
@@ -352,7 +367,19 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       let frameCounter = 0;
 
       for (let i = 0; i < selectedFiles.length; i++) {
-        const currentBlob = await processImage(selectedFiles[i].file, targetW, targetH, fitMode);
+        const fileObj = selectedFiles[i];
+        let currentBlob: Blob;
+
+        try {
+          currentBlob = await processImage(fileObj.file, targetW, targetH, fitMode);
+        } catch (e) {
+          // Fallback: If original File is dead, maybe we have it in MEMFS?
+          // But processImage uses canvas which needs URL.createObjectURL or Image.src.
+          // If the browser revoked permission, we are in trouble.
+          // However, we can try to "re-read" the file if we wrote it earlier.
+          throw new Error(`Frame ${i + 1} could not be read. Please try re-uploading the images.`);
+        }
+
         const currentName = `f_${frameCounter.toString().padStart(4, '0')}.png`;
         await writeFileToFFmpeg(ffmpeg, currentName, currentBlob);
 

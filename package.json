@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "pages:dev": "wrangler pages dev dist",
+    "pages:deploy": "npm run deploy"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.10",
@@ -22,7 +25,7 @@
     "heic2any": "^0.0.4",
     "html2canvas": "^1.4.1",
     "js-yaml": "^4.1.1",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.1.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.555.0",
     "mammoth": "^1.11.0",
@@ -40,6 +43,7 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260213.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
@@ -50,6 +54,8 @@
     "jsdom": "^27.3.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vitest": "^4.0.16"
+    "vite-plugin-cross-origin-isolation": "^0.1.6",
+    "vitest": "^4.0.16",
+    "wrangler": "^4.65.0"
   }
 }

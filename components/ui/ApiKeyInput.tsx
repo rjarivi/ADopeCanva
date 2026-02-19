@@ -8,6 +8,7 @@ interface ApiKeyInputProps {
     onKeyChange: (key: string) => void;
     placeholder?: string;
     description?: string;
+    compact?: boolean;
 }
 
 export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
@@ -15,7 +16,8 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
     localStorageKey,
     onKeyChange,
     placeholder = "Enter your API key",
-    description
+    description,
+    compact = false
 }) => {
     const [key, setKey] = useState('');
     const [isVisible, setIsVisible] = useState(false);
@@ -29,11 +31,11 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
         if (sessionKey) {
             setKey(sessionKey);
             onKeyChange(sessionKey);
-            setPersist(false); // It was in session, so not persisted effectively? Or user didn't want it?
+            setPersist(false);
         } else if (localKey) {
             setKey(localKey);
             onKeyChange(localKey);
-            setPersist(true); // Found in local, so user opted in previously
+            setPersist(true);
         }
     }, [localStorageKey, onKeyChange]);
 
@@ -53,12 +55,53 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
     const updateStorage = (val: string, isPersistent: boolean) => {
         if (isPersistent) {
             localStorage.setItem(localStorageKey, val);
-            sessionStorage.setItem(localStorageKey, val); // Sync to session just in case
+            sessionStorage.setItem(localStorageKey, val);
         } else {
             localStorage.removeItem(localStorageKey);
             sessionStorage.setItem(localStorageKey, val);
         }
     };
+
+    if (compact) {
+        return (
+            <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500 flex items-center gap-2">
+                        {serviceName} KEY
+                    </label>
+                    <button
+                        onClick={togglePersist}
+                        className={`text-[9px] font-bold uppercase tracking-tighter flex items-center gap-1.5 px-2 py-1 rounded-md transition-all ${persist
+                            ? 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20'
+                            : 'text-zinc-600 hover:text-zinc-400 border border-transparent'
+                            }`}
+                    >
+                        {persist ? <CheckSquare size={10} /> : <Square size={10} />}
+                        Remember
+                    </button>
+                </div>
+
+                <div className="relative group">
+                    <input
+                        type={isVisible ? "text" : "password"}
+                        value={key}
+                        onChange={handleKeyChange}
+                        placeholder={placeholder}
+                        className="w-full bg-zinc-950/50 border border-zinc-800 text-zinc-200 text-xs rounded-xl pl-9 pr-9 py-2 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all font-mono placeholder:text-zinc-800"
+                    />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-700">
+                        <Key size={12} />
+                    </div>
+                    <button
+                        onClick={() => setIsVisible(!isVisible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-700 hover:text-zinc-400 transition-colors"
+                    >
+                        {isVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-3 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/80">
@@ -71,8 +114,8 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
                     <button
                         onClick={togglePersist}
                         className={`text-xs flex items-center gap-1.5 px-2 py-1 rounded transition-colors ${persist
-                                ? 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20'
-                                : 'text-zinc-500 hover:text-zinc-300'
+                            ? 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20'
+                            : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                         title={persist ? "Key saved mostly securely in LocalStorage" : "Key clears when tab closes"}
                     >
