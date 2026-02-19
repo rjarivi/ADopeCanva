@@ -9,6 +9,10 @@ import { ToolCategory } from './types';
 // import { ProEditor } from './views/ProEditor';
 import { ComingSoon } from './views/ComingSoon';
 import { Feedback } from './components/Feedback';
+import { ProductHuntBadge } from './components/ProductHuntBadge';
+
+import { SEOSections } from './components/SEOSections';
+import { Comparison } from './views/Comparison';
 
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
@@ -42,11 +46,20 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     }, [tool, setActiveCategory]);
 
     return (
-        <div className={`animate-fade-in h-full ${isMobile ? 'p-0' : 'p-4 md:p-6'}`}>
+        <div className={`animate-fade-in h-full ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6 pb-20'}`}>
             <div className={`h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
                 <div className="h-full">
                     {tool.component}
                 </div>
+
+                {/* SEO & Guide Sections */}
+                <SEOSections
+                    guideTitle={tool.guideTitle}
+                    guideContent={tool.guideContent}
+                    faqs={tool.faqs}
+                    specs={tool.specs}
+                    privacyNotes={tool.privacyNotes}
+                />
             </div>
         </div>
     );
@@ -161,6 +174,7 @@ const App = () => {
                     </div>
                 } />
 
+                <Route path="/vs/:competitor" element={<Comparison />} />
                 <Route path="/studio" element={<ComingSoon />} />
 
                 <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
@@ -175,6 +189,7 @@ const App = () => {
                 setActiveCategory={setActiveCategory}
             >
                 {content}
+                {!isProMode && <ProductHuntBadge />}
                 {!isProMode && <Feedback />}
             </MobileLayout>
         );
@@ -228,7 +243,7 @@ const App = () => {
                 <div className="bg-zinc-900 p-1 rounded-lg border border-zinc-800 flex items-center shrink-0">
                     <button
                         onClick={() => navigate('/')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${!isProMode ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${location.pathname === '/' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
                     >
                         <LayoutGrid size={14} />
                         <span className="hidden sm:inline">Tools</span>
@@ -248,6 +263,7 @@ const App = () => {
                 {content}
             </main>
 
+            {!isProMode && <ProductHuntBadge />}
             {!isProMode && <Feedback />}
         </div>
     );

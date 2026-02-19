@@ -51,6 +51,10 @@ export const GifEditor: React.FC = () => {
     const sourceImgRef = useRef<HTMLImageElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
 
+    // Persistence State
+    const [isSourceReady, setIsSourceReady] = useState(false);
+    const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+
 
 
     useEffect(() => {
@@ -75,6 +79,9 @@ export const GifEditor: React.FC = () => {
     useEffect(() => {
         if (file && engineStatus === 'ready') {
             handleProbeDuration(file.file);
+        } else if (!file) {
+            setIsSourceReady(false);
+            setSourceFileName(null);
         }
     }, [file, engineStatus]);
 
@@ -94,15 +101,27 @@ export const GifEditor: React.FC = () => {
     const handleProbeDuration = async (fileToProbe: File) => {
         if (!ffmpegRef.current) return;
         setIsProbing(true);
+        setIsSourceReady(false);
+
         try {
             const ffmpeg = ffmpegRef.current;
-            const name = "probe_input";
+            const rawExt = fileToProbe.name.split('.').pop()?.toLowerCase() || 'gif';
+            const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+            const name = `input_source.${ext}`;
+
+            // Cleanup previous if exists
+            if (sourceFileName && sourceFileName !== name) {
+                try { await ffmpeg.deleteFile(sourceFileName); } catch (e) { }
+            }
+
+            console.log("[GifEditor] Pre-loading source file to memory...");
             await writeFileToFFmpeg(ffmpeg, name, fileToProbe);
+            setSourceFileName(name);
+            setIsSourceReady(true);
 
             // Log callback to catch Duration
             let dur = 0;
             const logCb = ({ message }: { message: string }) => {
-                // Duration: 00:00:03.21,
                 const match = message.match(/Duration: (\d{2}):(\d{2}):(\d{2}\.\d{2})/);
                 if (match) {
                     const hrs = parseFloat(match[1]);
@@ -113,10 +132,8 @@ export const GifEditor: React.FC = () => {
             };
 
             ffmpeg.on('log', logCb);
-            await ffmpeg.exec(['-i', name]); // Just input, no output, triggers info logs
+            await ffmpeg.exec(['-i', name]);
             ffmpeg.off('log', logCb);
-
-            await ffmpeg.deleteFile(name);
 
             if (dur > 0) {
                 setDuration(dur);
@@ -124,7 +141,8 @@ export const GifEditor: React.FC = () => {
                 console.log("Detected Duration:", dur);
             }
         } catch (e) {
-            console.error("Probe failed", e);
+            console.error("Probe/Load failed", e);
+            setErrorMessage("Failed to read file. Mobile browsers often restrict file access if the page is inactive. Please try uploading again.");
         } finally {
             setIsProbing(false);
         }
@@ -154,35 +172,49 @@ export const GifEditor: React.FC = () => {
         }
 
         try {
-            await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+            let inputName = sourceFileName;
+
+            if (!isSourceReady || !inputName) {
+                const rawExt = file.file.name.split('.').pop()?.toLowerCase() || 'gif';
+                const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+                inputName = `input_source.${ext}`;
+                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+                setSourceFileName(inputName);
+                setIsSourceReady(true);
+            }
 
             // Validation: Check if file exists in FS
             try {
                 await ffmpeg.readFile(inputName);
             } catch (e) {
-                throw new Error("Failed to write input file to memory. System might be out of memory.");
+                // If missing, try one last time to write it
+                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
             }
 
             // Build Filter Chain
             let filters = [];
 
             // 1. Crop
-            // Use sourceImgRef (hidden full res) or imgRef (visible preview) as fallback
+            // Use sourceImgRef (hidden full res) or imgRef (visible preview) or videoRef for dimensions
             const refImg = sourceImgRef.current || imgRef.current;
-            if (crop && crop.width && crop.height && refImg) {
+            const refVideo = videoRef.current;
+
+            if (crop && crop.width && crop.height && (refImg || refVideo)) {
                 // Crop is in %
-                const scaleX = refImg.naturalWidth / 100;
-                const scaleY = refImg.naturalHeight / 100;
+                const natW = refImg ? refImg.naturalWidth : (refVideo?.videoWidth || 0);
+                const natH = refImg ? refImg.naturalHeight : (refVideo?.videoHeight || 0);
 
-                const realX = Math.round(crop.x * scaleX);
-                const realY = Math.round(crop.y * scaleY);
-                const realW = Math.round(crop.width * scaleX);
-                const realH = Math.round(crop.height * scaleY);
+                if (natW > 0 && natH > 0) {
+                    const scaleX = natW / 100;
+                    const scaleY = natH / 100;
 
-                // Ensure even dimensions for standard video codecs (required by some encoders, safe for others)
-                // Actually crop filter supports odd, but it's good practice. 
-                // Let's just output raw
-                filters.push(`crop=${realW}:${realH}:${realX}:${realY}`);
+                    const realX = Math.round(crop.x * scaleX);
+                    const realY = Math.round(crop.y * scaleY);
+                    const realW = Math.round(crop.width * scaleX);
+                    const realH = Math.round(crop.height * scaleY);
+
+                    filters.push(`crop=${realW}:${realH}:${realX}:${realY}`);
+                }
             }
 
             // 2. Transform (Flip/Rotate)
@@ -334,7 +366,8 @@ export const GifEditor: React.FC = () => {
                 }
             }
 
-            await ffmpeg.deleteFile(inputName);
+            // Do NOT delete inputName (sourceFileName) to allow multi-preview without re-reading from File object
+            // await ffmpeg.deleteFile(inputName);
             // await ffmpeg.deleteFile(outputName); // Keep strictly if we want to preview it too, but we auto-downloaded. 
             // Actually let's keep it for the preview URL to work.
             try { await ffmpeg.deleteFile('font.ttf'); } catch (e) { }

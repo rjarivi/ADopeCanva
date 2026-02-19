@@ -14,6 +14,36 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.4.0',
+        date: 'Feb 19, 2026',
+        items: [
+            {
+                icon: Rocket,
+                title: 'Product Hunt Launch',
+                description: 'We are officially LIVE on Product Hunt! Check out our new featured badge on the site and support our community launch.',
+                type: 'feature'
+            },
+            {
+                icon: Layers,
+                title: 'Markdown Creator Launch',
+                description: 'A revolutionary text-based UI design tool using Unicode/ASCII characters for AI prompt engineering and mockups.',
+                type: 'feature'
+            },
+            {
+                icon: Zap,
+                title: 'AI Magic Build & Sync',
+                description: 'Integrated Gemini 2.0 Flash for instant UI generation from text prompts, with integrated template chips and persistent API settings.',
+                type: 'feature'
+            },
+            {
+                icon: Sparkles,
+                title: 'Workspace & UX Polish',
+                description: 'Optimized layout for high-density viewports, added Pro Mode history (Undo/Redo), and refined keyboard shortcuts.',
+                type: 'update'
+            }
+        ]
+    },
+    {
         version: '1.3.0',
         date: 'Jan 31, 2026',
         items: [

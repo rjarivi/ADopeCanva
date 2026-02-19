@@ -39,6 +39,14 @@ const INITIAL_FEATURES: Feature[] = [
         status: 'completed',
         votes: 85,
         date: '2024-02-28'
+    },
+    {
+        id: '4',
+        title: 'Markdown Creator',
+        description: 'Design UI mockups using ASCII and Unicode characters for AI prompt engineering.',
+        status: 'completed',
+        votes: 156,
+        date: '2026-02-19'
     }
 ];
 

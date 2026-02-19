@@ -47,6 +47,10 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Persistence State
+  const [isSourceReady, setIsSourceReady] = useState(false);
+  const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+
   useEffect(() => {
     let ffInstance: FFmpeg | null = null;
     const logCallback = ({ message }: { message: string }) => {
@@ -75,6 +79,31 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (file && engineStatus === 'ready') {
+      // Pre-load file for stability
+      const preload = async () => {
+        const ff = ffmpegRef.current;
+        if (!ff) return;
+        const rawExt = file.file.name.split('.').pop()?.toLowerCase() || 'mp4';
+        const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+        const name = `video_source.${ext}`;
+
+        try {
+          await writeFileToFFmpeg(ff, name, file.file);
+          setSourceFileName(name);
+          setIsSourceReady(true);
+        } catch (e) {
+          console.error("Failed to preload video", e);
+        }
+      };
+      preload();
+    } else if (!file) {
+      setIsSourceReady(false);
+      setSourceFileName(null);
+    }
+  }, [file, engineStatus]);
 
   const handleMetadata = () => {
     if (videoRef.current) {
@@ -121,7 +150,23 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     ffmpeg.on('progress', onProgress);
 
     try {
-      await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+      let inputName = sourceFileName;
+
+      if (!isSourceReady || !inputName) {
+        const rawExt = file.file.name.split('.').pop()?.toLowerCase() || 'mp4';
+        const ext = rawExt === 'jpeg' ? 'jpg' : rawExt;
+        inputName = `video_source.${ext}`;
+        await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+        setSourceFileName(inputName);
+        setIsSourceReady(true);
+      }
+
+      // Final check
+      try {
+        await ffmpeg.readFile(inputName);
+      } catch (e) {
+        await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+      }
 
       let filters = [];
 
@@ -188,7 +233,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       setGifUrl(url);
       setIsDone(true);
 
-      await ffmpeg.deleteFile(inputName);
+      // await ffmpeg.deleteFile(inputName); // Keep source for stability
       await ffmpeg.deleteFile(outputName);
       try { await ffmpeg.deleteFile('font.ttf'); } catch (e) { }
 

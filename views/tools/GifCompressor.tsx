@@ -25,6 +25,10 @@ export const GifCompressor: React.FC = () => {
 
     const ffmpegRef = useRef<FFmpeg | null>(null);
 
+    // Persistence State
+    const [isSourceReady, setIsSourceReady] = useState(false);
+    const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+
     useEffect(() => {
         getFFmpeg()
             .then(ff => {
@@ -37,6 +41,27 @@ export const GifCompressor: React.FC = () => {
                 setEngineStatus('error');
             });
     }, []);
+
+    useEffect(() => {
+        if (file && engineStatus === 'ready') {
+            const preload = async () => {
+                const ff = ffmpegRef.current;
+                if (!ff) return;
+                const name = 'compress_source.gif';
+                try {
+                    await writeFileToFFmpeg(ff, name, file.file);
+                    setSourceFileName(name);
+                    setIsSourceReady(true);
+                } catch (e) {
+                    console.error("Failed to preload gif", e);
+                }
+            };
+            preload();
+        } else if (!file) {
+            setIsSourceReady(false);
+            setSourceFileName(null);
+        }
+    }, [file, engineStatus]);
 
     const handleCompress = async () => {
         if (!file || !ffmpegRef.current) return;
@@ -56,7 +81,21 @@ export const GifCompressor: React.FC = () => {
         ffmpeg.on('progress', onProgress);
 
         try {
-            await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+            let inputName = sourceFileName;
+
+            if (!isSourceReady || !inputName) {
+                inputName = 'compress_source.gif';
+                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+                setSourceFileName(inputName);
+                setIsSourceReady(true);
+            }
+
+            // Final check
+            try {
+                await ffmpeg.readFile(inputName);
+            } catch (e) {
+                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+            }
 
             // Level 0: 256 colors, 1.0 scale
             // Level 100: 16 colors, 0.3 scale
@@ -84,7 +123,7 @@ export const GifCompressor: React.FC = () => {
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');
 
-            await ffmpeg.deleteFile(inputName);
+            // await ffmpeg.deleteFile(inputName);
             await ffmpeg.deleteFile(outputName);
 
         } catch (e) {
