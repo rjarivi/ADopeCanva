@@ -40,6 +40,18 @@ const CHANGES: ChangeEntry[] = [
                 title: 'Workspace & UX Polish',
                 description: 'Optimized layout for high-density viewports, added Pro Mode history (Undo/Redo), and refined keyboard shortcuts.',
                 type: 'update'
+            },
+            {
+                icon: Layers,
+                title: 'Text Utilities Improvements',
+                description: 'Refined sentence parsing algorithm with SBD rules and added a visual sentence merging UI in the Text Utilities tool.',
+                type: 'feature'
+            },
+            {
+                icon: Zap,
+                title: 'Image to ICO Converter',
+                description: 'Added a new client-side tool to convert any image into multi-resolution .ico files with ZIP download support.',
+                type: 'feature'
             }
         ]
     },

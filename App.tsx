@@ -165,7 +165,7 @@ const App = () => {
 
                         {!isMobile && (
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
-                                <p>© 2024 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <p>© 2026 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
                                 <div className="mt-6 flex justify-center">
                                     <img src="/ADC-Footer.png" alt="AdopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
                                 </div>
