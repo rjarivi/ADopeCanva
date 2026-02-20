@@ -43,6 +43,8 @@ import { Tooltip } from '../components/ui/Tooltip';
 import { MarkdownCreatorIcon } from '../components/icons/MarkdownCreatorIcon';
 import { MarkdownCreator } from './tools/MarkdownCreator';
 import { ImageConverter } from './tools/ImageConverter';
+import { UpscaleImage } from './tools/UpscaleImage';
+import { ImageToIco } from './tools/ImageToIco';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -65,6 +67,27 @@ export const TOOLS: ToolItem[] = [
             { label: 'Batch Support', value: 'Yes, multi-file select' }
         ],
         privacyNotes: 'Files are processed locally using your browser. No images are uploaded to any server.'
+    },
+    {
+        id: 'image-upscaler',
+        title: 'AI Image Upscaler',
+        description: 'Enhance and upscale images using Gemini AI.',
+        category: ToolCategory.IMAGE,
+        icon: Maximize2,
+        component: <UpscaleImage />,
+        popular: true,
+        guideTitle: 'How to upscale and enhance your images with AI',
+        guideContent: 'Our AI Image Upscaler uses advanced Gemini models to increase the resolution of your images while recovering lost details and removing noise. Perfect for low-resolution photos, artwork, and web graphics.',
+        faqs: [
+            { question: 'What AI models are supported?', answer: 'We support the latest Gemini Flash and Pro models for optimal speed and quality.' },
+            { question: 'Is my API key safe?', answer: 'Yes, your API key is stored locally in your browser and never sent to our servers.' }
+        ],
+        specs: [
+            { label: 'Models', value: 'Gemini 2.5 Flash/Pro, Gemini 2.0' },
+            { label: 'Options', value: '2x, 4x, Denoise, Enhance' },
+            { label: 'Privacy', value: 'Requires API Key' }
+        ],
+        privacyNotes: 'Processing is done via the Google Gemini API using your personal key.'
     },
     {
         id: 'signature-generator',
@@ -569,6 +592,25 @@ export const TOOLS: ToolItem[] = [
             { label: 'Compatibility', value: 'Modern Browsers' }
         ],
         privacyNotes: 'Animations are rendered in your browser memory.'
+    },
+    {
+        id: 'image-to-ico',
+        title: 'Image to ICO',
+        description: 'Convert any image to a favicon (.ico).',
+        category: ToolCategory.IMAGE,
+        icon: ImageIcon,
+        component: <ImageToIco />,
+        guideTitle: 'How to convert images to Favicons',
+        guideContent: 'Create perfect favicons for your website instantly. Upload any PNG, JPG, or WebP graphic, select a resolution from 16x16 up to 256x256, and save it directly as a .ico file compatible with all web browsers.',
+        faqs: [
+            { question: 'What size should a favicon be?', answer: 'Standard favicons use 16x16 or 32x32. For desktop icons and modern apps, larger sizes like 128x128 or 256x256 are recommended.' },
+            { question: 'Does it keep transparency?', answer: 'Yes, if your original image has a transparent background (like a PNG), the ICO will preserve it.' }
+        ],
+        specs: [
+            { label: 'Supported Inputs', value: 'PNG, JPG, WebP' },
+            { label: 'Output', value: 'Windows Icon (.ico)' }
+        ],
+        privacyNotes: 'Images are converted locally in your browser.'
     },
     {
         id: 'video-to-apng',

@@ -16,6 +16,7 @@ export const TextUtilities: React.FC = () => {
 
     // Analyzer Stats
     const [stats, setStats] = useState({ words: 0, chars: 0, charsNoSpace: 0, sentences: 0, lines: 0, readingTime: 0 });
+    const [detectedSentences, setDetectedSentences] = useState<string[]>([]);
 
     useEffect(() => {
         if (mode === 'analyze') analyzeText();
@@ -23,16 +24,78 @@ export const TextUtilities: React.FC = () => {
         else if (mode === 'encode') encodeBase64(true); // Default encode
     }, [input]);
 
+    const extractSentences = (text: string): string[] => {
+        if (!text.trim()) return [];
+        let processed = text;
+
+        processed = processed.replace(/\.{2,}/g, match => '<<<ELLIPSIS' + match.length + '>>>');
+        processed = processed.replace(/(\d)\.(\d)/g, '$1<<<DECIMAL>>>$2');
+        processed = processed.replace(/(^|\s)([a-zA-Z])\./g, '$1$2<<<INITIAL>>>');
+
+        const abbreviations = ['Mr', 'Mrs', 'Ms', 'Dr', 'Prof', 'Sr', 'Jr', 'Inc', 'Ltd', 'Co', 'Corp', 'Vs', 'vs', 'Fig', 'St', 'Mt'];
+        abbreviations.forEach(abbr => {
+            const regex = new RegExp(`\\b(${abbr})\\.`, 'gi');
+            processed = processed.replace(regex, '$1<<<ABBR>>>');
+        });
+
+        processed = processed.replace(/(^|\n)(\s*\d+)\.(\s)/g, '$1$2<<<LIST>>>$3');
+
+        const parts = processed.split(/([.!?]+[\s\n]*)/);
+
+        const sentences: string[] = [];
+        for (let i = 0; i < parts.length; i += 2) {
+            let sentence = parts[i];
+            let punctuation = parts[i + 1] || '';
+            let combined = sentence + punctuation;
+            if (!combined.trim()) continue;
+
+            combined = combined.replace(/<<<ELLIPSIS(\d+)>>>/g, (_, len) => '.'.repeat(Number(len)));
+            combined = combined.replace(/<<<DECIMAL>>>/g, '.');
+            combined = combined.replace(/<<<INITIAL>>>/g, '.');
+            combined = combined.replace(/<<<ABBR>>>/g, '.');
+            combined = combined.replace(/<<<LIST>>>/g, '.');
+
+            sentences.push(combined);
+        }
+
+        const mergedSentences: string[] = [];
+        for (let i = 0; i < sentences.length; i++) {
+            const s = sentences[i];
+            if (mergedSentences.length > 0) {
+                const trimmed = s.trim();
+                // If the next sentence starts with a lower case letter, merge it with previous.
+                if (trimmed.length > 0 && /^[a-z]/.test(trimmed)) {
+                    mergedSentences[mergedSentences.length - 1] += s;
+                    continue;
+                }
+            }
+            mergedSentences.push(s);
+        }
+
+        return mergedSentences;
+    };
+
     const analyzeText = () => {
         const text = input.trim();
-        const words = text ? text.split(/\s+/).length : 0;
+        const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
         const chars = input.length;
         const charsNoSpace = input.replace(/\s/g, '').length;
-        const sentences = text ? text.split(/[.!?]+/).filter(Boolean).length : 0;
         const lines = text ? input.split(/\n/).length : 0;
         const readingTime = Math.ceil(words / 200); // 200 wpm
 
-        setStats({ words, chars, charsNoSpace, sentences, lines, readingTime });
+        const sentencesArray = extractSentences(text);
+
+        setDetectedSentences(sentencesArray);
+        setStats({ words, chars, charsNoSpace, sentences: sentencesArray.length, lines, readingTime });
+    };
+
+    const handleMergeSentence = (index: number) => {
+        if (index === 0) return;
+        const newSentences = [...detectedSentences];
+        newSentences[index - 1] += newSentences[index];
+        newSentences.splice(index, 1);
+        setDetectedSentences(newSentences);
+        setStats(prev => ({ ...prev, sentences: newSentences.length }));
     };
 
     // --- Converters ---
@@ -215,9 +278,30 @@ export const TextUtilities: React.FC = () => {
                                     <StatBox label="Read Time" value={`~${stats.readingTime} min`} />
                                 </div>
                                 <div className="mt-6 pt-6 border-t border-zinc-800">
-                                    <h4 className="text-xs font-bold text-zinc-500 uppercase mb-3">Density (Top 5)</h4>
-                                    {/* Simple word frequency could go here later */}
-                                    <p className="text-xs text-zinc-600 italic">Word frequency analysis coming soon.</p>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="text-xs font-bold text-zinc-500 uppercase">Sentence Parsing</h4>
+                                        <div className="flex items-center gap-1 text-[10px] text-zinc-600">
+                                            <span className="w-2 h-2 rounded-full bg-indigo-500/50"></span>
+                                            <span>Click a sentence to merge it with the previous</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap text-sm text-zinc-300 leading-relaxed bg-zinc-900/30 p-4 rounded-xl border border-zinc-800/50 max-h-64 overflow-y-auto custom-scrollbar">
+                                        {detectedSentences.length === 0 ? (
+                                            <p className="text-xs text-zinc-600 italic">No sentences detected yet.</p>
+                                        ) : (
+                                            detectedSentences.map((sentence, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    onClick={() => handleMergeSentence(idx)}
+                                                    className={`px-0.5 rounded cursor-pointer transition-colors ${idx % 2 === 0 ? 'bg-indigo-500/10 hover:bg-indigo-500/30 text-indigo-200' : 'bg-violet-500/10 hover:bg-violet-500/30 text-violet-200'} ${idx > 0 ? 'hover:ring-1 hover:ring-white/20' : ''}`}
+                                                    title={idx > 0 ? "Click to merge with previous sentence" : "First sentence"}
+                                                >
+                                                    {sentence}
+                                                </span>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ) : (

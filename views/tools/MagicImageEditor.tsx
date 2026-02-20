@@ -53,7 +53,10 @@ export const MagicImageEditor: React.FC = () => {
       if (!apiKey) throw new Error("Please enter your Gemini API Key first");
 
       const base64Data = await getBase64(file.file);
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { apiVersion: 'v1alpha' }
+      });
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
@@ -70,6 +73,9 @@ export const MagicImageEditor: React.FC = () => {
             },
           ],
         },
+        config: {
+          responseModalities: ["IMAGE"]
+        }
       });
 
       // Extract image from response

@@ -51,7 +51,10 @@ export const BackgroundRemover: React.FC = () => {
       if (!apiKey) throw new Error("Please enter your Gemini API Key first");
 
       const base64Data = await getBase64(file.file);
-      const ai = new GoogleGenAI({ apiKey });
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { apiVersion: 'v1alpha' }
+      });
 
       // We use a specific prompt to instruct the model to isolate the subject
       const prompt = "Remove the background from this image. Ensure the main subject is isolated clearly.";
@@ -70,6 +73,9 @@ export const BackgroundRemover: React.FC = () => {
               text: prompt,
             },
           ],
+        },
+        config: {
+          responseModalities: ["IMAGE"],
         },
       });
 

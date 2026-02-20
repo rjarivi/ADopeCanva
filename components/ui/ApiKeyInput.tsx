@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Key, Lock, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import { Eye, EyeOff, Key, Lock, AlertTriangle, CheckSquare, Square, ChevronDown, Settings } from 'lucide-react';
 
 interface ApiKeyInputProps {
     serviceName: string;
@@ -9,6 +9,9 @@ interface ApiKeyInputProps {
     placeholder?: string;
     description?: string;
     compact?: boolean;
+    models?: { id: string; name: string }[];
+    selectedModel?: string;
+    onModelChange?: (model: string) => void;
 }
 
 export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
@@ -17,11 +20,15 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
     onKeyChange,
     placeholder = "Enter your API key",
     description,
-    compact = false
+    compact = false,
+    models,
+    selectedModel,
+    onModelChange
 }) => {
     const [key, setKey] = useState('');
     const [isVisible, setIsVisible] = useState(false);
     const [persist, setPersist] = useState(false);
+    const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
 
     // Initial Load: Check Session first, then Local
     useEffect(() => {
@@ -105,30 +112,68 @@ export const ApiKeyInput: React.FC<ApiKeyInputProps> = ({
 
     return (
         <div className="space-y-3 bg-zinc-900/50 p-4 rounded-xl border border-zinc-800/80">
-            <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-                    <Key size={14} className="text-yellow-500" />
-                    {serviceName} API Key
-                </label>
+            <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-zinc-300 flex items-center gap-2 whitespace-nowrap">
+                        <Key size={14} className="text-yellow-500 shrink-0" />
+                        {serviceName} API Key
+                    </label>
+
+                    {models && models.length > 0 && selectedModel && onModelChange && (
+                        <div className="relative z-30">
+                            <button
+                                onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                                className={`p-1.5 rounded-lg border transition-all ${isModelDropdownOpen ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' : 'bg-transparent border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 hover:border-zinc-700/50'}`}
+                                title="AI Model Selection"
+                            >
+                                <Settings size={14} className={`transition-transform duration-500 ${isModelDropdownOpen ? 'rotate-90' : ''}`} />
+                            </button>
+
+                            {isModelDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-64 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                    <div className="px-3 py-2 border-b border-zinc-800 bg-zinc-800/20">
+                                        <span className="text-[10px] uppercase font-black text-zinc-500 tracking-widest">Select Model</span>
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto custom-scrollbar p-1 flex flex-col gap-1">
+                                        {models.map(m => (
+                                            <button
+                                                key={m.id}
+                                                onClick={() => {
+                                                    onModelChange(m.id);
+                                                    setIsModelDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2 ${selectedModel === m.id ? 'bg-indigo-500/10 text-indigo-400 font-bold' : 'text-zinc-300 hover:bg-zinc-800'}`}
+                                            >
+                                                <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${selectedModel === m.id ? 'bg-indigo-400' : 'bg-transparent border-zinc-700 border'}`} />
+                                                <span className="truncate">{m.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 <div className="flex items-center gap-2">
                     <button
                         onClick={togglePersist}
-                        className={`text-xs flex items-center gap-1.5 px-2 py-1 rounded transition-colors ${persist
-                            ? 'text-indigo-400 bg-indigo-500/10 border border-indigo-500/20'
+                        className={`text-xs flex items-center gap-1.5 transition-colors whitespace-nowrap ${persist
+                            ? 'text-indigo-400'
                             : 'text-zinc-500 hover:text-zinc-300'
                             }`}
                         title={persist ? "Key saved mostly securely in LocalStorage" : "Key clears when tab closes"}
                     >
-                        {persist ? <CheckSquare size={12} /> : <Square size={12} />}
+                        {persist ? <CheckSquare size={13} className="shrink-0" /> : <Square size={13} className="shrink-0" />}
                         Keep me signed in
                     </button>
                     {persist && (
-                        <span className="text-[10px] text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 ml-1">Local</span>
+                        <span className="text-[10px] text-zinc-600 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 shrink-0">Local</span>
                     )}
                 </div>
-            </div>
 
-            {description && <p className="text-xs text-zinc-500">{description}</p>}
+                {description && <p className="text-xs text-zinc-500 pt-1">{description}</p>}
+            </div>
 
             <div className="relative group">
                 <input
