@@ -278,20 +278,13 @@ export const UpscaleImage: React.FC = () => {
                             </section>
 
                             {!resultImage ? (
-                                <Button
-                                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-emerald-600 hover:from-blue-600 border-none shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all"
-                                    onClick={handleUpscale}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing || !apiKey}
-                                >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all" onClick={handleUpscale} isLoading={isProcessing} disabled={isProcessing || !apiKey} >
                                     <Maximize2 size={18} className="mr-2" />
                                     {isProcessing ? 'Processing AI...' : 'Upscale Image'}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg font-bold uppercase text-xs tracking-widest"
-                                        onClick={() => {
+                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg font-bold uppercase text-xs tracking-widest" onClick={() => {
                                             const link = document.createElement('a');
                                             link.href = resultImage;
                                             link.download = `upscaled-${file.file.name}`;

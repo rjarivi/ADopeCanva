@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Image as ImageIcon, Download, CheckCircle, RefreshCcw, ArrowRightLeft, FileArchive } from 'lucide-react';
+import { Image as ImageIcon, Download, CheckCircle, RefreshCcw, ArrowRightLeft, FileArchive, Zap, Layers, Sparkles } from 'lucide-react';
 import JSZip from 'jszip';
 
 const SIZES = [16, 32, 48, 64, 128, 256];
@@ -144,6 +144,26 @@ export const ImageToIco: React.FC = () => {
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
+
+                {/* Feature Highlights */}
+                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
+                    {[
+                        { icon: Zap, label: 'Instant Conversion', desc: 'No Server Uploads' },
+                        { icon: Layers, label: 'Multi-Size Support', desc: '16px up to 256px' },
+                        { icon: FileArchive, label: 'Batch Export', desc: 'Download Packaged ZIP' },
+                        { icon: Sparkles, label: 'Perfect Quality', desc: 'Preserves Transparency' }
+                    ].map((feat, i) => (
+                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
+                                <feat.icon size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1 group-hover:text-zinc-400 transition-colors">{feat.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }
@@ -209,13 +229,7 @@ export const ImageToIco: React.FC = () => {
                         </div>
 
                         {!isDone ? (
-                            <Button
-                                onClick={handleConvert}
-                                isLoading={isProcessing || targetSizes.length === 0}
-                                size="lg"
-                                className="w-full h-14"
-                                disabled={targetSizes.length === 0}
-                            >
+                            <Button onClick={handleConvert} isLoading={isProcessing || targetSizes.length === 0} size="lg" className="w-full h-14" disabled={targetSizes.length === 0} >
                                 {isProcessing ? 'Converting...' : targetSizes.length > 1 ? `Create ${targetSizes.length} ICOs (ZIP)` : `Convert to ICO`}
                             </Button>
                         ) : (

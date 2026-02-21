@@ -385,11 +385,7 @@ export const TextTools: React.FC = () => {
                                         </div>
 
                                         <div className={isMobile ? 'flex justify-center w-full sm:w-auto' : ''}>
-                                            <Button
-                                                variant="secondary"
-                                                size="sm"
-                                                className={`shrink-0 transition-all ${isCopied ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}
-                                                onClick={() => handleCopy(resultText, i)}
+                                            <Button variant="secondary" size="sm" className={`shrink-0 transition-all ${isCopied ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`} onClick={() => handleCopy(resultText, i)}
                                             >
                                                 {isCopied ? (
                                                     <>

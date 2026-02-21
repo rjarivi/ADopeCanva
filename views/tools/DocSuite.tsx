@@ -480,10 +480,7 @@ export const PdfSuite: React.FC = () => {
                                         <p className="text-[9px] text-zinc-500 font-semibold uppercase mt-0.5">High Quality Output</p>
                                     </div>
                                 </div>
-                                <Button
-                                    className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl"
-                                    onClick={handleDownload}
-                                >
+                                <Button className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl" onClick={handleDownload} >
                                     <Download size={20} /> Download PDF
                                 </Button>
                                 <button
@@ -495,11 +492,7 @@ export const PdfSuite: React.FC = () => {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <Button
-                                    className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden"
-                                    onClick={handleProcess}
-                                    disabled={isProcessing || files.length === 0}
-                                >
+                                <Button className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden" onClick={handleProcess} disabled={isProcessing || files.length === 0} >
                                     {isProcessing ? (
                                         <Loader2 size={24} className="animate-spin" />
                                     ) : (

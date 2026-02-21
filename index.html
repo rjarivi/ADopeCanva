@@ -29,20 +29,19 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; 
-             script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://pagead2.googlesyndication.com https://www.googletagmanager.com https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; 
+             script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://pagead2.googlesyndication.com https://www.googletagmanager.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://*.adtrafficquality.google; 
              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
              font-src 'self' data: https://fonts.gstatic.com; 
-             img-src 'self' data: blob: https://*.google-analytics.com https://stats.g.doubleclick.net https://www.google.com https://www.gstatic.com https://api.producthunt.com; 
+             img-src 'self' data: blob: https://*.google-analytics.com https://stats.g.doubleclick.net https://www.google.com https://www.gstatic.com; 
              worker-src 'self' blob:;
              media-src 'self' blob: data:;
-             frame-src 'self' https://googleads.g.doubleclick.net; 
-             connect-src 'self' blob: https://*.google-analytics.com https://region1.google-analytics.com https://www.google-analytics.com https://script.google.com https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.adtrafficquality.google;">
+             frame-src 'self' https://googleads.g.doubleclick.net https://*.adtrafficquality.google https://www.google.com; 
+             connect-src 'self' blob: https://*.google-analytics.com https://region1.google-analytics.com https://www.google-analytics.com https://script.google.com https://script.googleusercontent.com https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.adtrafficquality.google https://csi.gstatic.com https://pagead2.googlesyndication.com;">
 
   <title>AdopeCanva - All-in-One Tools</title>
 
-  <link rel="icon" type="image/svg+xml"
-    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%236366f1'/%3E%3Cpath d='M10 21c-1.657 0-3-1.343-3-3s1.343-3 3-3h3v-3h-3c-1.657 0-3-1.343-3-3s1.343-3 3-3 3 1.343 3 3v3h3v-3c0-1.657 1.343-3 3-3s3 1.343 3 3-1.343 3-3 3h-3v3h3c1.657 0 3 1.343 3 3s-1.343 3-3 3-3-1.343-3-3v-3h-3v3c0 1.657-1.343 3-3 3zm0-4.5c-.828 0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5 1.5-.672 1.5-1.5h-1.5zm0-6.5c-.828 0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h1.5v-1.5c0-.828-.672-1.5-1.5-1.5zm11 0c-.828 0-1.5.672-1.5 1.5v1.5h1.5c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5zm0 8c.828 0 1.5-.672 1.5-1.5s-.672-1.5-1.5-1.5h-1.5v1.5c0 .828.672 1.5 1.5 1.5z' fill='white'/%3E%3C/svg%3E" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/svg+xml" href="/adopecanva.svg" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -84,47 +83,7 @@
       background: #52525b;
     }
   </style>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            unbounded: ['Unbounded', 'cursive'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            background: '#09090b',
-            surface: '#18181b',
-            surfaceHighlight: '#27272a',
-            primary: '#6366f1', // Indigo 500
-            primaryHover: '#4f46e5', // Indigo 600
-            accent: '#8b5cf6', // Violet 500
-          },
-          animation: {
-            'fade-in': 'fadeIn 0.3s ease-out',
-            'slide-up': 'slideUp 0.4s ease-out',
-            'scale-in': 'scaleIn 0.2s ease-out',
-          },
-          keyframes: {
-            fadeIn: {
-              '0%': { opacity: '0' },
-              '100%': { opacity: '1' },
-            },
-            slideUp: {
-              '0%': { transform: 'translateY(20px)', opacity: '0' },
-              '100%': { transform: 'translateY(0)', opacity: '1' },
-            },
-            scaleIn: {
-              '0%': { transform: 'scale(0.9)', opacity: '0' },
-              '100%': { transform: 'scale(1)', opacity: '1' },
-            }
-          }
-        }
-      }
-    }
-  </script>
+
 
   <!-- Libraries loaded locally via npm for privacy - no external CDN calls for core functionality -->
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
-    Command, Wand2, LayoutGrid,
+    Wand2, LayoutGrid,
     Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
@@ -9,7 +9,7 @@ import { ToolCategory } from './types';
 // import { ProEditor } from './views/ProEditor';
 import { ComingSoon } from './views/ComingSoon';
 import { Feedback } from './components/Feedback';
-import { ProductHuntBadge } from './components/ProductHuntBadge';
+
 
 import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
@@ -133,24 +133,25 @@ const App = () => {
                     <div className="space-y-8 animate-fade-in">
                         {/* Hero / Promo */}
                         {showBanner && !isMobile && (
-                            <div className="relative rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800 h-64 flex flex-col justify-center px-10 md:px-16 animate-slide-up group shadow-2xl">
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 group-hover:opacity-110 transition-opacity"></div>
-                                <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                            <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/60 h-56 flex flex-col justify-center px-10 md:px-16 animate-slide-up group">
+                                {/* Color leak — visible indigo warmth */}
+                                <div className="absolute right-0 top-0 w-96 h-96 rounded-full translate-x-1/3 -translate-y-1/3 blur-[80px]" style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.25) 0%, transparent 70%)' }}></div>
+                                <div className="absolute left-1/4 bottom-0 w-64 h-64 blur-[80px] rounded-full translate-y-1/2" style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.1) 0%, transparent 70%)' }}></div>
 
                                 <button
                                     onClick={() => setShowBanner(false)}
-                                    className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white hover:bg-white/10 rounded-full transition-colors z-20"
+                                    className="absolute top-4 right-4 p-2 text-zinc-600 hover:text-zinc-300 hover:bg-white/5 rounded-full transition-colors z-20"
                                 >
-                                    <X size={20} />
+                                    <X size={18} />
                                 </button>
 
                                 <div className="relative z-10 max-w-lg">
-                                    <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-bold mb-4 border border-indigo-500/20 shadow-sm">HOT FEATURE</span>
-                                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-2">Pro Image Editor</h2>
-                                    <p className="text-zinc-400 mb-6">Master your designs with layers, advanced filters, and professional tools.</p>
+                                    <span className="inline-block px-3 py-1 rounded-full text-indigo-300 text-[11px] font-bold tracking-wide uppercase mb-4 border" style={{ background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)' }}>New</span>
+                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">Pro Image Editor</h2>
+                                    <p className="text-zinc-500 text-sm mb-6 leading-relaxed">Layers, filters, and professional tools — all in your browser.</p>
                                     <button
                                         onClick={() => navigate('/image-editor')}
-                                        className="bg-white text-black px-6 py-2.5 rounded-xl font-bold hover:bg-zinc-200 transition-colors shadow-lg shadow-white/10"
+                                        className="bg-zinc-100 text-indigo-950 px-5 py-2 rounded-lg text-sm font-bold hover:bg-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5" style={{ boxShadow: '0 8px 32px rgba(79,70,229,0.3)' }}
                                     >
                                         Try it out
                                     </button>
@@ -166,8 +167,17 @@ const App = () => {
                         {!isMobile && (
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
                                 <p>© 2026 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
-                                <div className="mt-6 flex justify-center">
-                                    <img src="/ADC-Footer.png" alt="AdopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all" />
+                                <div className="mt-6 flex flex-col items-center gap-4">
+                                    <img src="/ADC-Footer.png" alt="AdopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_12px_rgba(79,70,229,0.6)] transition-all" />
+                                    <a
+                                        href="https://www.producthunt.com/products/a-dope-canva-omni-toolkit-locally"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800/60 border border-zinc-700/50 text-zinc-400 hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-500/10 transition-all duration-300 text-xs font-medium"
+                                    >
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M13.604 8.4h-3.405V12h3.405a1.8 1.8 0 0 0 0-3.6zM12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm1.604 14.4h-3.405V18H7.801V6h5.804a4.2 4.2 0 0 1 0 8.4z" /></svg>
+                                        Find us on Product Hunt
+                                    </a>
                                 </div>
                             </footer>
                         )}
@@ -189,7 +199,7 @@ const App = () => {
                 setActiveCategory={setActiveCategory}
             >
                 {content}
-                {!isProMode && <ProductHuntBadge />}
+
                 {!isProMode && <Feedback />}
             </MobileLayout>
         );
@@ -205,9 +215,7 @@ const App = () => {
                     className="flex items-center gap-3 cursor-pointer group select-none shrink-0"
                     onClick={() => { navigate('/'); }}
                 >
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105 shrink-0">
-                        <Command className="text-white" size={20} />
-                    </div>
+                    <img src="/adopecanva.svg" alt="AdopeCanva" className="w-9 h-9 rounded-xl transition-transform group-hover:scale-105 shrink-0" style={{ filter: 'drop-shadow(0 4px 12px rgba(121, 95, 244, 0.4))' }} />
                     <span className="text-2xl tracking-tight text-white hidden md:block" style={{ fontFamily: '"Comfortaa", sans-serif', fontWeight: 700 }}>
                         adopecanva<span className={`font-sans font-normal text-zinc-400 text-lg transition-opacity ml-2 ${isProMode ? 'opacity-100' : 'opacity-0 hidden'}`}>| Studio</span>
                     </span>
@@ -223,10 +231,11 @@ const App = () => {
                                     <button
                                         key={cat}
                                         onClick={() => handleCategoryClick(cat)}
-                                        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${activeCategory === cat
-                                            ? 'bg-zinc-800 text-white shadow-sm'
-                                            : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                                        className={`flex items-center gap-2 px-3 lg:px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap border ${activeCategory === cat
+                                            ? 'text-white'
+                                            : 'text-zinc-400 border-transparent hover:text-white hover:bg-zinc-800/50'
                                             }`}
+                                        style={activeCategory === cat ? { background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)', color: '#fff', boxShadow: '0 4px 12px rgba(79,70,229,0.15)' } : undefined}
                                     >
                                         <Icon size={16} />
                                         <span>{cat}</span>
@@ -243,14 +252,16 @@ const App = () => {
                 <div className="bg-zinc-900 p-1 rounded-lg border border-zinc-800 flex items-center shrink-0">
                     <button
                         onClick={() => navigate('/')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${location.pathname === '/' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${!isProMode ? 'text-white' : 'text-zinc-400 border-transparent hover:text-white'}`}
+                        style={!isProMode ? { background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)', color: '#fff', boxShadow: '0 4px 12px rgba(79,70,229,0.15)' } : undefined}
                     >
                         <LayoutGrid size={14} />
                         <span className="hidden sm:inline">Tools</span>
                     </button>
                     <button
                         onClick={() => navigate('/studio')}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${isProMode ? 'bg-gradient-to-r from-indigo-900 to-purple-900 text-white border border-indigo-500/30 shadow-sm' : 'text-zinc-400 hover:text-white'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${isProMode ? 'text-white' : 'text-zinc-400 border-transparent hover:text-white'}`}
+                        style={isProMode ? { background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)', color: '#fff', boxShadow: '0 4px 12px rgba(79,70,229,0.15)' } : undefined}
                     >
                         <Wand2 size={14} />
                         <span className="hidden sm:inline">Studio</span>
@@ -263,7 +274,7 @@ const App = () => {
                 {content}
             </main>
 
-            {!isProMode && <ProductHuntBadge />}
+
             {!isProMode && <Feedback />}
         </div>
     );

@@ -1064,12 +1064,7 @@ export const ProEditor: React.FC = () => {
                                 {formatTime(currentTime)} / {formatTime(duration)}
                             </div>
                         )}
-                        <Button
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white border-none h-10 px-6 text-sm font-semibold rounded-sm shadow-lg shadow-indigo-900/20 transition-all hover:scale-105 active:scale-95"
-                            onClick={handleExport}
-                            isLoading={isProcessing}
-                            disabled={!file}
-                        >
+                        <Button className="bg-indigo-600 hover:bg-indigo-700 text-white border-none h-10 px-6 text-sm font-semibold rounded-sm shadow-lg shadow-indigo-900/20 transition-all hover:scale-105 active:scale-95" onClick={handleExport} isLoading={isProcessing} disabled={!file} >
                             <Download size={14} className="mr-2" />
                             {isProcessing ? 'Rendering...' : 'Export'}
                         </Button>
@@ -1763,9 +1758,7 @@ export const ProEditor: React.FC = () => {
                             </div>
 
                             <div className="space-y-4">
-                                <Button
-                                    className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-2xl shadow-indigo-500/40 text-lg font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
-                                    onClick={() => {
+                                <Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-2xl shadow-indigo-500/40 text-lg font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98]" onClick={() => {
                                         const a = document.createElement('a');
                                         a.href = resultUrl;
                                         a.download = `omniedit_pro_${Date.now()}.mp4`;
@@ -1774,10 +1767,7 @@ export const ProEditor: React.FC = () => {
                                 >
                                     <Download size={20} className="mr-3" /> Download Video
                                 </Button>
-                                <Button
-                                    variant="ghost"
-                                    className="w-full h-14 text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl text-sm font-medium"
-                                    onClick={() => setResultUrl(null)}
+                                <Button variant="ghost" className="w-full h-14 text-zinc-400 hover:text-white hover:bg-white/5 rounded-2xl text-sm font-medium" onClick={() => setResultUrl(null)}
                                 >
                                     Continue Editing
                                 </Button>

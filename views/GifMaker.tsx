@@ -425,11 +425,7 @@ export const GifMaker: React.FC = () => {
               </div>
             )}
 
-            <Button
-              className="w-full h-12 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 border-none"
-              onClick={handleCreateGif}
-              isLoading={isProcessing}
-            >
+            <Button className="w-full h-12 border-none" onClick={handleCreateGif} isLoading={isProcessing} >
               <Film size={18} className="mr-2" /> {isProcessing ? progress : 'Create GIF'}
             </Button>
           </div>

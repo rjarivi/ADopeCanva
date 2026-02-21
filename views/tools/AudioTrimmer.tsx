@@ -463,12 +463,7 @@ export const AudioTrimmer: React.FC = () => {
                         {/* Actions */}
                         <div className="pt-4 space-y-3">
                             {!trimmedUrl ? (
-                                <Button
-                                    className="w-full h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 shadow-lg shadow-indigo-500/20 border-none"
-                                    onClick={handleExport}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing}
-                                >
+                                <Button className="w-full h-12 shadow-lg shadow-indigo-500/20 border-none" onClick={handleExport} isLoading={isProcessing} disabled={isProcessing} >
                                     {isProcessing ? (
                                         <span className="flex items-center gap-2">
                                             <Loader2 size={16} className="animate-spin" />
@@ -480,16 +475,10 @@ export const AudioTrimmer: React.FC = () => {
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg"
-                                        onClick={downloadTrimmed}
-                                    >
+                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg" onClick={downloadTrimmed} >
                                         <Download size={18} className="mr-2" /> Download MP3
                                     </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
-                                        onClick={() => {
+                                    <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={() => {
                                             setTrimmedUrl(null);
                                             setProgress(0);
                                         }}

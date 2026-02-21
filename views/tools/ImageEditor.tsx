@@ -1596,10 +1596,7 @@ export const ImageEditor: React.FC = () => {
                                     </section>
 
                                     <div className="pt-4 mt-auto">
-                                        <Button
-                                            variant="secondary"
-                                            className="w-full gap-2 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 py-3 rounded-xl"
-                                            onClick={() => {
+                                        <Button variant="secondary" className="w-full gap-2 bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 py-3 rounded-xl" onClick={() => {
                                                 if (fileInputRef.current) fileInputRef.current.click();
                                             }}
                                         >
@@ -2291,10 +2288,7 @@ export const ImageEditor: React.FC = () => {
                                 {navMode === 'top' && <PanelTop size={18} />}
                             </button>
                         )}
-                        <Button
-                            onClick={downloadImage}
-                            className={`flex-1 gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-lg shadow-indigo-500/20 ${isMobile ? 'py-5 rounded-2xl' : ''}`}
-                        >
+                        <Button onClick={downloadImage} className={`flex-1 gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-lg shadow-indigo-500/20 ${isMobile ? 'py-5 rounded-2xl' : ''}`} >
                             <Download size={18} />
                             Export Image
                         </Button>

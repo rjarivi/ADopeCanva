@@ -3,7 +3,7 @@ import { MobileNavbar } from './MobileNavbar';
 import { CategoryDropdown } from './CategoryDropdown';
 import { ToolCategory } from '../types';
 import { Dashboard } from '../views/Dashboard';
-import { Search, X, Command } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface MobileLayoutProps {
@@ -53,9 +53,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                     className="flex items-center gap-3 cursor-pointer"
                     onClick={() => navigate('/')}
                 >
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                        <Command className="text-white" size={18} />
-                    </div>
+                    <img src="/adopecanva.svg" alt="AdopeCanva" className="w-8 h-8 rounded-lg" style={{ filter: 'drop-shadow(0 4px 12px rgba(121, 95, 244, 0.4))' }} />
                     <span className="text-xl font-bold text-white tracking-tight" style={{ fontFamily: '"Comfortaa", sans-serif' }}>
                         adopecanva
                     </span>

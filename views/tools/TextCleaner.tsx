@@ -73,10 +73,7 @@ export const TextCleaner: React.FC = () => {
                     <div className="flex flex-col gap-2 h-full">
                         <div className="flex items-center justify-between">
                             <label className="text-sm font-medium text-zinc-400">Cleaned Result</label>
-                            <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
+                            <Button size="sm" variant="secondary" onClick={() => {
                                     navigator.clipboard.writeText(cleanedText);
                                 }}
                                 disabled={!cleanedText}

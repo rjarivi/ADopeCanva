@@ -298,12 +298,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
             )}
 
             {!isDone ? (
-              <Button
-                onClick={handleConvert}
-                isLoading={isProcessing}
-                size="lg"
-                className="w-full h-14"
-              >
+              <Button onClick={handleConvert} isLoading={isProcessing} size="lg" className="w-full h-14" >
                 {isProcessing ? 'Converting...' : `Convert to ${targetFormat}`}
               </Button>
             ) : (

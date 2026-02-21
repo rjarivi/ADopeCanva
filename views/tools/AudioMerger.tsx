@@ -216,13 +216,7 @@ export const AudioMerger: React.FC = () => {
 
           <div className="pt-4">
             {!mergedBlobUrl ? (
-              <Button
-                className="w-full h-14"
-                size="lg"
-                onClick={handleMerge}
-                isLoading={isProcessing}
-                disabled={files.length < 2 || isProcessing}
-              >
+              <Button className="w-full h-14" size="lg" onClick={handleMerge} isLoading={isProcessing} disabled={files.length < 2 || isProcessing} >
                 Merge {files.length} Tracks
               </Button>
             ) : (

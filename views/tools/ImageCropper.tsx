@@ -578,16 +578,10 @@ export const ImageCropper: React.FC = () => {
                         </section>
 
                         <div className="pt-4 space-y-3">
-                            <Button
-                                className="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none shadow-lg shadow-blue-500/20 font-bold text-xs tracking-widest uppercase"
-                                onClick={handleCropImage}
-                            >
+                            <Button className="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none shadow-lg shadow-blue-500/20 font-bold text-xs tracking-widest uppercase" onClick={handleCropImage} >
                                 <Check size={18} className="mr-2" /> Apply Changes
                             </Button>
-                            <Button
-                                variant="secondary"
-                                className="w-full h-12 border-zinc-800 font-bold text-xs tracking-widest uppercase"
-                                onClick={() => fileInputRef.current?.click()}
+                            <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold text-xs tracking-widest uppercase" onClick={() => fileInputRef.current?.click()}
                             >
                                 <RefreshCw size={16} className="mr-2" /> New Image
                             </Button>

@@ -186,21 +186,13 @@ export const TextToPdf: React.FC = () => {
 
                         {/* Actions */}
                         <div className="space-y-3">
-                            <Button
-                                className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 border-none shadow-lg shadow-emerald-900/20"
-                                onClick={generatePdf}
-                                isLoading={isProcessing}
-                                disabled={isProcessing || !hasText}
-                            >
+                            <Button className="w-full h-12 border-none shadow-lg shadow-emerald-900/20" onClick={generatePdf} isLoading={isProcessing} disabled={isProcessing || !hasText} >
                                 <Zap size={18} className="mr-2" />
                                 {isProcessing ? 'Generating...' : 'Preview PDF'}
                             </Button>
 
                             {pdfPreviewUrl && (
-                                <Button
-                                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                                    onClick={handleDownload}
-                                >
+                                <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleDownload} >
                                     <Download size={18} className="mr-2" /> Download PDF
                                 </Button>
                             )}
