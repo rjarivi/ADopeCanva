@@ -669,35 +669,21 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
             </section>
 
             {!resultGif ? (
-              <Button
-                className="w-full h-14 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
-                onClick={handleGenerate}
-                isLoading={isProcessing}
-                disabled={files.length < 2 || isProcessing}
-              >
+              <Button className="w-full h-14 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all" onClick={handleGenerate} isLoading={isProcessing} disabled={files.length < 2 || isProcessing} >
                 <Zap size={18} className="mr-2" />
                 {isProcessing ? 'Rendering...' : 'Start Render'}
               </Button>
             ) : (
               <div className="space-y-3 animate-slide-up">
-                <Button
-                  className="w-full h-14 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                  onClick={handleDownload}
-                >
+                <Button className="w-full h-14 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleDownload} >
                   <Download size={18} className="mr-2" /> Download Output
                 </Button>
                 <div className="flex gap-3">
-                  <Button
-                    variant="secondary"
-                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 whitespace-nowrap"
-                    onClick={() => setResultGif(null)}
+                  <Button variant="secondary" className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-zinc-300 whitespace-nowrap" onClick={() => setResultGif(null)}
                   >
                     <Undo2 size={16} className="mr-2" /> Redo
                   </Button>
-                  <Button
-                    variant="secondary"
-                    className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-red-400 hover:text-red-300 whitespace-nowrap"
-                    onClick={() => { setFiles([]); setResultGif(null); }}
+                  <Button variant="secondary" className="flex-1 h-14 border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-red-400 hover:text-red-300 whitespace-nowrap" onClick={() => { setFiles([]); setResultGif(null); }}
                   >
                     <RefreshCcw size={16} className="mr-2" /> New GIF
                   </Button>

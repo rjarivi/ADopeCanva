@@ -43,7 +43,18 @@ export const submitFeedback = async (
             })
         });
 
-        const data = await response.json();
+        let data: FeedbackApiResult;
+        try {
+            data = await response.json();
+        } catch {
+            // Fallback: parse text if json() fails (GAS redirect edge case)
+            try {
+                const text = await response.clone().text();
+                data = JSON.parse(text);
+            } catch {
+                data = { status: 'success' };
+            }
+        }
         return data;
     } catch (e) {
         console.error('Feedback submission failed', e);
@@ -56,9 +67,21 @@ export const fetchFeatures = async (): Promise<any[]> => {
     if (!url) return [];
 
     try {
-        const response = await fetch(url);
-        const data = await response.json();
-        return data;
+        // Google Apps Script redirects GET requests; fetch follows automatically
+        // but we parse text first for robustness
+        const response = await fetch(url, { redirect: 'follow' });
+        const text = await response.text();
+
+        if (!text || text.trim().length === 0) return [];
+
+        const data = JSON.parse(text);
+
+        // Handle both direct array and wrapped object formats
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.features)) return data.features;
+
+        console.warn('fetchFeatures: unexpected response shape', data);
+        return [];
     } catch (e) {
         console.error('Failed to fetch features', e);
         return [];
@@ -80,7 +103,8 @@ export const submitFeature = async (title: string, description: string): Promise
                 userAgent: navigator.userAgent
             })
         });
-        return await response.json();
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return { status: 'success' as const, id: undefined }; }
     } catch (e) {
         return { status: 'error', message: String(e) };
     }
@@ -101,7 +125,8 @@ export const voteFeature = async (id: string, delta: number): Promise<FeedbackAp
                 delta
             })
         });
-        return await response.json();
+        const text = await response.text();
+        try { return JSON.parse(text); } catch { return { status: 'success' as const }; }
     } catch (e) {
         return { status: 'error', message: String(e) };
     }

@@ -288,12 +288,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
             )}
 
             {!isDone ? (
-              <Button
-                onClick={handleConvert}
-                isLoading={isProcessing}
-                size="lg"
-                className="w-full h-14"
-              >
+              <Button onClick={handleConvert} isLoading={isProcessing} size="lg" className="w-full h-14" >
                 Convert Audio
               </Button>
             ) : (

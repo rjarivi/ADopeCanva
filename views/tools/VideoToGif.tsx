@@ -473,12 +473,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
 
             <div className="pt-4">
               {!isDone ? (
-                <Button
-                  onClick={handleConvert}
-                  className="w-full h-12 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-900/20"
-                  isLoading={isProcessing}
-                  disabled={isProcessing}
-                >
+                <Button onClick={handleConvert} className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" isLoading={isProcessing} disabled={isProcessing} >
                   {isProcessing ? (
                     <span className="flex items-center gap-2">
                       <Loader2 size={16} className="animate-spin" />
@@ -488,16 +483,10 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button
-                    onClick={handleDownload}
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                  >
+                  <Button onClick={handleDownload} className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" >
                     <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
                   </Button>
-                  <Button
-                    variant="secondary"
-                    className="w-full h-12 border-zinc-800"
-                    onClick={() => {
+                  <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={() => {
                       setIsDone(false);
                       setGifUrl(null);
                       setProgress(0);

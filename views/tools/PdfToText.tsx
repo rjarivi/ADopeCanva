@@ -175,29 +175,17 @@ export const PdfToText: React.FC = () => {
 
                         <div className="space-y-3">
                             {!extractedText ? (
-                                <Button
-                                    className="w-full h-12 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 border-none shadow-lg shadow-red-900/20"
-                                    onClick={extractText}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing}
-                                >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-red-900/20" onClick={extractText} isLoading={isProcessing} disabled={isProcessing} >
                                     <FileText size={18} className="mr-2" />
                                     {isProcessing ? 'Extracting...' : 'Extract Text'}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                                        onClick={handleCopy}
-                                    >
+                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleCopy} >
                                         {copied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
                                         {copied ? 'Copied!' : 'Copy to Clipboard'}
                                     </Button>
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full h-12 border-zinc-800"
-                                        onClick={handleDownload}
-                                    >
+                                    <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleDownload} >
                                         <Download size={16} className="mr-2" /> Download .txt
                                     </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>

@@ -191,11 +191,7 @@ export const ImageConverter: React.FC = () => {
 
                     <div className="pt-4">
                         {!processedFiles.length ? (
-                            <Button
-                                className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-black font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl"
-                                onClick={convertImages}
-                                disabled={isProcessing}
-                            >
+                            <Button className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-black font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl" onClick={convertImages} disabled={isProcessing} >
                                 {isProcessing ? <Loader2 className="animate-spin" /> : <><ArrowRight className="mr-2" size={18} /> Convert All</>}
                             </Button>
                         ) : (
@@ -204,10 +200,7 @@ export const ImageConverter: React.FC = () => {
                                     <span className="text-green-500 font-bold text-xs uppercase tracking-wider">Conversion Complete</span>
                                     <span className="text-green-400 font-mono text-xs">{processedFiles.length} files</span>
                                 </div>
-                                <Button
-                                    className="w-full h-14 bg-white text-black hover:bg-zinc-200 font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl"
-                                    onClick={handleDownloadAll}
-                                >
+                                <Button className="w-full h-14 bg-white text-black hover:bg-zinc-200 font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl" onClick={handleDownloadAll} >
                                     <Download className="mr-2" size={18} /> Download All
                                 </Button>
                                 <button onClick={() => setProcessedFiles([])} className="w-full text-center text-[10px] text-zinc-500 hover:text-white uppercase font-bold tracking-widest pt-2">

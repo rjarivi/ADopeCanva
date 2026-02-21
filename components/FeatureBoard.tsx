@@ -15,41 +15,6 @@ interface Feature {
     date: string;
 }
 
-const INITIAL_FEATURES: Feature[] = [
-    {
-        id: '1',
-        title: 'Dark Mode Schedule',
-        description: 'Auto-switch between light and dark mode based on sunset.',
-        status: 'in-progress',
-        votes: 42,
-        date: '2024-03-15'
-    },
-    {
-        id: '2',
-        title: 'Cloud Save',
-        description: 'Sync projects across devices using Google Drive.',
-        status: 'requested',
-        votes: 128,
-        date: '2024-03-14'
-    },
-    {
-        id: '3',
-        title: 'Audio Waveform Export',
-        description: 'Export the visualizer as a video file.',
-        status: 'completed',
-        votes: 85,
-        date: '2024-02-28'
-    },
-    {
-        id: '4',
-        title: 'Markdown Creator',
-        description: 'Design UI mockups using ASCII and Unicode characters for AI prompt engineering.',
-        status: 'completed',
-        votes: 156,
-        date: '2026-02-19'
-    }
-];
-
 export const FeatureBoard = () => {
     const [features, setFeatures] = useState<Feature[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -67,21 +32,23 @@ export const FeatureBoard = () => {
             const votedIds = JSON.parse(localStorage.getItem('omni_voted_features') || '[]');
 
             if (apiData && apiData.length > 0) {
+                const normalizeStatus = (s: string): FeatureStatus => {
+                    const lower = (s || 'requested').toLowerCase().trim();
+                    if (lower === 'completed' || lower === 'done') return 'completed';
+                    if (lower === 'in-progress' || lower === 'in progress') return 'in-progress';
+                    return 'requested';
+                };
+
                 const merged = apiData.map((f: any) => ({
                     ...f,
+                    status: normalizeStatus(f.status),
                     hasVoted: votedIds.includes(f.id)
                 }));
                 // Sort by votes desc
                 setFeatures(merged.sort((a: Feature, b: Feature) => b.votes - a.votes));
             } else {
-                // Fallback / Initial if empty
-                // Check if we have 'omni_features' locally from previous version
-                const local = localStorage.getItem('omni_features');
-                if (local) {
-                    setFeatures(JSON.parse(local));
-                } else {
-                    setFeatures(INITIAL_FEATURES);
-                }
+                // No features from API — show empty state (no mock data)
+                setFeatures([]);
             }
             setIsLoading(false);
         };
@@ -218,8 +185,7 @@ export const FeatureBoard = () => {
 
     return (
         <div className="space-y-4 animate-fade-in flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between shrink-0">
-                <h3 className="text-lg font-bold text-white">Feature Roadmap</h3>
+            <div className="flex items-center justify-end shrink-0">
                 <Button size="sm" onClick={() => setShowAddForm(true)}>
                     <Plus size={16} className="mr-2" /> New Request
                 </Button>
@@ -227,7 +193,7 @@ export const FeatureBoard = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-y-auto pr-2 custom-scrollbar flex-1 min-h-[300px]">
                 {/* Organize by status priority: In Progress -> Requested -> Completed */}
-                {['in-progress', 'requested', 'completed'].map(statusGroup => {
+                {['requested', 'in-progress', 'completed'].map(statusGroup => {
                     const groupFeatures = features.filter(f => f.status === statusGroup);
 
                     return (
@@ -236,6 +202,11 @@ export const FeatureBoard = () => {
                                 {getStatusIcon(statusGroup as FeatureStatus)}
                                 {statusGroup.replace('-', ' ')}
                             </div>
+                            {groupFeatures.length === 0 && (
+                                <div className="text-center text-zinc-600 text-xs py-6 border border-dashed border-zinc-800 rounded-xl">
+                                    No features yet
+                                </div>
+                            )}
                             {groupFeatures.map(feature => (
                                 <div key={feature.id} className="bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-xl p-4 transition-colors group">
                                     <div className="flex gap-3">

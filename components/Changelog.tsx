@@ -168,11 +168,7 @@ const CHANGES: ChangeEntry[] = [
 export const Changelog = () => {
     return (
         <div className="space-y-8 animate-fade-in flex-1 flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between shrink-0">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Rocket className="text-indigo-400" size={20} />
-                    What's New
-                </h3>
+            <div className="flex items-center justify-end shrink-0">
                 <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded border border-zinc-700/50 uppercase tracking-widest">
                     Version History
                 </span>

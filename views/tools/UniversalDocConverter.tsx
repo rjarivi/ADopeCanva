@@ -592,11 +592,7 @@ export const UniversalDocConverter: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <Button
-                                        onClick={processFile}
-                                        disabled={isProcessing}
-                                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                                    >
+                                    <Button onClick={processFile} disabled={isProcessing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]" >
                                         {isProcessing ? <Loader2 className="animate-spin mr-3" size={24} /> : <ArrowRight className="mr-3" size={24} />}
                                         {isProcessing ? 'Converting...' : 'Start Conversion'}
                                     </Button>

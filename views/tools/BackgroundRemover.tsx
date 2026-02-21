@@ -199,20 +199,13 @@ export const BackgroundRemover: React.FC = () => {
               />
 
               {!resultImage ? (
-                <Button
-                  className="w-full h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
-                  onClick={handleRemoveBackground}
-                  isLoading={isProcessing}
-                  disabled={isProcessing || !apiKey}
-                >
+                <Button className="w-full h-12 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all" onClick={handleRemoveBackground} isLoading={isProcessing} disabled={isProcessing || !apiKey} >
                   <Eraser size={18} className="mr-2" />
                   {isProcessing ? 'Removing...' : 'Remove Background'}
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                    onClick={() => {
+                  <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
                       link.download = `no-bg-${file.file.name.split('.')[0]}.png`;

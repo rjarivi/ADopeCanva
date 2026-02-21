@@ -444,28 +444,18 @@ export const SignatureGenerator: React.FC = () => {
                             {view === 'draw' ? (
                                 <>
                                     <div className="grid grid-cols-2 gap-3">
-                                        <Button
-                                            variant="secondary"
-                                            onClick={() => setStrokes(s => s.slice(0, -1))}
+                                        <Button variant="secondary" onClick={() => setStrokes(s => s.slice(0, -1))}
                                             disabled={strokes.length === 0}
                                         >
                                             <Undo size={16} className="mr-2" /> Undo
                                         </Button>
-                                        <Button
-                                            variant="secondary"
-                                            className="hover:border-red-500/50 hover:text-red-400"
-                                            onClick={() => setStrokes([])}
+                                        <Button variant="secondary" className="hover:border-red-500/50 hover:text-red-400" onClick={() => setStrokes([])}
                                             disabled={strokes.length === 0}
                                         >
                                             <Eraser size={16} className="mr-2" /> Clear
                                         </Button>
                                     </div>
-                                    <Button
-                                        variant="primary"
-                                        className="w-full h-12"
-                                        onClick={startPreviewAndExport}
-                                        disabled={strokes.length === 0}
-                                    >
+                                    <Button variant="primary" className="w-full h-12" onClick={startPreviewAndExport} disabled={strokes.length === 0} >
                                         <Eye size={18} className="mr-2" /> Preview & Create
                                     </Button>
                                 </>
@@ -473,13 +463,7 @@ export const SignatureGenerator: React.FC = () => {
                                 <div className="space-y-3 animate-slide-up">
                                     {/* UNIFIED DOWNLOAD BUTTON */}
                                     <div className="relative flex items-stretch mt-4 group shadow-sm">
-                                        <Button
-                                            className={`flex-1 ${(!isProcessing && mp4Url) ? 'rounded-r-none border-r border-white/20' : ''} ${(gifUrl || isProcessing)
-                                                    ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 disabled:opacity-100 disabled:cursor-wait'
-                                                    : 'bg-zinc-800 text-zinc-500 disabled:opacity-50'
-                                                }`}
-                                            disabled={!gifUrl && !isProcessing}
-                                            onClick={() => {
+                                        <Button className={`flex-1 ${(!isProcessing && mp4Url) ? 'rounded-r-none border-r border-white/20' : ''} ${(gifUrl || isProcessing) ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 disabled:opacity-100 disabled:cursor-wait' : 'bg-zinc-800 text-zinc-500 disabled:opacity-50' }`} disabled={!gifUrl && !isProcessing} onClick={() => {
                                                 if (isProcessing) return;
                                                 if (!gifUrl) return;
                                                 const a = document.createElement("a");
@@ -532,10 +516,7 @@ export const SignatureGenerator: React.FC = () => {
                                         )}
                                     </div>
 
-                                    <Button
-                                        variant="secondary"
-                                        className="w-full mt-2"
-                                        onClick={() => { setView('draw'); setError(null); }}
+                                    <Button variant="secondary" className="w-full mt-2" onClick={() => { setView('draw'); setError(null); }}
                                     >
                                         <Edit2 size={16} className="mr-2" /> Continue Drawing
                                     </Button>

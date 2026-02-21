@@ -278,21 +278,13 @@ export const PdfToJpg: React.FC = () => {
 
                         <div className="space-y-3">
                             {pageImages.length === 0 ? (
-                                <Button
-                                    className="w-full h-12 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 border-none shadow-lg shadow-amber-900/20"
-                                    onClick={convertToImages}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing}
-                                >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-amber-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
                                     <FileImage size={18} className="mr-2" />
                                     {isProcessing ? 'Converting...' : 'Convert to JPG'}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                                        onClick={downloadAll}
-                                    >
+                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={downloadAll} >
                                         <Archive size={18} className="mr-2" />
                                         {pageImages.length === 1 ? 'Download JPG' : `Download All (${pageImages.length} images)`}
                                     </Button>

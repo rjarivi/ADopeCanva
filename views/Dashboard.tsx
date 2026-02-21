@@ -1114,7 +1114,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveC
                 <input
                     id="mobile-tool-search"
                     type="text"
-                    className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:bg-zinc-900 focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-colors"
+                    className="block w-full pl-10 pr-3 py-3 border border-zinc-800 rounded-xl leading-5 bg-zinc-900/50 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:bg-zinc-900 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 sm:text-sm transition-all"
+                    style={{ zIndex: 10 }}
                     placeholder="Search tools..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -1126,11 +1127,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveC
                     <div
                         key={tool.id}
                         onClick={() => handleToolClick(tool)}
-                        className={`group bg-surface hover:bg-zinc-800 border border-zinc-800/50 hover:border-primary/50 rounded-3xl transition-all duration-300 relative flex flex-col h-full ${tool.comingSoon ? 'opacity-75 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/5'}`}
+                        className={`group bg-zinc-900/80 hover:bg-zinc-800/90 border border-zinc-800/50 rounded-2xl transition-all duration-300 relative flex flex-col h-full ${tool.comingSoon ? 'opacity-75 grayscale-[0.5] cursor-not-allowed' : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20'}`}
+                        style={!tool.comingSoon ? { ['--tw-hover-border' as any]: '' } : undefined}
+                        onMouseEnter={(e) => { if (!tool.comingSoon) { e.currentTarget.style.borderColor = 'rgba(79,70,229,0.5)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(79,70,229,0.15)'; } }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.boxShadow = ''; }}
                     >
                         {/* Background Glow Effect - Isolated in clipped container */}
-                        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-                            <div className="absolute -right-10 -top-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-500"></div>
+                        <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
+                            <div className="absolute -right-10 -top-10 w-48 h-48 rounded-full blur-3xl transition-all duration-500" style={{ background: 'rgba(79,70,229,0.05)' }}
+                                ref={el => { if (el) { el.parentElement?.parentElement?.addEventListener('mouseenter', () => el.style.background = 'rgba(79,70,229,0.15)'); el.parentElement?.parentElement?.addEventListener('mouseleave', () => el.style.background = 'rgba(79,70,229,0.05)'); } }}></div>
                         </div>
 
                         {/* Content - relative with z-index to sit above glow, NO overflow hidden */}
@@ -1183,7 +1188,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveC
                                 </p>
                             </div>
 
-                            <div className="mt-6 flex items-center text-sm font-medium text-zinc-500 group-hover:text-primary transition-colors pt-2">
+                            <div className="mt-6 flex items-center text-sm font-bold text-zinc-600 transition-colors pt-2" style={{ color: undefined }}
+                                ref={el => { if (el) { el.closest('[data-tool]')?.addEventListener('mouseenter', () => el.style.color = 'rgb(129,140,248)'); el.closest('[data-tool]')?.addEventListener('mouseleave', () => el.style.color = ''); } }}>
                                 {tool.comingSoon ? (
                                     <span className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] bg-zinc-800 px-2 py-1 rounded-md border border-zinc-700">Coming Soon</span>
                                 ) : (

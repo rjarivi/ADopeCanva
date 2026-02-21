@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, X, Send, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, X, Send, CheckCircle2, Rocket, Layers, Bug } from 'lucide-react';
 import { Button } from './ui/Button';
 import { FeatureBoard } from './FeatureBoard';
 import { Changelog } from './Changelog';
@@ -66,30 +66,61 @@ export const Feedback = () => {
                             ${type === 'feature' || type === 'changelog' ? 'max-w-4xl h-[85vh]' : 'max-w-md'}
                         `}
                     >
-                        <button
-                            onClick={() => setIsOpen(false)}
-                            className="absolute top-4 right-4 p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors z-20"
-                        >
-                            <X size={20} />
-                        </button>
+                        {/* Header: Title, Icon, Close */}
+                        <div className="flex items-start justify-between w-full mb-3 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-indigo-500/10 text-indigo-400 rounded-xl shrink-0">
+                                    {type === 'bug' ? <Bug size={20} /> : type === 'feature' ? <Layers size={20} /> : type === 'changelog' ? <Rocket size={20} /> : <MessageSquare size={20} />}
+                                </div>
+                                <h3 className="text-xl font-bold text-white">
+                                    {type === 'bug' ? 'Report a Bug' : type === 'feature' ? 'Feature Roadmap' : type === 'changelog' ? "What's New" : 'Send Feedback'}
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="flex-shrink-0 p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                                aria-label="Close"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
 
-                        <div className="flex bg-zinc-800/50 p-1 rounded-xl mb-6 relative z-10 w-fit">
-                            {(['feedback', 'bug', 'feature', 'changelog'] as const).map((t) => (
-                                <button
-                                    key={t}
-                                    type="button"
-                                    onClick={() => setType(t)}
-                                    className={`
-                                        px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all
-                                        ${type === t
-                                            ? 'bg-zinc-700 text-white shadow-md'
-                                            : 'text-zinc-500 hover:text-zinc-300'
-                                        }
-                                    `}
-                                >
-                                    {t === 'feature' ? 'Roadmap' : t === 'changelog' ? 'Updates' : t}
-                                </button>
-                            ))}
+                        {/* Details */}
+                        <p className="text-sm text-zinc-400 mb-6 px-1">
+                            {type === 'bug' ? 'Found an issue? Let us know so we can squash it!' :
+                                type === 'feature' ? 'Suggest and vote on new features for Omniedit.' :
+                                    type === 'changelog' ? 'View the latest updates and improvements.' :
+                                        'Tell us about your experience or suggest improvements.'}
+                        </p>
+
+                        {/* Tabs (Responsive: Icons on Mobile, Text on Desktop) */}
+                        <div className="flex items-center w-full sm:w-fit bg-zinc-800/50 p-1 rounded-xl mb-6 gap-1 shrink-0">
+                            {(['feedback', 'bug', 'feature', 'changelog'] as const).map((t) => {
+                                const Icon = t === 'bug' ? Bug : t === 'feature' ? Layers : t === 'changelog' ? Rocket : MessageSquare;
+                                const label = t === 'feature' ? 'Roadmap' : t === 'changelog' ? 'Updates' : t;
+                                const isActive = type === t;
+
+                                return (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => setType(t)}
+                                        className={`
+                                            flex items-center justify-center gap-2 whitespace-nowrap py-2.5 sm:py-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider rounded-lg transition-all duration-300 overflow-hidden
+                                            ${isActive
+                                                ? 'bg-zinc-700 text-white shadow-md flex-1 sm:flex-none px-3 sm:px-4'
+                                                : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-700/50 flex-none sm:flex-none w-12 sm:w-auto px-0 sm:px-4'
+                                            }
+                                        `}
+                                        title={label}
+                                    >
+                                        <Icon size={16} className="shrink-0 sm:hidden" />
+                                        <span className={isActive ? 'animate-fade-in block sm:block' : 'hidden sm:block'}>
+                                            {label}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
 
                         {type === 'feature' ? (
@@ -98,17 +129,6 @@ export const Feedback = () => {
                             <Changelog />
                         ) : !showSuccess ? (
                             <form onSubmit={handleSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-bold text-white">
-                                        {type === 'bug' ? 'Report a Bug' : 'Send Feedback'}
-                                    </h3>
-                                    <p className="text-sm text-zinc-400">
-                                        {type === 'bug'
-                                            ? 'Found an issue? Let us know so we can squash it!'
-                                            : 'Tell us about your experience or suggest improvements.'
-                                        }
-                                    </p>
-                                </div>
 
                                 <div className="space-y-4">
                                     <div className="space-y-2">
@@ -141,11 +161,7 @@ export const Feedback = () => {
                                     </div>
                                 </div>
 
-                                <Button
-                                    isLoading={isSubmitting}
-                                    type="submit"
-                                    className="w-full"
-                                >
+                                <Button isLoading={isSubmitting} type="submit" className="w-full" >
                                     <Send size={16} className="mr-2" />
                                     Send
                                 </Button>

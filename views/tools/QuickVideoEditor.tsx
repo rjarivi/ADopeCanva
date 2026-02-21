@@ -482,20 +482,12 @@ export const QuickVideoEditor: React.FC = () => {
                 {/* Sticky Action Buttons */}
                 <div className="p-4 border-t border-zinc-900 bg-zinc-950 z-20 shrink-0">
                     {!trimmedUrl ? (
-                        <Button
-                            className="w-full h-12 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20 border-none rounded-xl font-bold tracking-wide"
-                            onClick={handleExport}
-                            isLoading={isProcessing}
-                            disabled={isProcessing}
-                        >
+                        <Button className="w-full h-12 shadow-lg shadow-indigo-500/20 border-none rounded-xl font-bold tracking-wide" onClick={handleExport} isLoading={isProcessing} disabled={isProcessing} >
                             <Scissors size={18} className="mr-2" /> Export Video
                         </Button>
                     ) : (
                         <div className="space-y-3 animate-slide-up">
-                            <Button
-                                className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg rounded-xl font-bold"
-                                onClick={downloadTrimmed}
-                            >
+                            <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg rounded-xl font-bold" onClick={downloadTrimmed} >
                                 <Download size={18} className="mr-2" /> Download
                             </Button>
                             <button

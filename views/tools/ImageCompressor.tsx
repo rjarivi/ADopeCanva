@@ -215,8 +215,8 @@ export const ImageCompressor: React.FC = () => {
             <div className="space-y-3">
               {!resultImage ? (
                 <Button
-                  className="w-full h-12 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 border-none shadow-lg shadow-indigo-900/20"
-                  onClick={handleCompress} // Changed from compressImage to handleCompress to match existing function
+                  className="w-full h-12 border-none shadow-lg shadow-indigo-900/20"
+                  onClick={handleCompress}
                   isLoading={isProcessing}
                   disabled={isProcessing}
                 >
@@ -225,14 +225,12 @@ export const ImageCompressor: React.FC = () => {
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button
-                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = resultImage!; // Changed from compressedImage to resultImage to match existing state
-                      link.download = `optimized-${file!.file.name}`; // Added ! for file and removed split('.')[0]}.jpg to match new format
-                      link.click();
-                    }}
+                  <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = resultImage!; // Changed from compressedImage to resultImage to match existing state
+                    link.download = `optimized-${file!.file.name}`; // Added ! for file and removed split('.')[0]}.jpg to match new format
+                    link.click();
+                  }}
                   >
                     <Download size={18} className="mr-2" /> Download Result
                   </Button>

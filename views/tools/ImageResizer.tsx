@@ -294,21 +294,13 @@ export const ImageResizer: React.FC = () => {
                         {/* Actions */}
                         <div className="space-y-3">
                             {!resultImage ? (
-                                <Button
-                                    className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 border-none shadow-lg shadow-cyan-900/20"
-                                    onClick={handleResize}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing}
-                                >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-cyan-900/20" onClick={handleResize} isLoading={isProcessing} disabled={isProcessing} >
                                     <Zap size={18} className="mr-2" />
                                     {isProcessing ? 'Resizing...' : 'Resize Image'}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button
-                                        className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg"
-                                        onClick={handleDownload}
-                                    >
+                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleDownload} >
                                         <Download size={18} className="mr-2" /> Download
                                     </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={() => setResultImage(null)}>

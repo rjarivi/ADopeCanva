@@ -266,12 +266,7 @@ export const GifCompressor: React.FC = () => {
                         </section>
 
                         {!resultUrl ? (
-                            <Button
-                                onClick={handleCompress}
-                                isLoading={isProcessing}
-                                disabled={isProcessing}
-                                className="w-full h-12 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 border-none font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-900/20"
-                            >
+                            <Button onClick={handleCompress} isLoading={isProcessing} disabled={isProcessing} className="w-full h-12 border-none font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-indigo-900/20" >
                                 {isProcessing ? (
                                     <span className="flex items-center gap-2">
                                         <Loader2 size={16} className="animate-spin" />
@@ -283,8 +278,7 @@ export const GifCompressor: React.FC = () => {
                             </Button>
                         ) : (
                             <div className="space-y-3 animate-slide-up">
-                                <Button
-                                    onClick={() => {
+                                <Button onClick={() => {
                                         const a = document.createElement('a');
                                         a.href = resultUrl!;
                                         a.download = 'compressed.gif';
@@ -294,9 +288,7 @@ export const GifCompressor: React.FC = () => {
                                 >
                                     <Download size={18} className="mr-2" /> Download GIF
                                 </Button>
-                                <Button
-                                    variant="secondary"
-                                    onClick={() => {
+                                <Button variant="secondary" onClick={() => {
                                         setFile(null);
                                         setResultUrl(null);
                                         setResultSize(null);

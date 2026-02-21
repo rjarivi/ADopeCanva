@@ -619,8 +619,7 @@ const MarkdownCreator: React.FC = () => {
                         </div>
                     </div>
 
-                    <Button
-                        onClick={() => handleAIGenerate()}
+                    <Button onClick={() => handleAIGenerate()}
                         disabled={!prompt || !apiKey || isProcessing}
                         isLoading={isProcessing}
                         className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white border-none shadow-lg shadow-indigo-500/10 font-black uppercase tracking-widest text-[10px]"
@@ -655,16 +654,10 @@ const MarkdownCreator: React.FC = () => {
                             <span className="text-[10px] font-black uppercase tracking-widest">Clear Canvas</span>
                         </button>
                         <div className="w-px h-6 bg-zinc-800 mx-2" />
-                        <Button
-                            variant="secondary"
-                            onClick={copyMarkdown}
-                            className="h-9 px-4 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 font-bold whitespace-nowrap text-[11px] uppercase tracking-wider"
-                        >
+                        <Button variant="secondary" onClick={copyMarkdown} className="h-9 px-4 border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-zinc-800 font-bold whitespace-nowrap text-[11px] uppercase tracking-wider" >
                             <Copy size={14} className="mr-2" /> Copy Markdown
                         </Button>
-                        <Button
-                            className="h-9 px-4 bg-indigo-600 text-white hover:bg-indigo-500 font-black uppercase text-[11px] tracking-widest whitespace-nowrap border-none"
-                            onClick={() => {
+                        <Button className="h-9 px-4 bg-indigo-600 text-white hover:bg-indigo-500 font-black uppercase text-[11px] tracking-widest whitespace-nowrap border-none" onClick={() => {
                                 const blob = new Blob([grid.map(row => row.map(cell => cell.char).join('')).join('\n')], { type: 'text/plain' });
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');

@@ -281,12 +281,7 @@ export const AudioReplacer: React.FC = () => {
                             </div>
                         </div>
 
-                        <Button
-                            className="w-full h-12 text-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 shadow-lg shadow-violet-500/20"
-                            onClick={handleProcess}
-                            isLoading={isProcessing}
-                            disabled={isDone}
-                        >
+                        <Button className="w-full h-12 text-lg shadow-lg shadow-violet-500/20" onClick={handleProcess} isLoading={isProcessing} disabled={isDone} >
                             {isDone ? 'Completed' : 'Replace Audio'}
                         </Button>
                     </div>
@@ -317,7 +312,7 @@ export const AudioReplacer: React.FC = () => {
                             </div>
                             <div className="flex gap-3">
                                 <Button variant="secondary" onClick={resetAll}>Edit Another</Button>
-                                <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white shadow-lg shadow-violet-500/20 border-none" onClick={handleDownload}>
+                                <Button className=" text-white shadow-lg shadow-violet-500/20 border-none" onClick={handleDownload}>
                                     <Download size={18} className="mr-2" /> Download
                                 </Button>
                             </div>
