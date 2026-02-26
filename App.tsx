@@ -78,14 +78,48 @@ const App = () => {
 
     const categories = ['All', ...Object.values(ToolCategory)];
 
-    // Google Analytics Page Tracking
+    // Unified SEO logic: Google Analytics, Page Tracking, and Structured Data
     useEffect(() => {
+        // Track page view
         if (typeof window.gtag === 'function') {
             window.gtag('config', 'G-1ZV3C4L9KF', {
                 page_path: location.pathname + location.search,
                 page_title: document.title
             });
         }
+
+        // Inject/Update Structured Data (JSON-LD)
+        const schemaId = 'adopecanva-schema';
+        let scriptTag = document.getElementById(schemaId) as HTMLScriptElement;
+
+        if (!scriptTag) {
+            scriptTag = document.createElement('script');
+            scriptTag.id = schemaId;
+            scriptTag.type = 'application/ld+json';
+            document.head.appendChild(scriptTag);
+        }
+
+        const schemaData = {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "AdopeCanva",
+            "operatingSystem": "All",
+            "applicationCategory": "MultimediaApplication, ProductivityApplication",
+            "description": "A comprehensive all-in-one productivity suite for video editing, image processing, and document management entirely in the browser.",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            },
+            "url": "https://adopecanva.com"
+        };
+
+        scriptTag.text = JSON.stringify(schemaData);
+
+        return () => {
+            // Optional: clean up schema if navigating away from home or to a specific tool
+            // (In this case, keeping the base schema is usually fine)
+        };
     }, [location]);
 
     // Sync Pro Mode with URL

@@ -9,6 +9,7 @@ import {
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
 import { VideoConverter } from './tools/VideoConverter';
+import { VideoCompressor } from './tools/VideoCompressor';
 import { AudioReplacer } from './tools/AudioReplacer';
 import { VideoToGif } from './tools/VideoToGif';
 import { AudioMerger } from './tools/AudioMerger';
@@ -87,6 +88,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Options', value: '2x, 4x, Denoise, Enhance' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
+        comingSoon: true,
         privacyNotes: 'Processing is done via the Google Gemini API using your personal key.'
     },
     {
@@ -259,6 +261,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Output Format', value: 'Transparent PNG' },
             { label: 'Speed', value: '< 2 seconds' }
         ],
+        comingSoon: true,
         privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
         beforeAfterImage: {
             before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
@@ -344,6 +347,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Capabilities', value: 'Inpainting, Style Transfer, Object Removal' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
+        comingSoon: true,
         privacyNotes: 'AI requests are sent to Google Gemini API. Your API keys are stored only in your browser.'
     },
     {
@@ -385,6 +389,27 @@ export const TOOLS: ToolItem[] = [
             { label: 'Max Filesize', value: 'Browser limited (usually 2GB)' }
         ],
         privacyNotes: 'Transcoding is done locally using FFmpeg.wasm. Privacy and speed guaranteed.'
+    },
+    {
+        id: 'video-compressor',
+        title: 'Video Compressor',
+        description: 'Reduce video file size efficiently.',
+        category: ToolCategory.VIDEO,
+        icon: Minimize2,
+        component: <VideoCompressor />,
+        popular: true,
+        guideTitle: 'Reduce video size for web and sharing',
+        guideContent: 'Large video files can be difficult to share or upload. Our video compressor uses advanced H.264 encoding with variable bitrate control to significantly reduce file size while maintaining excellent visual quality. Perfect for Discord, Slack, or email attachments.',
+        faqs: [
+            { question: 'What is the best compression setting?', answer: 'A CRF value between 23 and 28 usually provides the best balance of size and quality.' },
+            { question: 'Will it change my video format?', answer: 'The tool currently exports optimized MP4 (H.264) files for maximum compatibility.' }
+        ],
+        specs: [
+            { label: 'Engine', value: 'libx264 (WASM)' },
+            { label: 'Input Formats', value: 'MP4, MOV, WebM, AVI' },
+            { label: 'Output Format', value: 'MP4 (H.264)' }
+        ],
+        privacyNotes: 'Video processing is done locally on your CPU. No video data is ever transmitted to a server.'
     },
     {
         id: 'gif-maker',
@@ -570,6 +595,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Characters', value: 'Unicode Box-Drawing (┌, ─, │, etc.)' },
             { label: 'Export', value: 'Markdown Code Block' }
         ],
+        comingSoon: true,
         privacyNotes: 'Your designs are processed locally. AI generation requires your own Gemini API key.'
     },
     // APNG Tools
