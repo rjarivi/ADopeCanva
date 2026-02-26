@@ -55,7 +55,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: RefreshCcw,
         component: <ImageConverter />,
-        popular: true,
         guideTitle: 'How to batch convert images for web optimization',
         guideContent: 'Converting images to modern formats like WebP can significantly improve your website loading speed. Our batch converter allows you to transform multiple PNGs or JPGs into optimized WebP files instantly, ensuring high quality with smaller file sizes.',
         faqs: [
@@ -76,7 +75,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Maximize2,
         component: <UpscaleImage />,
-        popular: true,
         guideTitle: 'How to upscale and enhance your images with AI',
         guideContent: 'Our AI Image Upscaler uses advanced Gemini models to increase the resolution of your images while recovering lost details and removing noise. Perfect for low-resolution photos, artwork, and web graphics.',
         faqs: [
@@ -119,7 +117,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <ImageEditor />,
-        popular: true,
         guideTitle: 'Master layer-based editing in your browser',
         guideContent: 'Our Image Editor provides a familiar workspace with layers, filters, and granular controls. Whether you are adding text overlays, applying vintage filters, or compositing multiple images, you can do it all without installing heavy software like Photoshop.',
         faqs: [
@@ -140,7 +137,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Edit3,
         component: <GifEditor />,
-        popular: true,
         guideTitle: 'How to trim and crop animated GIFs',
         guideContent: 'Perfect your animations by removing unwanted frames or focusing on a specific area. Our GIF Editor lets you trim the start and end of any GIF with frame precision, ensuring your loops are seamless and engaging.',
         faqs: [
@@ -249,7 +245,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Eraser,
         component: <BackgroundRemover />,
-        popular: true,
         guideTitle: 'How to create transparent product photos for eBay',
         guideContent: 'Transparent backgrounds are essential for professional eBay listings. Our AI backgrounds remover precisely cuts out your product, allowing you to place it on any background or keep it transparent for a clean look.',
         faqs: [
@@ -595,7 +590,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Characters', value: 'Unicode Box-Drawing (┌, ─, │, etc.)' },
             { label: 'Export', value: 'Markdown Code Block' }
         ],
-        comingSoon: true,
         privacyNotes: 'Your designs are processed locally. AI generation requires your own Gemini API key.'
     },
     // APNG Tools
@@ -1119,7 +1113,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveC
                 t.description.toLowerCase().includes(query)
             );
         }
-        return tools;
+
+        return [...tools].sort((a, b) => (a.comingSoon ? 1 : 0) - (b.comingSoon ? 1 : 0));
     }, [activeCategory, searchQuery]);
 
     const handleToolClick = (tool: ToolItem) => {
