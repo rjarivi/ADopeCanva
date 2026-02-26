@@ -41,6 +41,18 @@ const MarkdownCreator: React.FC = () => {
     const [hoverPos, setHoverPos] = useState<{ r: number, c: number } | null>(null);
     const [textCursor, setTextCursor] = useState<{ r: number, c: number } | null>(null);
     const [showApiSettings, setShowApiSettings] = useState(false);
+    const [activeComponentId, setActiveComponentId] = useState<string | null>(null);
+    const [tableConfig, setTableConfig] = useState({ rows: 3, cols: 2 });
+    const [compConfig, setCompConfig] = useState<Record<string, any>>({
+        button: "Button",
+        input: "Enter text...",
+        checkbox: "Checkbox",
+        radio: "Radio Option",
+        toggle: "Toggle",
+        progress: 50,
+        tabs: { count: 3, names: ["Overview", "Analytics", "Settings", "Profile", "More"] },
+        card: "Card Title"
+    });
 
     // New Placement & Selection State
     const [placementData, setPlacementData] = useState<{ cells: Cell[][], w: number, h: number } | null>(null);
@@ -68,6 +80,13 @@ const MarkdownCreator: React.FC = () => {
             saveHistory(grid);
         }
     }, []);
+
+    // Refresh placement preview when config changes
+    useEffect(() => {
+        if (activeComponentId) {
+            prepareComponent(activeComponentId);
+        }
+    }, [tableConfig, compConfig]);
 
     const undo = () => {
         if (historyIndex > 0) {
@@ -161,7 +180,7 @@ const MarkdownCreator: React.FC = () => {
             });
             setGrid(newGrid);
             saveHistory(newGrid);
-            setPlacementData(null);
+            // setPlacementData(null); // Keep placement data to allow multiple placements
             return;
         }
 
@@ -330,6 +349,7 @@ const MarkdownCreator: React.FC = () => {
             e.preventDefault();
             setSelection(null);
             setPlacementData(null);
+            setActiveComponentId(null);
             return;
         }
 
@@ -422,83 +442,130 @@ const MarkdownCreator: React.FC = () => {
 
     // Presets - Now as Placement Fragments
     const prepareComponent = (type: string) => {
-        setSelection(null); // Clear selection when starting placement
-        // Create a temporary mini-grid for the component
-        // Dimensions vary by component
+        setSelection(null);
+        setActiveComponentId(type);
+        setActiveTool('select');
+
         let w = 0, h = 0;
 
         switch (type) {
-            case 'button': w = 12; h = 3; break;
-            case 'input': w = 26; h = 3; break;
-            case 'checkbox': w = 12; h = 1; break;
-            case 'radio': w = 15; h = 1; break;
-            case 'toggle': w = 15; h = 1; break;
-            case 'progress': w = 20; h = 1; break;
-            case 'table': w = 32; h = 7; break;
-            case 'navbar': w = 78; h = 3; break;
-            case 'tabs': w = 40; h = 2; break;
-            case 'card': w = 31; h = 9; break;
-            default: w = 10; h = 3; break;
+            case 'button': {
+                const text = compConfig.button;
+                const label = ` ${text} `;
+                w = label.length + 4; h = 3;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                drawBox(0, 0, 2, w - 1, cells);
+                writeString(1, 2, label, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'input': {
+                const text = compConfig.input;
+                w = Math.max(26, text.length + 4); h = 3;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                drawBox(0, 0, 2, w - 1, cells);
+                writeString(1, 1, ` ${text}`.padEnd(w - 2, ' '), cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'checkbox': {
+                const text = compConfig.checkbox;
+                w = text.length + 3; h = 1;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                writeString(0, 0, `☐ ${text}`, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'radio': {
+                const text = compConfig.radio;
+                w = text.length + 3; h = 1;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                writeString(0, 0, `○ ${text}`, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'toggle': {
+                const text = compConfig.toggle;
+                w = text.length + 8; h = 1;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                writeString(0, 0, `[○━] ${text}`, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'progress': {
+                const val = Math.max(0, Math.min(100, compConfig.progress));
+                const filled = Math.round((val / 100) * 12);
+                const barStr = `[${'█'.repeat(filled)}${'░'.repeat(12 - filled)}] ${val}%`;
+                w = barStr.length; h = 1;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                writeString(0, 0, barStr, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'tabs': {
+                const count = compConfig.tabs.count;
+                const tabNames = compConfig.tabs.names.slice(0, count);
+                const line = tabNames.map(t => `  ${t}  `).join('');
+                w = line.length; h = 2;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                writeString(0, 0, line, cells);
+
+                let underline = "";
+                tabNames.forEach((t) => {
+                    underline += " " + "─".repeat(t.length + 2) + " ";
+                });
+                writeString(1, 0, underline, cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'card': {
+                const title = compConfig.card;
+                w = Math.max(31, title.length + 6); h = 10;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                drawBox(0, 0, 9, w - 1, cells);
+                writeString(1, 2, title, cells);
+                writeString(2, 0, "├" + "─".repeat(w - 2) + "┤", cells);
+                writeString(4, 2, "Main content goes here", cells);
+                writeString(5, 2, "with multiple lines.", cells);
+                writeString(6, Math.floor(w / 2 - 4), "┌──────┐", cells);
+                writeString(7, Math.floor(w / 2 - 4), "│  OK  │", cells);
+                writeString(8, Math.floor(w / 2 - 4), "└──────┘", cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'navbar': {
+                w = 78; h = 3;
+                const cells = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                drawBox(0, 0, 2, 75, cells);
+                writeString(1, 2, "LOGO", cells);
+                writeString(1, 10, "Home   Products   About   Contact", cells);
+                writeString(1, 64, "[ LOGIN ]", cells);
+                setPlacementData({ cells, w, h });
+                break;
+            }
+            case 'table': {
+                const rowCount = tableConfig.rows;
+                const colCount = tableConfig.cols;
+                const cellW = 12;
+                w = colCount * cellW + 1;
+                h = rowCount * 2 + 1;
+                const dynamicTable = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
+                for (let r = 0; r <= rowCount; r++) {
+                    const gridR = r * 2;
+                    let lineStr = "";
+                    if (r === 0) lineStr = "┌" + ("─".repeat(cellW - 1) + "┬").repeat(colCount - 1) + "─".repeat(cellW - 1) + "┐";
+                    else if (r === rowCount) lineStr = "└" + ("─".repeat(cellW - 1) + "┴").repeat(colCount - 1) + "─".repeat(cellW - 1) + "┘";
+                    else lineStr = "├" + ("─".repeat(cellW - 1) + "┼").repeat(colCount - 1) + "─".repeat(cellW - 1) + "┤";
+                    writeString(gridR, 0, lineStr, dynamicTable);
+                    if (r < rowCount) {
+                        const dataR = gridR + 1;
+                        for (let c = 0; c <= colCount; c++) updateCell(dataR, c * cellW, "│", dynamicTable);
+                    }
+                }
+                setPlacementData({ cells: dynamicTable, w, h });
+                break;
+            }
         }
-
-        const tempGrid = Array.from({ length: h }, () => Array.from({ length: w }, () => ({ char: EMPTY_CHAR })));
-
-        switch (type) {
-            case 'button':
-                drawBox(0, 0, 2, 11, tempGrid);
-                writeString(1, 2, " Button ", tempGrid);
-                break;
-            case 'input':
-                drawBox(0, 0, 2, 25, tempGrid);
-                writeString(1, 1, "Enter text...          ", tempGrid);
-                break;
-            case 'checkbox':
-                writeString(0, 0, "☐ Checkbox", tempGrid);
-                break;
-            case 'radio':
-                writeString(0, 0, "○ Radio Option", tempGrid);
-                break;
-            case 'toggle':
-                writeString(0, 0, "[○━] Toggle Off", tempGrid);
-                break;
-            case 'progress':
-                writeString(0, 0, "[██████░░░░░░] 50%", tempGrid);
-                break;
-            case 'table':
-                drawBox(0, 0, 6, 31, tempGrid);
-                writeString(2, 0, "├" + "─".repeat(10) + "┬" + "─".repeat(20) + "┤", tempGrid);
-                writeString(1, 1, " ID       ", tempGrid);
-                writeString(1, 11, "│ NAME               ", tempGrid);
-                writeString(3, 1, " 01       ", tempGrid);
-                writeString(3, 11, "│ Item A             ", tempGrid);
-                writeString(4, 0, "├" + "─".repeat(10) + "┼" + "─".repeat(20) + "┤", tempGrid);
-                writeString(5, 1, " 02       ", tempGrid);
-                writeString(5, 11, "│ Item B             ", tempGrid);
-                break;
-            case 'navbar':
-                drawBox(0, 0, 2, 75, tempGrid);
-                writeString(1, 2, "LOGO", tempGrid);
-                writeString(1, 10, "Home   Products   About   Contact", tempGrid);
-                writeString(1, 64, "[ LOGIN ]", tempGrid);
-                break;
-            case 'tabs':
-                writeString(0, 0, "  Overview    Analytics    Settings  ", tempGrid);
-                writeString(1, 0, " ──────────  ", tempGrid);
-                break;
-            case 'card':
-                drawBox(0, 0, 8, 30, tempGrid);
-                writeString(1, 2, "Card Title", tempGrid);
-                writeString(2, 0, "├" + "─".repeat(29) + "┤", tempGrid);
-                writeString(4, 2, "Main content goes here", tempGrid);
-                writeString(5, 2, "with multiple lines.", tempGrid);
-                writeString(7, 18, "┌──────┐", tempGrid);
-                writeString(8, 18, "└──────┘", tempGrid);
-                writeString(8, 19, "  OK  ", tempGrid);
-                break;
-        }
-
-        setPlacementData({ cells: tempGrid, w, h });
-        setActiveTool('select'); // Switch to pointer to indicate placement mode
     };
 
     return (
@@ -533,8 +600,8 @@ const MarkdownCreator: React.FC = () => {
                     ].map(tool => (
                         <button
                             key={tool.id}
-                            onClick={() => { setActiveTool(tool.id); setPlacementData(null); setSelection(null); }}
-                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeTool === tool.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900/50 border-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}`}
+                            onClick={() => { setActiveTool(tool.id); setPlacementData(null); setSelection(null); setActiveComponentId(null); }}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeTool === tool.id && !activeComponentId ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900/50 border-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}`}
                         >
                             <tool.icon size={18} />
                             <span className="text-[10px] font-bold mt-2 uppercase">{tool.label}</span>
@@ -559,8 +626,8 @@ const MarkdownCreator: React.FC = () => {
                             { id: 'tabs', label: 'Tabs', icon: Layout },
                             { id: 'card', label: 'Card', icon: CreditCard },
                         ].map(item => (
-                            <button key={item.id} onClick={() => prepareComponent(item.id)} className="flex items-center gap-2 p-2.5 rounded-lg bg-zinc-900/40 border border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/60 text-zinc-400 hover:text-zinc-200 transition-all text-[10px] font-bold uppercase tracking-tight relative group">
-                                <item.icon size={12} className="text-indigo-500" />
+                            <button key={item.id} onClick={() => prepareComponent(item.id)} className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all text-[10px] font-bold uppercase tracking-tight relative group ${activeComponentId === item.id ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900/40 border-zinc-900 hover:border-zinc-700 hover:bg-zinc-900/60 text-zinc-400 hover:text-zinc-200'}`}>
+                                <item.icon size={12} className={activeComponentId === item.id ? 'text-indigo-400' : 'text-indigo-500'} />
                                 {item.label}
                                 <div className="absolute inset-0 border border-indigo-500/0 group-hover:border-indigo-500/20 rounded-lg pointer-events-none transition-all" />
                             </button>
@@ -568,65 +635,108 @@ const MarkdownCreator: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="pt-4 border-t border-zinc-900 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Magic Build</h3>
-                        <button
-                            onClick={() => setShowApiSettings(!showApiSettings)}
-                            className={`p-1.5 rounded-lg transition-colors ${showApiSettings ? 'bg-indigo-500/10 text-indigo-400' : 'text-zinc-500 hover:text-white hover:bg-zinc-900'}`}
-                        >
-                            <Settings size={14} />
-                        </button>
+                {activeComponentId && (
+                    <div className="bg-zinc-900/30 border border-zinc-900 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">{activeComponentId.toUpperCase()} Settings</h3>
+                            <button onClick={() => { setActiveComponentId(null); setPlacementData(null); }} className="text-zinc-600 hover:text-white transition-colors">
+                                <X size={14} />
+                            </button>
+                        </div>
+
+                        {activeComponentId === 'table' ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Rows</label>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => setTableConfig(prev => ({ ...prev, rows: Math.max(1, prev.rows - 1) }))} className="p-1 px-2 bg-zinc-800 rounded-md hover:bg-indigo-600 text-white transition-colors text-xs font-bold">-</button>
+                                        <span className="text-xs font-black text-white w-4 text-center">{tableConfig.rows}</span>
+                                        <button onClick={() => setTableConfig(prev => ({ ...prev, rows: Math.min(10, prev.rows + 1) }))} className="p-1 px-2 bg-zinc-800 rounded-md hover:bg-indigo-600 text-white transition-colors text-xs font-bold">+</button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Cols</label>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => setTableConfig(prev => ({ ...prev, cols: Math.max(1, prev.cols - 1) }))} className="p-1 px-2 bg-zinc-800 rounded-md hover:bg-indigo-600 text-white transition-colors text-xs font-bold">-</button>
+                                        <span className="text-xs font-black text-white w-4 text-center">{tableConfig.cols}</span>
+                                        <button onClick={() => setTableConfig(prev => ({ ...prev, cols: Math.min(6, prev.cols + 1) }))} className="p-1 px-2 bg-zinc-800 rounded-md hover:bg-indigo-600 text-white transition-colors text-xs font-bold">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {['button', 'input', 'checkbox', 'radio', 'toggle', 'card'].includes(activeComponentId) && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-bold text-zinc-500 uppercase">Text / Label</label>
+                                        <input
+                                            type="text"
+                                            value={compConfig[activeComponentId]}
+                                            onChange={(e) => setCompConfig(prev => ({ ...prev, [activeComponentId]: e.target.value }))}
+                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-zinc-200 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                        />
+                                    </div>
+                                )}
+
+                                {activeComponentId === 'progress' && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-[9px] font-bold text-zinc-500 uppercase">Value (%)</label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="range" min="0" max="100"
+                                                value={compConfig.progress}
+                                                onChange={(e) => setCompConfig(prev => ({ ...prev, progress: parseInt(e.target.value) }))}
+                                                className="flex-1 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                            />
+                                            <span className="text-[10px] font-bold text-indigo-400 w-8">{compConfig.progress}%</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeComponentId === 'tabs' && (
+                                    <div className="space-y-4">
+                                        <div className="space-y-1.5">
+                                            <h4 className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Tab Count</h4>
+                                            <div className="flex items-center gap-2">
+                                                {[1, 2, 3, 4, 5].map(n => (
+                                                    <button
+                                                        key={n}
+                                                        onClick={() => setCompConfig(prev => ({ ...prev, tabs: { ...prev.tabs, count: n } }))}
+                                                        className={`flex-1 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${compConfig.tabs.count === n ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-950 border-zinc-900 text-zinc-500'}`}
+                                                    >
+                                                        {n}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <h4 className="text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">Tab Names</h4>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {compConfig.tabs.names.slice(0, compConfig.tabs.count).map((name, i) => (
+                                                    <div key={i} className="space-y-1">
+                                                        <input
+                                                            type="text"
+                                                            value={name}
+                                                            onChange={(e) => {
+                                                                const newNames = [...compConfig.tabs.names];
+                                                                newNames[i] = e.target.value;
+                                                                setCompConfig(prev => ({ ...prev, tabs: { ...prev.tabs, names: newNames } }));
+                                                            }}
+                                                            placeholder={`Tab ${i + 1}`}
+                                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg p-1.5 px-2 text-[10px] text-zinc-200 focus:ring-1 focus:ring-indigo-500 outline-none"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
+                )}
 
-                    {showApiSettings && (
-                        <div className="bg-zinc-900/30 border border-zinc-900 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                            <ApiKeyInput
-                                serviceName="Gemini"
-                                localStorageKey="gemini_api_key"
-                                onKeyChange={setApiKey}
-                                compact={true}
-                            />
-                        </div>
-                    )}
-
-                    <div className="relative group">
-                        <textarea
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            placeholder="Describe any custom UI component..."
-                            className="w-full bg-zinc-900 border border-zinc-900 rounded-2xl p-4 text-xs text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500 min-h-[110px] resize-none placeholder:text-zinc-700 transition-all"
-                        />
-                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Sparkles size={14} className="text-zinc-700" />
-                        </div>
-
-                        {/* Integrated Templates as suggestions */}
-                        <div className="absolute bottom-3 left-3 flex flex-wrap gap-1.5 max-w-[calc(100%-24px)]">
-                            {[
-                                { label: 'Login', prompt: 'A centered login form card with email input, password input, a "Remember Me" checkbox, and a large primary button at the bottom.' },
-                                { label: 'Pricing', prompt: 'A horizontal pricing layout with 3 cards side-by-side. Each card has a title, price, list of 3 benefits, and a "Choose Plan" button.' },
-                                { label: 'Navbar', prompt: 'A professional website header with a company logo on the left, four navigation links in the center, and a search bar on the right.' },
-                            ].map(template => (
-                                <button
-                                    key={template.label}
-                                    onClick={() => { setPrompt(template.prompt); }}
-                                    className="px-2 py-1 rounded-md bg-zinc-950/80 border border-zinc-800 text-[9px] font-bold text-zinc-500 hover:text-indigo-400 hover:border-indigo-500/30 transition-all uppercase tracking-tighter"
-                                >
-                                    {template.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <Button onClick={() => handleAIGenerate()}
-                        disabled={!prompt || !apiKey || isProcessing}
-                        isLoading={isProcessing}
-                        className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 text-white border-none shadow-lg shadow-indigo-500/10 font-black uppercase tracking-widest text-[10px]"
-                    >
-                        <Sparkles size={14} className="mr-2" /> Start Generation
-                    </Button>
-                </div>
+                {/* Magic Build AI features hidden for now as per user request */}
+                {/* <div className="pt-4 border-t border-zinc-900 space-y-4"> ... </div> */}
             </aside>
 
             {/* Main Canvas Area */}
@@ -636,10 +746,6 @@ const MarkdownCreator: React.FC = () => {
                         <div className="hidden lg:flex items-center gap-4 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                                 <Grid size={12} className="text-indigo-500" /> {COLS}x{ROWS} CANVAS
-                            </div>
-                            <div className="w-1 h-1 rounded-full bg-zinc-800" />
-                            <div className="flex items-center gap-1.5">
-                                <Sparkles size={12} className="text-purple-500" /> PRO MODE
                             </div>
                         </div>
                     </div>
@@ -658,13 +764,13 @@ const MarkdownCreator: React.FC = () => {
                             <Copy size={14} className="mr-2" /> Copy Markdown
                         </Button>
                         <Button className="h-9 px-4 bg-indigo-600 text-white hover:bg-indigo-500 font-black uppercase text-[11px] tracking-widest whitespace-nowrap border-none" onClick={() => {
-                                const blob = new Blob([grid.map(row => row.map(cell => cell.char).join('')).join('\n')], { type: 'text/plain' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = 'mockup-design.txt';
-                                a.click();
-                            }}
+                            const blob = new Blob([grid.map(row => row.map(cell => cell.char).join('')).join('\n')], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'mockup-design.txt';
+                            a.click();
+                        }}
                         >
                             <Download size={14} className="mr-2" /> Export TXT
                         </Button>
@@ -741,9 +847,10 @@ const MarkdownCreator: React.FC = () => {
                                                 className={`w-[8.5px] h-[14px] flex items-center justify-center transition-all duration-75 relative
                                                   ${isHovered && !placementData ? 'bg-indigo-500/10' : ''}
                                                   ${isTextCursor ? 'bg-indigo-600 text-white animate-pulse z-30' : ''}
-                                                  ${isDragVisual ? 'bg-indigo-500/40 text-white z-30 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : ''}
+                                                  ${isDragVisual ? 'bg-indigo-500/40 text-white z-30' : ''}
                                                   ${cellClass}
                                                 `}
+                                                style={{ fontSize: '13px', lineHeight: '14px', fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", monospace' }}
                                             >
                                                 {displayChar}
                                             </div>
@@ -753,14 +860,15 @@ const MarkdownCreator: React.FC = () => {
                             ))}
 
                             {/* Handle Visual for Selection */}
-                            {selection?.active && !selection.isDragging && (
+                            {selection?.active && !selection.isDragging && !placementData && (
                                 <div
                                     className="absolute border-2 border-indigo-500 pointer-events-none z-40"
                                     style={{
                                         top: selection.r1 * 14,
                                         left: selection.c1 * 8.5,
                                         width: (selection.c2 - selection.c1 + 1) * 8.5,
-                                        height: (selection.r2 - selection.r1 + 1) * 14
+                                        height: (selection.r2 - selection.r1 + 1) * 14,
+                                        boxSizing: 'border-box'
                                     }}
                                 >
                                     <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border border-indigo-500 rounded-sm" />
