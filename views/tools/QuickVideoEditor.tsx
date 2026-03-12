@@ -4,7 +4,8 @@ import {
     Play, Pause, Scissors, Download, AlertCircle, Loader2,
     Film, Plus, Trash2, Copy, VolumeX, Volume2,
     Monitor, Smartphone, Square, Maximize2, Video,
-    Check, ArrowLeft,
+    Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
+    ZoomIn, Gauge, Music,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -109,8 +110,21 @@ export const QuickVideoEditor: React.FC = () => {
     const [pendingStart, setPendingStart] = useState('00:00:00');
     const [pendingEnd, setPendingEnd] = useState('00:00:00');
 
-    // Global controls
-    const [aspectRatio, setAspectRatio] = useState('16:9');
+    // Canvas (aspect ratio)
+    const [aspectRatio, setAspectRatio] = useState('original');
+
+    // Layout
+    const [scaleMode, setScaleMode] = useState<'fit' | 'cover'>('fit');
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [flipH, setFlipH] = useState(false);
+    const [flipV, setFlipV] = useState(false);
+
+    // Playback speed
+    const [speed, setSpeed] = useState(1);
+
+    // Audio
+    const [volume, setVolume] = useState(100);
     const [globalMuted, setGlobalMuted] = useState(false);
 
     // Export
@@ -140,6 +154,8 @@ export const QuickVideoEditor: React.FC = () => {
         videoRef.current.src = clip.url;
         videoRef.current.currentTime = clip.trimStart;
         videoRef.current.muted = clip.muted || globalMuted;
+        videoRef.current.playbackRate = speed;
+        videoRef.current.volume = volume / 100;
         setIsPlaying(false);
         setCurrentTime(clip.trimStart);
     }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -151,6 +167,19 @@ export const QuickVideoEditor: React.FC = () => {
         }
     }, [globalMuted, selectedClip]);
 
+    // ── Sync speed & volume to video element ──
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = speed;
+        }
+    }, [speed]);
+
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.volume = Math.max(0, Math.min(1, volume / 100));
+        }
+    }, [volume]);
+
     // ── Add clips ──
     const addFiles = useCallback(async (files: File[]) => {
         const videoFiles = files.filter(f => f.type.startsWith('video/'));
@@ -161,15 +190,11 @@ export const QuickVideoEditor: React.FC = () => {
             const id = genId();
             const url = URL.createObjectURL(file);
             newClips.push({ id, file, url, duration, thumbnails: [], trimStart: 0, trimEnd: duration, muted: false });
-            // Async thumbnail generation
             generateThumbs(file).then(thumbs =>
                 setClips(prev => prev.map(c => c.id === id ? { ...c, thumbnails: thumbs } : c))
             );
         }
-        setClips(prev => {
-            const updated = [...prev, ...newClips];
-            return updated;
-        });
+        setClips(prev => [...prev, ...newClips]);
         setSelectedId(prev => prev ?? newClips[0].id);
         setExportUrl(null);
     }, []);
@@ -246,6 +271,27 @@ export const QuickVideoEditor: React.FC = () => {
         }
     };
 
+    // ── Build FFmpeg filters ──
+    const buildFilters = () => {
+        const vf: string[] = [];
+        const af: string[] = [];
+
+        if (rotation === 90) vf.push('transpose=1');
+        else if (rotation === 180) { vf.push('transpose=1'); vf.push('transpose=1'); }
+        else if (rotation === 270) vf.push('transpose=2');
+        if (flipH) vf.push('hflip');
+        if (flipV) vf.push('vflip');
+        if (speed !== 1) vf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
+
+        if (speed !== 1) {
+            const clamped = Math.max(0.5, Math.min(2, speed));
+            af.push(`atempo=${clamped.toFixed(2)}`);
+        }
+        if (volume !== 100) af.push(`volume=${(volume / 100).toFixed(2)}`);
+
+        return { vf, af };
+    };
+
     // ── Export ──
     const handleExport = async () => {
         if (!ffmpegRef.current || clips.length === 0) return;
@@ -256,40 +302,36 @@ export const QuickVideoEditor: React.FC = () => {
             if (p >= 0 && p <= 1) setProgress(Math.round(p * 100));
         };
         ffmpeg.on('progress', onProg);
+
         try {
+            const { vf, af } = buildFilters();
+
+            const buildClipArgs = (inName: string, outName: string, trimStart: number, trimEnd: number): string[] => {
+                const args = ['-y', '-ss', String(trimStart), '-to', String(trimEnd), '-i', inName];
+                if (vf.length) args.push('-vf', vf.join(','));
+                if (af.length) args.push('-af', af.join(','));
+                args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
+                return args;
+            };
+
             if (clips.length === 1) {
                 const clip = clips[0];
                 await writeFileToFFmpeg(ffmpeg, 'inp.mp4', clip.file);
-                await ffmpeg.exec([
-                    '-y', '-ss', String(clip.trimStart), '-to', String(clip.trimEnd),
-                    '-i', 'inp.mp4',
-                    '-c:v', 'libx264', '-preset', 'ultrafast',
-                    '-c:a', 'aac', '-ar', '44100',
-                    'out.mp4',
-                ]);
+                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd));
                 await ffmpeg.deleteFile('inp.mp4');
             } else {
-                // Trim each clip individually
                 const trimmed: string[] = [];
                 for (let i = 0; i < clips.length; i++) {
                     const clip = clips[i];
                     const inName = `inp_${i}.mp4`;
                     const outName = `tri_${i}.mp4`;
                     await writeFileToFFmpeg(ffmpeg, inName, clip.file);
-                    await ffmpeg.exec([
-                        '-y', '-ss', String(clip.trimStart), '-to', String(clip.trimEnd),
-                        '-i', inName,
-                        '-c:v', 'libx264', '-preset', 'ultrafast',
-                        '-c:a', 'aac', '-ar', '44100', '-ac', '2',
-                        outName,
-                    ]);
+                    await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd));
                     await ffmpeg.deleteFile(inName);
                     trimmed.push(outName);
                 }
-                // Write concat list
                 const list = trimmed.map(n => `file '${n}'`).join('\n');
                 await ffmpeg.writeFile('list.txt', new TextEncoder().encode(list));
-                // Concat with re-encode
                 await ffmpeg.exec([
                     '-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt',
                     '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac',
@@ -298,6 +340,7 @@ export const QuickVideoEditor: React.FC = () => {
                 for (const n of trimmed) await ffmpeg.deleteFile(n);
                 await ffmpeg.deleteFile('list.txt');
             }
+
             const url = await readFileFromFFmpeg(ffmpeg, 'out.mp4', 'video/mp4');
             setExportUrl(url);
             await ffmpeg.deleteFile('out.mp4');
@@ -341,6 +384,12 @@ export const QuickVideoEditor: React.FC = () => {
         : aspectRatio === '1:1' ? { aspectRatio: '1/1' }
         : {};
 
+    // ── Video transform style ──
+    const videoTransformStyle = {
+        transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1}) rotate(${rotation}deg) scale(${zoom})`,
+        objectFit: scaleMode === 'cover' ? 'cover' as const : 'contain' as const,
+    };
+
     // ═══════════════════════════════════════════════════════
     //  RENDER STATES
     // ═══════════════════════════════════════════════════════
@@ -381,18 +430,22 @@ export const QuickVideoEditor: React.FC = () => {
                     </p>
                 </div>
 
-                <div
-                    className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border-2 border-dashed border-zinc-700 rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500/60 hover:bg-zinc-900/70 transition-all group"
-                    onClick={() => fileInputRef.current?.click()}
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
-                >
-                    <div className="p-5 rounded-full bg-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors mb-4">
-                        <Film size={40} className="text-indigo-400" />
+                {/* Two-level upload box: outer solid card + inner dashed drop zone */}
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 relative overflow-hidden group hover:border-indigo-500/30 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                    <div
+                        className="relative w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all flex flex-col items-center justify-center cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
+                    >
+                        <div className="p-4 rounded-full bg-zinc-800 mb-4 group-hover:bg-zinc-700 transition-colors">
+                            <Film size={36} className="text-zinc-400 group-hover:text-indigo-400 transition-colors" />
+                        </div>
+                        <p className="text-lg font-bold text-white">Upload Video</p>
+                        <p className="text-sm text-zinc-500 mt-1">MP4, MOV, WebM, AVI — add one or more clips</p>
+                        <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />
                     </div>
-                    <p className="text-lg font-bold text-zinc-300">Drop videos here or click to browse</p>
-                    <p className="text-sm text-zinc-500 mt-1">MP4, MOV, WebM, AVI — add one or more clips</p>
-                    <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />
                 </div>
 
                 <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
@@ -494,16 +547,19 @@ export const QuickVideoEditor: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-                            {/* Layout */}
+                        <div className="flex-1 p-4 space-y-5 overflow-y-auto">
+
+                            {/* ── CANVAS ── */}
                             <div>
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3">Layout</p>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <Monitor size={10} /> Canvas
+                                </p>
                                 <div className="grid grid-cols-2 gap-2">
                                     {[
+                                        { id: 'original', label: 'Original', icon: Maximize2 },
                                         { id: '16:9', label: '16:9', icon: Monitor },
                                         { id: '9:16', label: '9:16', icon: Smartphone },
                                         { id: '1:1', label: '1:1', icon: Square },
-                                        { id: 'auto', label: 'Auto', icon: Maximize2 },
                                     ].map(opt => (
                                         <button
                                             key={opt.id}
@@ -517,14 +573,119 @@ export const QuickVideoEditor: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Mute all */}
-                            <button
-                                onClick={() => setGlobalMuted(m => !m)}
-                                className={`w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-all text-sm font-medium ${globalMuted ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
-                            >
-                                {globalMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-                                {globalMuted ? 'Unmute All' : 'Mute'}
-                            </button>
+                            <div className="h-px bg-zinc-800/60" />
+
+                            {/* ── LAYOUT ── */}
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <ZoomIn size={10} /> Layout
+                                </p>
+
+                                {/* Fit / Cover */}
+                                <div className="flex bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-3">
+                                    {(['fit', 'cover'] as const).map(mode => (
+                                        <button
+                                            key={mode}
+                                            onClick={() => setScaleMode(mode)}
+                                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${scaleMode === mode ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                        >
+                                            {mode}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Zoom */}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-[11px] text-zinc-400">Zoom</span>
+                                    <span className="text-[11px] font-bold text-indigo-400">{zoom.toFixed(1)}x</span>
+                                </div>
+                                <input
+                                    type="range" min="0.5" max="3" step="0.1"
+                                    value={zoom}
+                                    onChange={e => setZoom(parseFloat(e.target.value))}
+                                    className="w-full h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer mb-3"
+                                />
+
+                                {/* Transform buttons */}
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setRotation(r => (r + 90) % 360)}
+                                        title="Rotate 90°"
+                                        className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all text-[9px] font-bold"
+                                    >
+                                        <RotateCw size={14} />
+                                        <span>Rotate</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFlipH(h => !h)}
+                                        title="Flip Horizontal"
+                                        className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all text-[9px] font-bold ${flipH ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                                    >
+                                        <FlipHorizontal2 size={14} />
+                                        <span>Flip H</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setFlipV(v => !v)}
+                                        title="Flip Vertical"
+                                        className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all text-[9px] font-bold ${flipV ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                                    >
+                                        <FlipVertical2 size={14} />
+                                        <span>Flip V</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-zinc-800/60" />
+
+                            {/* ── PLAYBACK SPEED ── */}
+                            <div>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                    <Gauge size={10} /> Playback Speed
+                                </p>
+                                <div className="flex gap-1.5 mb-3">
+                                    {[0.5, 1, 1.5, 2].map(s => (
+                                        <button
+                                            key={s}
+                                            onClick={() => setSpeed(s)}
+                                            className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${speed === s ? 'bg-indigo-600 text-white' : 'bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                                        >
+                                            {s}x
+                                        </button>
+                                    ))}
+                                </div>
+                                <input
+                                    type="range" min="0.25" max="2" step="0.05"
+                                    value={speed}
+                                    onChange={e => setSpeed(parseFloat(e.target.value))}
+                                    className="w-full h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
+                                />
+                            </div>
+
+                            <div className="h-px bg-zinc-800/60" />
+
+                            {/* ── AUDIO ── */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Music size={10} /> Audio
+                                    </p>
+                                    <span className="text-[11px] font-bold text-indigo-400">{volume}%</span>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <button
+                                        onClick={() => setGlobalMuted(m => !m)}
+                                        className={`shrink-0 p-2 rounded-lg border transition-all ${globalMuted ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
+                                    >
+                                        {globalMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                    </button>
+                                    <input
+                                        type="range" min="0" max="100" step="1"
+                                        value={globalMuted ? 0 : volume}
+                                        onChange={e => { setVolume(parseInt(e.target.value)); setGlobalMuted(false); }}
+                                        className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
+                                    />
+                                </div>
+                            </div>
 
                             {/* Clip count info */}
                             {clips.length > 1 && (
@@ -586,13 +747,16 @@ export const QuickVideoEditor: React.FC = () => {
                     >
                         <video
                             ref={videoRef}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full"
+                            style={videoTransformStyle}
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
                             onTimeUpdate={handleTimeUpdate}
                             onLoadedMetadata={() => {
                                 if (videoRef.current && selectedClip) {
                                     videoRef.current.currentTime = selectedClip.trimStart;
+                                    videoRef.current.playbackRate = speed;
+                                    videoRef.current.volume = volume / 100;
                                     setCurrentTime(selectedClip.trimStart);
                                 }
                             }}
