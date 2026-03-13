@@ -235,7 +235,7 @@ export const PdfSuite: React.FC = () => {
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
-                        <div className="text-red-500"><FileText size={42} /></div>
+                        <div className="text-indigo-400"><FileText size={42} /></div>
                         <span className="text-white">                            PDF Studio
                         </span>
                     </h1>
@@ -268,7 +268,7 @@ export const PdfSuite: React.FC = () => {
                         { icon: Download, label: 'Export', desc: 'High Quality' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors group">
-                            <div className="p-3 bg-zinc-900 rounded-full text-red-500 group-hover:scale-110 transition-transform shadow-inner">
+                            <div className="p-3 bg-zinc-900 rounded-full text-indigo-400 group-hover:scale-110 transition-transform shadow-inner">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -288,7 +288,7 @@ export const PdfSuite: React.FC = () => {
             {/* 1. Sidebar - Unified Controls - MOVED TO RIGHT */}
             <aside className={`${isMobile ? 'order-3 h-1/2' : 'order-2 w-72 border-l'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
                 <div className="h-16 px-6 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#0c0c0e]/80 backdrop-blur-md">
-                    <h2 className="font-black text-xs text-red-500 uppercase tracking-[0.2em] flex items-center gap-3 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-3 font-unbounded">
                         <Settings size={18} /> CONFIGURATION
                     </h2>
                     <button
@@ -317,11 +317,11 @@ export const PdfSuite: React.FC = () => {
                                     key={m.id}
                                     onClick={() => handleModeChange(m.id as Mode)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1.5 ${mode === m.id
-                                        ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                                        ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
                                         : 'bg-[#121214] border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 hover:bg-zinc-800'
                                         }`}
                                 >
-                                    <m.icon size={16} className={mode === m.id ? 'text-red-500' : 'opacity-70'} />
+                                    <m.icon size={16} className={mode === m.id ? 'text-indigo-400' : 'opacity-70'} />
                                     <span className="font-bold uppercase text-[9px] font-unbounded">{m.label}</span>
                                 </button>
                             ))}
@@ -339,7 +339,7 @@ export const PdfSuite: React.FC = () => {
                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                                     {files.map((file, i) => (
                                         <div key={i} className="bg-[#121214] border border-zinc-800/50 p-3 rounded-2xl flex items-center gap-3 group hover:border-zinc-700 transition-all">
-                                            <div className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
+                                            <div className="w-10 h-10 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
                                                 <FileText size={20} />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -390,7 +390,7 @@ export const PdfSuite: React.FC = () => {
                                         <button
                                             key={r}
                                             onClick={() => setRotation(r)}
-                                            className={`py-3 rounded-xl text-[11px] font-black transition-all font-unbounded ${rotation === r ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'}`}
+                                            className={`py-3 rounded-xl text-[11px] font-black transition-all font-unbounded ${rotation === r ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-600 hover:text-zinc-400 hover:bg-zinc-800/50'}`}
                                         >
                                             {r}°
                                         </button>
@@ -423,7 +423,7 @@ export const PdfSuite: React.FC = () => {
                                         <input
                                             type="password"
                                             placeholder="••••••••"
-                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-red-500 outline-none text-zinc-300"
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none text-zinc-300"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                         />
@@ -437,7 +437,7 @@ export const PdfSuite: React.FC = () => {
                                 <div className="bg-[#121214] border border-zinc-800/50 p-4 rounded-2xl flex flex-col gap-3">
                                     <div className="flex items-center justify-between text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
                                         <span>Current Sequence</span>
-                                        <button onClick={() => setReorderOrder(Array.from({ length: pageCount }, (_, i) => i))} className="text-red-500 hover:underline">Reset</button>
+                                        <button onClick={() => setReorderOrder(Array.from({ length: pageCount }, (_, i) => i))} className="text-indigo-400 hover:underline">Reset</button>
                                     </div>
                                     <div className="max-h-32 overflow-y-auto custom-scrollbar flex flex-wrap gap-1.5">
                                         {reorderOrder.map((idx, i) => (
@@ -459,7 +459,7 @@ export const PdfSuite: React.FC = () => {
                                     </div>
                                     <div className="bg-[#121214] p-4 rounded-2xl border border-zinc-800/50 flex flex-col items-center justify-center">
                                         <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest font-unbounded mb-1">Active</span>
-                                        <span className="text-xl font-black text-red-500 font-unbounded">{selectedPages.length || 'ALL'}</span>
+                                        <span className="text-xl font-black text-indigo-400 font-unbounded">{selectedPages.length || 'ALL'}</span>
                                     </div>
                                 </div>
                             </>
@@ -479,7 +479,7 @@ export const PdfSuite: React.FC = () => {
                                         <p className="text-[9px] text-zinc-500 font-semibold uppercase mt-0.5">High Quality Output</p>
                                     </div>
                                 </div>
-                                <Button className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl" onClick={handleDownload} >
+                                <Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl" onClick={handleDownload} >
                                     <Download size={20} /> Download PDF
                                 </Button>
                                 <button
@@ -491,7 +491,7 @@ export const PdfSuite: React.FC = () => {
                             </div>
                         ) : (
                             <div className="space-y-4">
-                                <Button className="w-full h-14 bg-red-500 hover:bg-red-600 text-white shadow-xl shadow-red-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden" onClick={handleProcess} disabled={isProcessing || files.length === 0} >
+                                <Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden" onClick={handleProcess} disabled={isProcessing || files.length === 0} >
                                     {isProcessing ? (
                                         <Loader2 size={24} className="animate-spin" />
                                     ) : (
@@ -560,34 +560,34 @@ export const PdfSuite: React.FC = () => {
                  ${isMobile ? 'w-32' : 'w-48'} aspect-[3/4.5]
                  rounded-[24px] border-2 bg-zinc-900/40 backdrop-blur-xl shadow-2xl overflow-hidden
                  ${isSelected
-                                        ? 'border-red-500 -translate-y-3 scale-105 ring-8 ring-red-500/5 shadow-red-500/10'
+                                        ? 'border-indigo-500 -translate-y-3 scale-105 ring-8 ring-indigo-500/5 shadow-indigo-500/10'
                                         : 'border-zinc-800/50 hover:border-zinc-600 hover:-translate-y-2'
                                     }
               `}
                             >
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                                     <div
-                                        className={`w-full h-full rounded-2xl border border-dashed border-zinc-800/80 flex items-center justify-center transition-all duration-500 ${isSelected ? 'bg-red-500/5 border-red-500/30' : ''}`}
+                                        className={`w-full h-full rounded-2xl border border-dashed border-zinc-800/80 flex items-center justify-center transition-all duration-500 ${isSelected ? 'bg-indigo-500/5 border-indigo-500/30' : ''}`}
                                         style={{ transform: mode === 'rotate' && isSelected ? `rotate(${rotation}deg)` : 'none' }}
                                     >
                                         <FileText
                                             size={isMobile ? 40 : 56}
-                                            className={`transition-all duration-500 ${isSelected ? 'text-red-400 drop-shadow-[0_0_15px_rgba(239,68,68,0.4)]' : 'text-zinc-800'}`}
+                                            className={`transition-all duration-500 ${isSelected ? 'text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]' : 'text-zinc-800'}`}
                                         />
                                     </div>
                                     <div className="mt-4 flex flex-col items-center gap-1">
-                                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] font-unbounded ${isSelected ? 'text-red-400' : 'text-zinc-600'}`}>PAGE</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.2em] font-unbounded ${isSelected ? 'text-indigo-400' : 'text-zinc-600'}`}>PAGE</span>
                                         <span className={`text-sm font-black font-unbounded ${isSelected ? 'text-white' : 'text-zinc-700'}`}>{originalIndex + 1}</span>
                                     </div>
                                 </div>
 
                                 {isSelected && (
-                                    <div className="absolute top-4 right-4 bg-red-500 text-white rounded-full p-1.5 shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-in zoom-in duration-300">
+                                    <div className="absolute top-4 right-4 bg-indigo-500 text-white rounded-full p-1.5 shadow-[0_0_20px_rgba(99,102,241,0.5)] animate-in zoom-in duration-300">
                                         <CheckCircle size={16} strokeWidth={3} />
                                     </div>
                                 )}
 
-                                <div className="absolute inset-0 bg-gradient-to-t from-red-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                             </div>
                         );
                     })}
@@ -616,7 +616,7 @@ export const PdfSuite: React.FC = () => {
                             }}
                             className="w-48 aspect-[3/4.5] rounded-[24px] border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 hover:bg-red-500/5 flex flex-col items-center justify-center text-zinc-700 hover:text-red-400 transition-all duration-500 group"
                         >
-                            <div className="p-5 rounded-3xl bg-zinc-900/50 mb-4 group-hover:scale-110 group-hover:bg-red-500/10 transition-all">
+                            <div className="p-5 rounded-3xl bg-zinc-900/50 mb-4 group-hover:scale-110 group-hover:bg-indigo-500/10 transition-all">
                                 <FilePlus size={40} />
                             </div>
                             <div className="flex flex-col items-center gap-1">

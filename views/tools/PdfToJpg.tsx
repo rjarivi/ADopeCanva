@@ -155,14 +155,14 @@ export const PdfToJpg: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-amber-500/50 transition-colors shadow-2xl">
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFileSelect={handleFileSelect}
                         accept=".pdf"
                         label="Upload PDF"
                         description="Select a PDF to convert to images"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-amber-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
 
@@ -175,7 +175,7 @@ export const PdfToJpg: React.FC = () => {
                         { icon: Archive, label: 'ZIP Download', desc: 'All at once' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-amber-500/10 rounded-full text-indigo-400">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -243,7 +243,7 @@ export const PdfToJpg: React.FC = () => {
                                 <select
                                     value={scale}
                                     onChange={(e) => setScale(parseFloat(e.target.value))}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
                                 >
                                     <option value={1}>1× (72 DPI)</option>
                                     <option value={1.5}>1.5× (108 DPI)</option>
@@ -278,7 +278,7 @@ export const PdfToJpg: React.FC = () => {
 
                         <div className="space-y-3">
                             {pageImages.length === 0 ? (
-                                <Button className="w-full h-12 border-none shadow-lg shadow-amber-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
                                     <FileImage size={18} className="mr-2" />
                                     {isProcessing ? 'Converting...' : 'Convert to JPG'}
                                 </Button>
@@ -316,7 +316,7 @@ export const PdfToJpg: React.FC = () => {
                             {pageImages.map((image) => (
                                 <div
                                     key={image.pageNum}
-                                    className="group relative bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-amber-500/50 transition-all cursor-pointer"
+                                    className="group relative bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden hover:border-indigo-500/50 transition-all cursor-pointer"
                                     onClick={() => downloadSingle(image)}
                                 >
                                     <img
