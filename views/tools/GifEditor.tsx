@@ -411,7 +411,7 @@ export const GifEditor: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Film size={32} /> GIF Editor
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -632,7 +632,7 @@ export const GifEditor: React.FC = () => {
 
                             {isProbing ? (
                                 <div className="flex flex-col items-center py-12 gap-3">
-                                    <Loader2 className="animate-spin text-zinc-500" />
+                                    <Loader2 className="animate-spin text-indigo-500" />
                                     <span className="text-xs text-zinc-500">Detecting sequence...</span>
                                 </div>
                             ) : (

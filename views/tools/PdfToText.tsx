@@ -91,7 +91,7 @@ export const PdfToText: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <FileText size={32} /> PDF to Text
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -100,14 +100,14 @@ export const PdfToText: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-red-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFileSelect={handleFileSelect}
                         accept=".pdf"
                         label="Upload PDF"
                         description="Select a PDF file to extract text"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-red-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
 
@@ -120,7 +120,7 @@ export const PdfToText: React.FC = () => {
                         { icon: FileSearch, label: 'Searchable', desc: 'Full text output' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-red-500/10 rounded-full text-red-400">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -135,12 +135,12 @@ export const PdfToText: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-red-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
             {/* Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-black text-xs text-red-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <FileText size={20} /> PDF to Text
                     </h2>
                     <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
@@ -162,7 +162,7 @@ export const PdfToText: React.FC = () => {
                             {pageCount > 0 && (
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-zinc-500 font-medium">Pages</span>
-                                    <span className="text-xs text-red-400 font-mono font-bold">{pageCount}</span>
+                                    <span className="text-xs text-indigo-400 font-mono font-bold">{pageCount}</span>
                                 </div>
                             )}
                         </section>

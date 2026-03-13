@@ -185,7 +185,7 @@ export const SpreadsheetTools: React.FC = () => {
         <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
             {/* Header */}
             <div className="flex-none space-y-3 mb-10">
-                <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-600 flex items-center justify-center gap-3 font-unbounded">
+                <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                     <Table size={32} /> Spreadsheet Converter
                 </h2>
                 <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -230,7 +230,7 @@ export const SpreadsheetTools: React.FC = () => {
                         { icon: Download, label: 'Fast Process', desc: 'Browser-based' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-green-500/10 rounded-full text-green-400">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
                                 <feat.icon size={20} />
                             </div>
                             <div>

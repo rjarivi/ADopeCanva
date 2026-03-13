@@ -175,8 +175,7 @@ export const AudioConverter: React.FC = () => {
         <div className="flex-none space-y-3 mb-10">
           <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
             <div className="text-indigo-500"><Music size={32} /></div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
-              Audio Converter
+            <span className="text-white">              Audio Converter
             </span>
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -253,13 +252,10 @@ export const AudioConverter: React.FC = () => {
                       key={fmt}
                       onClick={() => setFormat(fmt)}
                       disabled={isProcessing || isDone}
-                      className={`
-px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider transition - all border
-                              ${format === fmt
+                      className={`px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${format === fmt
                           ? 'bg-indigo-500 text-white border-indigo-500 shadow-md shadow-indigo-500/20'
                           : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'
-                        }
-`}
+                        }`}
                     >
                       {fmt}
                     </button>
@@ -273,7 +269,8 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
                   value={bitrate}
                   onChange={(e) => setBitrate((e.target as HTMLSelectElement).value)}
                   disabled={isProcessing || isDone || format === 'WAV' || format === 'FLAC'}
-                  className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none text-white rounded-xl px-4 py-3 transition-all appearance-none cursor-pointer disabled:opacity-50"
+                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                 >
                   {BITRATES.map(br => <option key={br} value={br}>{br.replace('k', ' kbps')}</option>)}
                 </select>
@@ -310,7 +307,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
               {Array.from({ length: 20 }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w - 2 bg - indigo - 500 rounded - full transition - all duration - 300 ${isProcessing ? 'animate-pulse' : ''} `}
+                  className={`w-2 bg-indigo-500 rounded-full transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''}`}
                   style={{
                     height: `${Math.random() * 60 + 20}% `,
                     animationDelay: `${i * 0.1} s`
@@ -324,7 +321,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
                 <div className="w-16 h-16 mx-auto border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                 <div className="space-y-1">
                   <p className="text-white font-black font-unbounded uppercase tracking-wider text-sm">Converting...</p>
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}% ` }}></div>
                   </div>
                 </div>

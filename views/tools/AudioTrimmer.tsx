@@ -256,9 +256,7 @@ export const AudioTrimmer: React.FC = () => {
                 <div className="flex-none space-y-3 mb-10">
                     <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
                         <div className="text-indigo-400"><Scissors size={32} /></div>
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-indigo-400">
-                            Audio Trimmer Studio
-                        </span>
+                        <span className="text-white">Audio Trimmer Studio</span>
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
                         Trim and cut audio files with precision.

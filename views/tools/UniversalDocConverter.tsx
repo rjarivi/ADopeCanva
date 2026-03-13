@@ -455,7 +455,7 @@ export const UniversalDocConverter: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Layers size={32} /> Universal Doc Converter
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -504,7 +504,7 @@ export const UniversalDocConverter: React.FC = () => {
             <div className="fixed -left-[9999px] top-0 w-[800px] bg-white text-black z-[-1]" ref={previewRef}></div>
 
             <div className="text-center space-y-2">
-                <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+                <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                     <Layers size={32} /> Universal Doc Converter
                 </h2>
                 <button
