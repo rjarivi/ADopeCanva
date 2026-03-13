@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.5.0',
+        date: 'Mar 13, 2026',
+        items: [
+            {
+                icon: Sparkles,
+                title: 'SVG Code to SVG',
+                description: 'New DEV tool: paste raw SVG markup, preview it live with dark/light/transparent backgrounds, validate in real-time, and download a clean .svg file.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.4.0',
         date: 'Feb 19, 2026',
         items: [
