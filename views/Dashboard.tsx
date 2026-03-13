@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -46,6 +46,7 @@ import { MarkdownCreator } from './tools/MarkdownCreator';
 import { ImageConverter } from './tools/ImageConverter';
 import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
+import { SvgConverter } from './tools/SvgConverter';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -1080,6 +1081,28 @@ export const TOOLS: ToolItem[] = [
             { label: "Engine", value: "PDF.js" }
         ],
         privacyNotes: "Your PDF pages are rendered to images locally."
+    },
+    {
+        id: 'svg-converter',
+        title: 'SVG Code to SVG',
+        description: 'Paste SVG markup, preview it live, and download as an .svg file.',
+        category: ToolCategory.DEV,
+        icon: FileCode2,
+        component: <SvgConverter />,
+        guideTitle: 'How to convert SVG code into a downloadable SVG file',
+        guideContent: 'Write or paste raw SVG markup and instantly see a live rendering. The tool validates your code in real-time, highlights errors, and lets you export a clean .svg file — no server uploads, no design software needed.',
+        faqs: [
+            { question: 'What is SVG?', answer: 'SVG (Scalable Vector Graphics) is an XML-based format for vector images that can be scaled to any size without losing quality.' },
+            { question: 'Is my code safe?', answer: 'Yes — all processing happens entirely in your browser. Your SVG code never leaves your device.' },
+            { question: 'Can I use custom fonts or external URLs?', answer: 'Inline fonts work fine. External URL references (like Google Fonts) may be blocked by browser security policies in the preview.' },
+        ],
+        specs: [
+            { label: 'Input', value: 'Raw SVG markup (XML)' },
+            { label: 'Output', value: '.svg file download' },
+            { label: 'Validation', value: 'Real-time DOMParser check' },
+            { label: 'Preview backgrounds', value: 'Dark, Light, Transparent' },
+        ],
+        privacyNotes: 'SVG code is processed entirely in-browser. Nothing is transmitted to any server.'
     },
 ];
 
