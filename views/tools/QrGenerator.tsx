@@ -104,7 +104,7 @@ export const QrGenerator: React.FC = () => {
                         <input
                             type="range" min="150" max="500" value={size}
                             onChange={(e) => setSize(parseInt((e.target as HTMLInputElement).value))}
-                            className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-white"
+                            className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                         />
                     </div>
                 </div>

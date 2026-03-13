@@ -286,7 +286,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   if (engineStatus === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-4 animate-fade-in">
-        <Loader2 size={32} className="animate-spin text-green-500" />
+        <Loader2 size={32} className="animate-spin text-indigo-500" />
         <p className="text-zinc-400">Loading {outputFormat.toUpperCase()} Engine...</p>
       </div>
     );
@@ -297,7 +297,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
             <Film size={32} /> GIF Generator
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -341,7 +341,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   }
 
   return (
-    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-green-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
       {/* Navigation removed for simplified workflow */}
 
@@ -438,21 +438,31 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
               <div className="space-y-2">
                 <SectionLabel>Quality Mode</SectionLabel>
                 <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => { setQuality('standard'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>Standard</button>
-                  <button onClick={() => { setQuality('high'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'high' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900'}`}>High Latency</button>
+                  <button onClick={() => { setQuality('standard'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'standard' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900 hover:text-zinc-400'}`}>Standard</button>
+                  <button onClick={() => { setQuality('high'); setIsDone(false); setGifUrl(null); }} className={`py-2 rounded-lg text-xs font-bold uppercase border transition-all ${quality === 'high' ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-transparent border-zinc-800 text-zinc-600 hover:bg-zinc-900 hover:text-zinc-400'}`}>High Quality</button>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <SectionLabel>FPS</SectionLabel>
-                  <select value={fps} onChange={(e) => { setFps(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                  <select
+                    value={fps}
+                    onChange={(e) => { setFps(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                  >
                     {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
                   <SectionLabel>Width</SectionLabel>
-                  <select value={width} onChange={(e) => { setWidth(Number(e.target.value)); setIsDone(false); setGifUrl(null); }} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                  <select
+                    value={width}
+                    onChange={(e) => { setWidth(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                  >
                     {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
                   </select>
                 </div>

@@ -129,7 +129,7 @@ export const MagicImageEditor: React.FC = () => {
       <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center gap-3 font-unbounded">
+          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
             <Sparkles size={32} /> Magic Image Editor
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
