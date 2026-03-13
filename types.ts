@@ -41,6 +41,7 @@ export interface ToolItem {
   component: React.ReactNode;
   popular?: boolean;
   comingSoon?: boolean;
+  swapId?: string;        // ID of the reverse/paired tool (enables swap button)
   // SEO & Guides fields
   guideTitle?: string;
   guideContent?: string;

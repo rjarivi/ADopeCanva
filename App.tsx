@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
     Wand2, LayoutGrid,
-    Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type
+    Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type, ArrowLeftRight
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
 import { ToolCategory } from './types';
@@ -17,11 +17,14 @@ import { Comparison } from './views/Comparison';
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
     const { toolId } = useParams();
+    const navigate = useNavigate();
     const tool = TOOLS.find(t => t.id === toolId);
 
     if (!tool) {
         return <Navigate to="/" replace />;
     }
+
+    const swapTool = tool.swapId ? TOOLS.find(t => t.id === tool.swapId) : null;
 
     // Set document title, meta description, and active category
     useEffect(() => {
@@ -61,6 +64,18 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                     privacyNotes={tool.privacyNotes}
                 />
             </div>
+
+            {/* Swap Tool Button — floating pill, only shown when a swap partner exists */}
+            {swapTool && (
+                <button
+                    onClick={() => navigate(`/${swapTool.id}`)}
+                    title={`Switch to ${swapTool.title}`}
+                    className="fixed bottom-24 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500/60 hover:bg-zinc-800 shadow-xl transition-all duration-200 group hover:shadow-indigo-500/10 hover:shadow-2xl text-sm font-medium"
+                >
+                    <ArrowLeftRight size={15} className="text-indigo-400 group-hover:rotate-180 transition-transform duration-300" />
+                    <span className="max-w-[140px] truncate">{swapTool.title}</span>
+                </button>
+            )}
         </div>
     );
 };
