@@ -154,14 +154,14 @@ export const ImageResizer: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-cyan-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFileSelect={setFile}
                         accept="image/*"
                         label="Upload Image"
                         description="Supports JPG, PNG, WEBP, GIF"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-cyan-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
 
@@ -229,7 +229,7 @@ export const ImageResizer: React.FC = () => {
                                         type="number"
                                         value={newWidth}
                                         onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
                                     />
                                 </div>
 
@@ -247,7 +247,7 @@ export const ImageResizer: React.FC = () => {
                                         type="number"
                                         value={newHeight}
                                         onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500/50 outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
                                     />
                                 </div>
                             </div>
@@ -261,7 +261,7 @@ export const ImageResizer: React.FC = () => {
                                     <button
                                         key={scale}
                                         onClick={() => applyScale(scale)}
-                                        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-cyan-500/50 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 transition-all"
+                                        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 transition-all"
                                     >
                                         {scale}%
                                     </button>
@@ -277,7 +277,7 @@ export const ImageResizer: React.FC = () => {
                                     <button
                                         key={preset.name}
                                         onClick={() => applyPreset(preset)}
-                                        className="flex items-center justify-between bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-cyan-500/50 rounded-lg px-3 py-2 text-xs transition-all group"
+                                        className="flex items-center justify-between bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs transition-all group"
                                     >
                                         <span className="flex items-center gap-2">
                                             <span>{preset.icon}</span>
@@ -294,7 +294,7 @@ export const ImageResizer: React.FC = () => {
                         {/* Actions */}
                         <div className="space-y-3">
                             {!resultImage ? (
-                                <Button className="w-full h-12 border-none shadow-lg shadow-cyan-900/20" onClick={handleResize} isLoading={isProcessing} disabled={isProcessing} >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={handleResize} isLoading={isProcessing} disabled={isProcessing} >
                                     <Zap size={18} className="mr-2" />
                                     {isProcessing ? 'Resizing...' : 'Resize Image'}
                                 </Button>
@@ -326,7 +326,7 @@ export const ImageResizer: React.FC = () => {
                                 alt="Resized"
                                 className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl border border-zinc-800"
                             />
-                            <div className="absolute top-4 right-4 bg-cyan-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest shadow-lg">
+                            <div className="absolute top-4 right-4 bg-indigo-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold uppercase tracking-widest shadow-lg">
                                 {newWidth} × {newHeight}
                             </div>
                         </div>

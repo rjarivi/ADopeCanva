@@ -625,7 +625,7 @@ export const ImageCropper: React.FC = () => {
                 >
                     {/* Viewport Toolbar */}
                     <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 bg-zinc-900/80 backdrop-blur border border-white/5 p-1 rounded-full shadow-2xl">
-                        <button onClick={() => setIsPanMode(!isPanMode)} className={`p-2 rounded-full transition-colors ${isPanMode ? 'bg-blue-500 text-white' : 'text-zinc-500 hover:text-white'}`}>
+                        <button onClick={() => setIsPanMode(!isPanMode)} className={`p-2 rounded-full transition-colors ${isPanMode ? 'bg-indigo-500 text-white' : 'text-zinc-500 hover:text-white'}`}>
                             <Hand size={16} />
                         </button>
                         <div className="w-px h-3 bg-zinc-800 mx-1"></div>

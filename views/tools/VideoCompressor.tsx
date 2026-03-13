@@ -260,7 +260,7 @@ export const VideoCompressor: React.FC = () => {
                                         setPreset(p);
                                         setResultUrl(null);
                                     }}
-                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${preset === p ? 'bg-zinc-800 text-indigo-400 shadow-inner' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                    className={`flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${preset === p ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'text-zinc-600 hover:text-zinc-400'}`}
                                 >
                                     {p.replace('fast', '').replace('slow', '').replace('medium', 'Normal') || 'Fastest'}
                                 </button>

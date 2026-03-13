@@ -647,7 +647,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
                       <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest pl-1">Transition Effect</div>
                       <div className="grid grid-cols-2 gap-2">
                         {(['none', 'crossfade'] as const).map(eff => (
-                          <button key={eff} onClick={() => { setEffect(eff); if (eff !== 'none') setIsProMode(true); }} className={`py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${effect === eff ? 'bg-white text-black border-white' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'}`}>
+                          <button key={eff} onClick={() => { setEffect(eff); if (eff !== 'none') setIsProMode(true); }} className={`py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border ${effect === eff ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-700'}`}>
                             {eff}
                           </button>
                         ))}
