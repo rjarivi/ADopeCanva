@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
     Wand2, LayoutGrid,
-    Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type, ArrowLeftRight
+    Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type, ArrowLeftRight, ChevronLeft
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
 import { ToolCategory } from './types';
@@ -51,6 +51,21 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     return (
         <div className={`animate-fade-in h-full ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6 pb-20'}`}>
             <div className={`h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
+                {/* Breadcrumb / Back navigation */}
+                {!isMobile && (
+                    <div className="flex items-center gap-2 mb-4">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors group"
+                        >
+                            <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+                            <span>All tools</span>
+                        </button>
+                        <span className="text-zinc-700">/</span>
+                        <span className="text-sm text-zinc-400">{tool.title}</span>
+                    </div>
+                )}
+
                 <div className="h-full">
                     {tool.component}
                 </div>
@@ -182,7 +197,7 @@ const App = () => {
                     <div className="space-y-8 animate-fade-in">
                         {/* Hero / Promo */}
                         {showBanner && !isMobile && (
-                            <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/60 h-56 flex flex-col justify-center px-10 md:px-16 animate-slide-up group">
+                            <div className="relative rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800/60 flex flex-col justify-center px-10 md:px-16 py-10 animate-slide-up group">
                                 {/* Color leak — visible indigo warmth */}
                                 <div className="absolute right-0 top-0 w-96 h-96 rounded-full translate-x-1/3 -translate-y-1/3 blur-[80px]" style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.25) 0%, transparent 70%)' }}></div>
                                 <div className="absolute left-1/4 bottom-0 w-64 h-64 blur-[80px] rounded-full translate-y-1/2" style={{ background: 'radial-gradient(circle, rgba(79,70,229,0.1) 0%, transparent 70%)' }}></div>
@@ -190,20 +205,37 @@ const App = () => {
                                 <button
                                     onClick={() => setShowBanner(false)}
                                     className="absolute top-4 right-4 p-2 text-zinc-600 hover:text-zinc-300 hover:bg-white/5 rounded-full transition-colors z-20"
+                                    aria-label="Dismiss banner"
                                 >
                                     <X size={18} />
                                 </button>
 
-                                <div className="relative z-10 max-w-lg">
-                                    <span className="inline-block px-3 py-1 rounded-full text-indigo-300 text-[11px] font-bold tracking-wide uppercase mb-4 border" style={{ background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)' }}>New</span>
-                                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">Pro Image Editor</h2>
-                                    <p className="text-zinc-500 text-sm mb-6 leading-relaxed">Layers, filters, and professional tools — all in your browser.</p>
-                                    <button
-                                        onClick={() => navigate('/image-editor')}
-                                        className="bg-zinc-100 text-indigo-950 px-5 py-2 rounded-lg text-sm font-bold hover:bg-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5" style={{ boxShadow: '0 8px 32px rgba(79,70,229,0.3)' }}
-                                    >
-                                        Try it out
-                                    </button>
+                                <div className="relative z-10 flex items-center justify-between gap-10">
+                                    <div className="max-w-lg">
+                                        <span className="inline-block px-3 py-1 rounded-full text-indigo-300 text-[11px] font-bold tracking-wide uppercase mb-4 border" style={{ background: 'rgba(79,70,229,0.15)', borderColor: 'rgba(79,70,229,0.3)' }}>New</span>
+                                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">Pro Image Editor</h2>
+                                        <p className="text-zinc-500 text-sm mb-6 leading-relaxed">Layers, filters, and professional tools — all in your browser. No installs, no uploads.</p>
+                                        <button
+                                            onClick={() => navigate('/image-editor')}
+                                            className="bg-zinc-100 text-indigo-950 px-5 py-2 rounded-lg text-sm font-bold hover:bg-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5" style={{ boxShadow: '0 8px 32px rgba(79,70,229,0.3)' }}
+                                        >
+                                            Try it out
+                                        </button>
+                                    </div>
+
+                                    {/* Quick stats strip */}
+                                    <div className="hidden xl:flex items-center gap-6 shrink-0">
+                                        {[
+                                            { value: `${TOOLS.filter(t => !t.comingSoon).length}+`, label: 'Free tools' },
+                                            { value: '100%', label: 'In-browser' },
+                                            { value: '0', label: 'Uploads' },
+                                        ].map(stat => (
+                                            <div key={stat.label} className="text-center">
+                                                <div className="text-3xl font-unbounded font-bold text-white">{stat.value}</div>
+                                                <div className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">{stat.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -276,6 +308,9 @@ const App = () => {
                         <nav className="flex items-center gap-1 p-1 bg-zinc-900/50 rounded-xl border border-zinc-800/50 overflow-x-auto no-scrollbar max-w-full">
                             {categories.map(cat => {
                                 const Icon = getCategoryIcon(cat);
+                                const count = cat === 'All'
+                                    ? TOOLS.filter(t => !t.comingSoon).length
+                                    : TOOLS.filter(t => t.category === cat && !t.comingSoon).length;
                                 return (
                                     <button
                                         key={cat}
@@ -288,6 +323,9 @@ const App = () => {
                                     >
                                         <Icon size={16} />
                                         <span>{cat}</span>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden lg:inline-block ${activeCategory === cat ? 'bg-white/15 text-white/80' : 'bg-zinc-800 text-zinc-500'}`}>
+                                            {count}
+                                        </span>
                                     </button>
                                 );
                             })}

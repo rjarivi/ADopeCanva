@@ -98,7 +98,10 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-300 group ${isDragging
+      role="button"
+      tabIndex={0}
+      aria-label={`${label}. ${description}`}
+      className={`relative w-full overflow-hidden rounded-2xl border-2 border-dashed transition-all duration-300 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isDragging
         ? 'border-indigo-500 bg-indigo-500/10'
         : 'border-zinc-700 bg-surface hover:border-indigo-500 hover:bg-indigo-500/5 hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]'
         } ${className}`}
@@ -106,6 +109,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={() => !isUploading && fileInputRef.current?.click()}
+      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isUploading) { e.preventDefault(); fileInputRef.current?.click(); } }}
     >
       <input
         type="file"
@@ -114,18 +118,19 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onChange={handleFileInput}
         accept={accept}
         multiple={multiple}
+        aria-hidden="true"
       />
 
       {isUploading ? (
         <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
           <div className="w-full max-w-xs space-y-2">
             <div className="flex justify-between text-xs text-zinc-400">
-              <span>Uploading...</span>
+              <span>Reading file...</span>
               <span>{uploadProgress}%</span>
             </div>
-            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-primary transition-all duration-300 ease-out"
+                className="h-full bg-primary transition-all duration-100 ease-out"
                 style={{ width: `${uploadProgress}%` }}
               />
             </div>
@@ -133,16 +138,21 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         </div>
       ) : (
         <div className={`flex flex-col items-center justify-center ${compact ? 'py-4 px-4' : 'py-12 px-4'} text-center cursor-pointer h-full`}>
-          <div className={`${compact ? 'p-2 mb-2' : 'p-4 mb-4'} rounded-full transition-all duration-300 border border-transparent ${isDragging ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500' : 'bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 group-hover:border-indigo-500 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] group-hover:scale-110'}`}>
+          <div className={`${compact ? 'p-2 mb-2' : 'p-4 mb-4'} rounded-full transition-all duration-300 border border-transparent ${isDragging ? 'bg-indigo-500/20 text-indigo-500 border-indigo-500' : 'bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/10 group-hover:text-indigo-400 group-hover:border-indigo-500/50 group-hover:shadow-[0_0_15px_rgba(99,102,241,0.3)] group-hover:scale-110'}`}>
             <Icon size={compact ? 20 : 32} />
           </div>
           <h3 className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-zinc-100 mb-1`}>{label}</h3>
           {!compact && <p className="text-sm text-zinc-400 max-w-xs">{description}</p>}
-          {multiple && !compact && <span className="mt-2 text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">Multi-file supported</span>}
+          {!compact && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap justify-center">
+              {multiple && <span className="text-xs bg-zinc-800 text-zinc-400 px-2 py-0.5 rounded border border-zinc-700">Multi-file</span>}
+              <span className="text-xs text-zinc-600">or press <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-500 font-mono">space</kbd> to browse</span>
+            </div>
+          )}
 
           {isDragging && (
-            <div className="absolute inset-0 flex items-center justify-center bg-primary/90 backdrop-blur-sm transition-opacity">
-              <p className="text-white font-bold text-xl">Drop it like it's hot!</p>
+            <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/80 backdrop-blur-sm transition-opacity">
+              <p className="text-white font-bold text-xl tracking-tight">Drop to upload</p>
             </div>
           )}
         </div>
