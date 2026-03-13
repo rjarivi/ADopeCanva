@@ -209,7 +209,7 @@ export const VideoTrimmer: React.FC = () => {
     if (engineStatus === 'loading') {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-center space-y-4 animate-fade-in">
-                <Loader2 size={32} className="animate-spin text-pink-500" />
+                <Loader2 size={32} className="animate-spin text-indigo-500" />
                 <p className="text-zinc-400">Loading Video Engine...</p>
             </div>
         );
@@ -220,7 +220,7 @@ export const VideoTrimmer: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-rose-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Scissors size={32} /> Precision Video Trimmer
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">

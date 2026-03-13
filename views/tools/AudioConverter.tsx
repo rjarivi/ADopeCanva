@@ -175,8 +175,7 @@ export const AudioConverter: React.FC = () => {
         <div className="flex-none space-y-3 mb-10">
           <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
             <div className="text-indigo-500"><Music size={32} /></div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
-              Audio Converter
+            <span className="text-white">              Audio Converter
             </span>
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -324,7 +323,7 @@ px - 3 py - 2 rounded - lg text - xs font - bold uppercase tracking - wider tran
                 <div className="w-16 h-16 mx-auto border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
                 <div className="space-y-1">
                   <p className="text-white font-black font-unbounded uppercase tracking-wider text-sm">Converting...</p>
-                  <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
                     <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}% ` }}></div>
                   </div>
                 </div>

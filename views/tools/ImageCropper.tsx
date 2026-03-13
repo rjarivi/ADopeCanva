@@ -389,7 +389,7 @@ export const ImageCropper: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Crop size={32} /> Image Cropper
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -483,18 +483,18 @@ export const ImageCropper: React.FC = () => {
     });
 
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-blue-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
 
             <aside className={`${isMobile ? 'order-2 w-full h-[55vh]' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-black text-xs text-blue-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <Crop size={20} /> Cropper Settings
                     </h2>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="text-[10px] font-bold text-zinc-500 hover:text-blue-400 uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                            className="text-[10px] font-bold text-zinc-500 hover:text-indigo-400 uppercase tracking-widest transition-colors flex items-center gap-1.5"
                             title="Replace Image"
                         >
                             <RefreshCw size={14} /> Replace
@@ -568,7 +568,7 @@ export const ImageCropper: React.FC = () => {
                                     <button
                                         key={ratio.id}
                                         onClick={() => applyAspectRatio(ratio.id as AspectRatio)}
-                                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all ${aspectRatio === ratio.id ? 'bg-blue-500/10 border-blue-500 text-blue-400' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                        className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border transition-all ${aspectRatio === ratio.id ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400' : 'bg-zinc-900/50 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
                                     >
                                         <ratio.icon size={14} />
                                         <span className="text-[9px] font-bold">{ratio.label}</span>

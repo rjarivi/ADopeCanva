@@ -145,7 +145,7 @@ export const ImageResizer: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Maximize2 size={32} /> Image Resizer
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -174,7 +174,7 @@ export const ImageResizer: React.FC = () => {
                         { icon: Monitor, label: 'HD Quality', desc: 'Crisp output' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-cyan-500/10 rounded-full text-cyan-400">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -189,15 +189,15 @@ export const ImageResizer: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-cyan-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
             {/* Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-black text-xs text-cyan-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <Maximize2 size={20} /> Image Resizer
                     </h2>
-                    <button onClick={handleReset} className="text-zinc-600 hover:text-cyan-400 transition-colors">
+                    <button onClick={handleReset} className="text-zinc-600 hover:text-indigo-400 transition-colors">
                         <RefreshCcw size={14} />
                     </button>
                 </div>
@@ -235,7 +235,7 @@ export const ImageResizer: React.FC = () => {
 
                                 <button
                                     onClick={() => setAspectLocked(!aspectLocked)}
-                                    className={`mt-5 p-2 rounded-lg transition-colors ${aspectLocked ? 'bg-cyan-500/20 text-cyan-400' : 'bg-zinc-800 text-zinc-500'}`}
+                                    className={`mt-5 p-2 rounded-lg transition-colors ${aspectLocked ? 'bg-indigo-500/20 text-indigo-400' : 'bg-zinc-800 text-zinc-500'}`}
                                     title={aspectLocked ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
                                 >
                                     {aspectLocked ? <Lock size={16} /> : <Unlock size={16} />}
@@ -283,7 +283,7 @@ export const ImageResizer: React.FC = () => {
                                             <span>{preset.icon}</span>
                                             <span className="font-medium text-zinc-300">{preset.name}</span>
                                         </span>
-                                        <span className="text-zinc-600 group-hover:text-cyan-400 font-mono text-[10px]">
+                                        <span className="text-zinc-600 group-hover:text-indigo-400 font-mono text-[10px]">
                                             {preset.width}×{preset.height}
                                         </span>
                                     </button>
