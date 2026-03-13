@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -47,6 +47,7 @@ import { ImageConverter } from './tools/ImageConverter';
 import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
+import { SvgToCode } from './tools/SvgToCode';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -657,6 +658,7 @@ export const TOOLS: ToolItem[] = [
         id: 'gif-to-apng',
         title: 'GIF to APNG',
         description: 'Convert GIF animations to APNG.',
+        swapId: 'apng-to-gif',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <GifToApng />,
@@ -675,6 +677,7 @@ export const TOOLS: ToolItem[] = [
         id: 'apng-to-gif',
         title: 'APNG to GIF',
         description: 'Convert APNG files to standard GIF.',
+        swapId: 'gif-to-apng',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <ApngToGif />,
@@ -787,6 +790,7 @@ export const TOOLS: ToolItem[] = [
         id: 'gif-to-webp',
         title: 'GIF to WebP',
         description: 'Convert GIF to animated WebP.',
+        swapId: 'webp-to-gif',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <GifToWebp />,
@@ -805,6 +809,7 @@ export const TOOLS: ToolItem[] = [
         id: 'jpg-to-webp',
         title: 'JPG to WebP',
         description: 'Convert JPG images to WebP.',
+        swapId: 'webp-to-jpg',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <JpgToWebp />,
@@ -823,6 +828,7 @@ export const TOOLS: ToolItem[] = [
         id: 'png-to-webp',
         title: 'PNG to WebP',
         description: 'Convert PNG images to WebP.',
+        swapId: 'webp-to-png',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <PngToWebp />,
@@ -858,6 +864,7 @@ export const TOOLS: ToolItem[] = [
         id: 'webp-to-gif',
         title: 'WebP to GIF',
         description: 'Convert WebP to GIF animation.',
+        swapId: 'gif-to-webp',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <WebpToGif />,
@@ -876,6 +883,7 @@ export const TOOLS: ToolItem[] = [
         id: 'webp-to-jpg',
         title: 'WebP to JPG',
         description: 'Convert WebP to JPG image.',
+        swapId: 'jpg-to-webp',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <WebpToJpg />,
@@ -894,6 +902,7 @@ export const TOOLS: ToolItem[] = [
         id: 'webp-to-png',
         title: 'WebP to PNG',
         description: 'Convert WebP to PNG image.',
+        swapId: 'png-to-webp',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <WebpToPng />,
@@ -988,6 +997,7 @@ export const TOOLS: ToolItem[] = [
         id: 'pdf-to-text',
         title: 'PDF to Text',
         description: 'Extract text content from PDF documents.',
+        swapId: 'text-to-pdf',
         category: ToolCategory.DOCS,
         icon: FileText,
         component: <PdfToText />,
@@ -1009,6 +1019,7 @@ export const TOOLS: ToolItem[] = [
         id: 'text-to-pdf',
         title: 'Text to PDF',
         description: 'Convert plain text to PDF documents.',
+        swapId: 'pdf-to-text',
         category: ToolCategory.DOCS,
         icon: FileText,
         component: <TextToPdf />,
@@ -1086,6 +1097,7 @@ export const TOOLS: ToolItem[] = [
         id: 'svg-converter',
         title: 'SVG Code to SVG',
         description: 'Paste SVG markup, preview it live, and download as an .svg file.',
+        swapId: 'svg-to-code',
         category: ToolCategory.DEV,
         icon: FileCode2,
         component: <SvgConverter />,
@@ -1103,6 +1115,28 @@ export const TOOLS: ToolItem[] = [
             { label: 'Preview backgrounds', value: 'Dark, Light, Transparent' },
         ],
         privacyNotes: 'SVG code is processed entirely in-browser. Nothing is transmitted to any server.'
+    },
+    {
+        id: 'svg-to-code',
+        title: 'SVG to Code',
+        description: 'Upload an SVG file and extract its raw source markup.',
+        swapId: 'svg-converter',
+        category: ToolCategory.DEV,
+        icon: FileSearch,
+        component: <SvgToCode />,
+        guideTitle: 'How to extract SVG source code from an SVG file',
+        guideContent: 'Open any SVG file and instantly view, copy, or download its raw XML markup. Perfect for developers who need to inspect icon libraries, tweak SVG paths, or embed inline SVG into HTML.',
+        faqs: [
+            { question: 'What is SVG source code?', answer: 'SVG files are XML text files. This tool reads that text so you can copy, edit, or embed it directly in your code.' },
+            { question: 'Can I edit the code after extracting?', answer: 'Yes — the code panel is fully editable. Make changes and the preview updates live.' },
+            { question: 'Is my file safe?', answer: 'All processing is done entirely in your browser. The file never leaves your device.' },
+        ],
+        specs: [
+            { label: 'Input', value: '.svg file' },
+            { label: 'Output', value: 'Raw SVG markup (editable)' },
+            { label: 'Preview', value: 'Live render in browser' },
+        ],
+        privacyNotes: 'SVG files are read locally in-browser. No data is uploaded.'
     },
 ];
 
