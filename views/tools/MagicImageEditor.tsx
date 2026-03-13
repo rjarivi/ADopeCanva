@@ -252,7 +252,7 @@ export const MagicImageEditor: React.FC = () => {
 
             <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
               <h4 className="font-semibold text-zinc-400 mb-2 text-[10px] uppercase tracking-widest flex items-center gap-2 font-bold">
-                <Sparkles size={14} className="text-yellow-400" /> AI Style Tips
+                <Sparkles size={14} className="text-indigo-400" /> AI Style Tips
               </h4>
               <ul className="text-[10px] text-zinc-500 space-y-2 uppercase font-bold tracking-tight">
                 <li>Be specific about colors & styles</li>

@@ -97,7 +97,7 @@ export const ImageConverter: React.FC = () => {
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-4 font-unbounded">
-                        <div className="text-teal-500"><ArrowRightRightLeft size={42} /></div>
+                        <div className="text-indigo-400"><ArrowRightRightLeft size={42} /></div>
                         <span className="text-white">                            Format Shifter
                         </span>
                     </h1>
@@ -107,9 +107,9 @@ export const ImageConverter: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-teal-500/50 transition-colors shadow-2xl">
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFilesSelect={handleFiles}
                         onFileSelect={handleFiles}
@@ -117,7 +117,7 @@ export const ImageConverter: React.FC = () => {
                         label="Upload Images to Convert"
                         description="JPG, PNG, WEBP Supported"
                         multiple={true}
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-teal-500/50 bg-transparent rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all"
                     />
                 </div>
 
@@ -130,7 +130,7 @@ export const ImageConverter: React.FC = () => {
                         { icon: RotateCw, label: 'Format Shift', desc: 'PNG • JPG • WEBP' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors group">
-                            <div className="p-3 bg-zinc-900 rounded-full text-teal-500 group-hover:scale-110 transition-transform shadow-inner">
+                            <div className="p-3 bg-zinc-900 rounded-full text-indigo-400 group-hover:scale-110 transition-transform shadow-inner">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -149,10 +149,10 @@ export const ImageConverter: React.FC = () => {
             {/* Sidebar Controls */}
             <aside className={`${isMobile ? 'order-2 h-1/2' : 'order-1 w-85 border-r'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
                 <div className="h-16 px-6 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#0c0c0e]/80 backdrop-blur-md">
-                    <h2 className="font-black text-xs text-teal-500 uppercase tracking-[0.2em] flex items-center gap-3 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-3 font-unbounded">
                         <Settings size={18} /> SETTINGS
                     </h2>
-                    <button onClick={reset} className="text-zinc-600 hover:text-teal-400 transition-all p-2 hover:bg-teal-500/5 rounded-xl">
+                    <button onClick={reset} className="text-zinc-600 hover:text-indigo-400 transition-all p-2 hover:bg-indigo-500/5 rounded-xl">
                         <RefreshCcw size={16} />
                     </button>
                 </div>
@@ -190,7 +190,7 @@ export const ImageConverter: React.FC = () => {
 
                     <div className="pt-4">
                         {!processedFiles.length ? (
-                            <Button className="w-full h-14 bg-teal-500 hover:bg-teal-600 text-black font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl" onClick={convertImages} disabled={isProcessing} >
+                            <Button className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase text-xs tracking-[0.1em] font-unbounded rounded-2xl" onClick={convertImages} disabled={isProcessing} >
                                 {isProcessing ? <Loader2 className="animate-spin" /> : <><ArrowRight className="mr-2" size={18} /> Convert All</>}
                             </Button>
                         ) : (
@@ -239,7 +239,7 @@ export const ImageConverter: React.FC = () => {
                             })));
                             input.click();
                         }}
-                        className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/30 flex flex-col items-center justify-center text-zinc-600 hover:text-teal-400 hover:border-teal-500/30 transition-all font-unbounded text-[10px] font-black uppercase tracking-widest gap-2"
+                        className="aspect-square rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/30 flex flex-col items-center justify-center text-zinc-600 hover:text-indigo-400 hover:border-indigo-500/30 transition-all font-unbounded text-[10px] font-black uppercase tracking-widest gap-2"
                     >
                         <FileImage size={24} />
                         <span>Add More</span>

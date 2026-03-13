@@ -232,7 +232,7 @@ export const CodeFormatter: React.FC = () => {
 
                 <div className="flex-1 relative">
                     <textarea
-                        className="w-full h-full bg-zinc-950 p-6 font-mono text-sm text-zinc-300 resize-none outline-none focus:bg-black transition-colors custom-scrollbar leading-relaxed"
+                        className="w-full h-full bg-zinc-950 p-6 font-mono text-sm text-zinc-300 resize-none outline-none focus:bg-black focus:ring-2 focus:ring-indigo-500/50 transition-colors custom-scrollbar leading-relaxed"
                         placeholder={`Paste your ${language} code here...`}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}

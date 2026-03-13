@@ -587,7 +587,7 @@ export const QuickVideoEditor: React.FC = () => {
                                         <button
                                             key={mode}
                                             onClick={() => setScaleMode(mode)}
-                                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${scaleMode === mode ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${scaleMode === mode ? 'bg-indigo-500/10 border border-indigo-500 text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
                                         >
                                             {mode}
                                         </button>
