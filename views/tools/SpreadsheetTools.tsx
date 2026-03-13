@@ -195,13 +195,13 @@ export const SpreadsheetTools: React.FC = () => {
                 <div className="flex justify-center gap-4 mt-6">
                     <button
                         onClick={() => { setMode('excel-to-other'); setFile(null); setResult(null); }}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
                     >
                         Excel → Other
                     </button>
                     <button
                         onClick={() => { setMode('other-to-excel'); setFile(null); setResult(null); }}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-green-600 border-green-500 text-white shadow-lg shadow-green-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
                     >
                         Other → Excel
                     </button>
@@ -209,14 +209,14 @@ export const SpreadsheetTools: React.FC = () => {
             </div>
 
             {/* Upload Area */}
-            <div className={`flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-green-500/50 transition-colors shadow-2xl ${result ? 'hidden' : 'flex'}`}>
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className={`flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl ${result ? 'hidden' : 'flex'}`}>
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 <FileUploader
                     onFileSelect={handleFileSelect}
                     accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
                     label={mode === 'excel-to-other' ? "Upload Spreadsheet" : "Upload JSON/CSV"}
                     description={mode === 'excel-to-other' ? "Supports XLSX, XLS, ODS, CSV" : "Supports JSON arrays or CSV text"}
-                    className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-green-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                    className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                 />
             </div>
 
@@ -259,7 +259,7 @@ export const SpreadsheetTools: React.FC = () => {
                     <div className="flex-1 p-8 bg-zinc-900/10 flex flex-col">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="font-black text-white flex items-center gap-2 font-unbounded text-lg uppercase tracking-wider">
-                                <FileSpreadsheet size={20} className="text-green-500" /> Result
+                                <FileSpreadsheet size={20} className="text-indigo-400" /> Result
                             </h3>
                             {downloadUrl && (
                                 <a

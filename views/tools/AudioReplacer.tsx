@@ -228,7 +228,7 @@ export const AudioReplacer: React.FC = () => {
                     <div className="bg-surface rounded-3xl border border-zinc-800 p-6 space-y-6">
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="text-lg font-black text-white flex items-center gap-2 font-unbounded">
-                                <Settings size={18} className="text-violet-500" /> Configuration
+                                <Settings size={18} className="text-indigo-400" /> Configuration
                             </h3>
                             <Button variant="ghost" size="sm" onClick={resetAll} disabled={isProcessing}>
                                 <RefreshCcw size={16} className="mr-2" /> Reset
@@ -238,14 +238,14 @@ export const AudioReplacer: React.FC = () => {
                         {/* File List */}
                         <div className="space-y-3">
                             <div className="flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                                <Video className="text-blue-500" size={20} />
+                                <Video className="text-indigo-400" size={20} />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-zinc-500">Video Source</p>
                                     <p className="text-sm text-zinc-300 truncate">{videoFile.file.name}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 p-3 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-                                <Music className="text-violet-500" size={20} />
+                                <Music className="text-indigo-400" size={20} />
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-zinc-500">New Audio Track</p>
                                     <p className="text-sm text-zinc-300 truncate">{audioFile.file.name}</p>

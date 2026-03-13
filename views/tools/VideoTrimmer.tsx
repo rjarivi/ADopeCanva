@@ -448,7 +448,7 @@ export const VideoTrimmer: React.FC = () => {
                         {/* Playhead Overlay */}
                         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] pointer-events-none">
                             <div className="w-full h-1 bg-zinc-800/50 rounded-full overflow-hidden backdrop-blur-sm">
-                                <div className="h-full bg-pink-500 transition-all duration-75" style={{ width: `${(videoRef.current?.currentTime || 0) / (duration || 1) * 100}%` }} />
+                                <div className="h-full bg-indigo-500 transition-all duration-75" style={{ width: `${(videoRef.current?.currentTime || 0) / (duration || 1) * 100}%` }} />
                             </div>
                         </div>
 

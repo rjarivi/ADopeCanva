@@ -35,7 +35,7 @@ export const GifSuite: React.FC = () => {
                 <div className="w-full lg:w-72 flex-shrink-0 space-y-8">
                     <div className="px-2">
                         <h2 className="text-2xl font-black text-white flex items-center gap-2 mb-2 font-unbounded uppercase tracking-wider">
-                            <LayoutGrid size={24} className="text-pink-400" /> GIF Studio
+                            <LayoutGrid size={24} className="text-indigo-400" /> GIF Studio
                         </h2>
                         <p className="text-zinc-500 text-sm">Professional GIF toolkit</p>
                     </div>
@@ -51,7 +51,7 @@ export const GifSuite: React.FC = () => {
                                     : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
                                     }`}
                             >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeMode === item.id ? 'bg-pink-500 text-white' : 'bg-zinc-800 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-pink-500'
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeMode === item.id ? 'bg-indigo-500 text-white' : 'bg-zinc-800 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-indigo-400'
                                     }`}>
                                     <item.icon size={16} />
                                 </div>
@@ -79,7 +79,7 @@ export const GifSuite: React.FC = () => {
                                     : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
                                     }`}
                             >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeMode === item.id ? 'bg-purple-500 text-white' : 'bg-zinc-800 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-purple-500'
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${activeMode === item.id ? 'bg-indigo-500 text-white' : 'bg-zinc-800 text-zinc-500 group-hover:bg-zinc-800 group-hover:text-indigo-400'
                                     }`}>
                                     <item.icon size={16} />
                                 </div>

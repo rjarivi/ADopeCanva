@@ -193,7 +193,7 @@ export const TextUtilities: React.FC = () => {
                         <button
                             key={m.id}
                             onClick={() => { setMode(m.id as Mode); setOutput(''); }}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${mode === m.id ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${mode === m.id ? 'bg-indigo-500/10 border border-indigo-500 text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'
                                 }`}
                         >
                             <m.icon size={14} />
@@ -217,7 +217,7 @@ export const TextUtilities: React.FC = () => {
                     </div>
 
                     <textarea
-                        className="flex-1 bg-transparent p-6 outline-none text-zinc-300 font-mono text-sm resize-none custom-scrollbar"
+                        className="flex-1 bg-transparent p-6 outline-none text-zinc-300 font-mono text-sm resize-none custom-scrollbar focus:ring-1 focus:ring-indigo-500/50"
                         placeholder={mode === 'generate' ? "Enter text to hash (optional for UUID)..." : "Paste your text here to begin..."}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
