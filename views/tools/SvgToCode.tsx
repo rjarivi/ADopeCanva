@@ -47,7 +47,7 @@ export const SvgToCode: React.FC = () => {
             <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-violet-600 flex items-center justify-center gap-3 font-unbounded">
+                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <FileSearch size={32} /> SVG to Code
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -76,7 +76,7 @@ export const SvgToCode: React.FC = () => {
                         { icon: Maximize2, label: 'Any SVG', desc: 'Icons, illustrations' },
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group">
-                            <div className="p-2 bg-violet-500/10 rounded-full text-violet-400 group-hover:scale-110 group-hover:bg-violet-500/20 transition-all">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -95,7 +95,7 @@ export const SvgToCode: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <FileSearch size={32} className="text-violet-400" />
+                    <FileSearch size={32} className="text-indigo-400" />
                     <div>
                         <h2 className="text-2xl font-black text-white font-unbounded">SVG to Code</h2>
                         <p className="text-xs text-zinc-500">{fileName ? `${fileName}.svg` : 'SVG source extractor'}</p>
@@ -179,7 +179,7 @@ export const SvgToCode: React.FC = () => {
                     { icon: Maximize2, label: 'Scalable', desc: 'Vector source' },
                 ].map((feat, i) => (
                     <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group">
-                        <div className="p-2 bg-violet-500/10 rounded-full text-violet-400 group-hover:scale-110 group-hover:bg-violet-500/20 transition-all">
+                        <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
                             <feat.icon size={18} />
                         </div>
                         <div>

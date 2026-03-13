@@ -192,7 +192,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
   if (engineStatus === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-4 animate-fade-in">
-        <Loader2 size={32} className="animate-spin text-orange-500" />
+        <Loader2 size={32} className="animate-spin text-indigo-500" />
         <p className="text-zinc-400">Loading Converter Engine...</p>
       </div>
     );
@@ -203,7 +203,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
             <FileVideo size={32} /> {title}
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">

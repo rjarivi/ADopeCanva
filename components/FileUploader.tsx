@@ -128,7 +128,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
               <span>Reading file...</span>
               <span>{uploadProgress}%</span>
             </div>
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-100 ease-out"
                 style={{ width: `${uploadProgress}%` }}

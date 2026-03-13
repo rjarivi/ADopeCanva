@@ -286,7 +286,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   if (engineStatus === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center space-y-4 animate-fade-in">
-        <Loader2 size={32} className="animate-spin text-green-500" />
+        <Loader2 size={32} className="animate-spin text-indigo-500" />
         <p className="text-zinc-400">Loading {outputFormat.toUpperCase()} Engine...</p>
       </div>
     );
@@ -297,7 +297,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600 flex items-center justify-center gap-3 font-unbounded">
+          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
             <Film size={32} /> GIF Generator
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
@@ -341,7 +341,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   }
 
   return (
-    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-green-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
       {/* Navigation removed for simplified workflow */}
 

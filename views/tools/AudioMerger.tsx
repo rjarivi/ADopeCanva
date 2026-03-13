@@ -112,8 +112,7 @@ export const AudioMerger: React.FC = () => {
         <div className="flex-none space-y-3 mb-10">
           <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
             <div className="text-indigo-500"><ListMusic size={32} /></div>
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-600">
-              Audio Merger
+            <span className="text-white">              Audio Merger
             </span>
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">

@@ -236,8 +236,7 @@ export const PdfSuite: React.FC = () => {
                 <div className="flex-none space-y-3 mb-10">
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
                         <div className="text-red-500"><FileText size={42} /></div>
-                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-500">
-                            PDF Studio
+                        <span className="text-white">                            PDF Studio
                         </span>
                     </h1>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
@@ -246,9 +245,9 @@ export const PdfSuite: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-red-500/50 transition-colors shadow-2xl">
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFilesSelect={handleFileSelect}
                         onFileSelect={handleFileSelect}
@@ -256,7 +255,7 @@ export const PdfSuite: React.FC = () => {
                         label={`Upload PDF${mode === 'merge' ? 's' : ''}`}
                         description={mode === 'merge' ? 'Select multiple documents to combine' : 'Select a document to extract or rotate pages'}
                         multiple={mode === 'merge'}
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-red-500/50 bg-transparent rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all"
                     />
                 </div>
 
@@ -284,7 +283,7 @@ export const PdfSuite: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-red-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
+        <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
 
             {/* 1. Sidebar - Unified Controls - MOVED TO RIGHT */}
             <aside className={`${isMobile ? 'order-3 h-1/2' : 'order-2 w-72 border-l'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
@@ -376,7 +375,7 @@ export const PdfSuite: React.FC = () => {
                                             };
                                             input.click();
                                         }}
-                                        className="w-full flex items-center justify-center gap-3 p-4 border border-zinc-800 border-dashed rounded-2xl text-zinc-600 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5 transition-all duration-300"
+                                        className="w-full flex items-center justify-center gap-3 p-4 border border-zinc-800 border-dashed rounded-2xl text-zinc-600 hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-500/5 transition-all duration-300"
                                     >
                                         <Plus size={18} />
                                         <span className="text-[10px] font-black uppercase tracking-widest font-unbounded">Enqueue More</span>
@@ -615,7 +614,7 @@ export const PdfSuite: React.FC = () => {
                                 };
                                 input.click();
                             }}
-                            className="w-48 aspect-[3/4.5] rounded-[24px] border-2 border-dashed border-zinc-800 hover:border-red-500/50 hover:bg-red-500/5 flex flex-col items-center justify-center text-zinc-700 hover:text-red-400 transition-all duration-500 group"
+                            className="w-48 aspect-[3/4.5] rounded-[24px] border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 hover:bg-red-500/5 flex flex-col items-center justify-center text-zinc-700 hover:text-red-400 transition-all duration-500 group"
                         >
                             <div className="p-5 rounded-3xl bg-zinc-900/50 mb-4 group-hover:scale-110 group-hover:bg-red-500/10 transition-all">
                                 <FilePlus size={40} />
