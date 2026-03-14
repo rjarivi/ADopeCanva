@@ -52,6 +52,30 @@ import { HtmlToImage } from './tools/HtmlToImage';
 
 export const TOOLS: ToolItem[] = [
     {
+        id: 'html-to-image',
+        title: 'HTML to Image',
+        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
+        category: ToolCategory.DEV,
+        icon: MonitorDown,
+        component: <HtmlToImage />,
+        popular: true,
+        guideTitle: 'How to convert HTML and CSS to an image',
+        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
+        faqs: [
+            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
+            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
+            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
+            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
+        ],
+        specs: [
+            { label: 'Input', value: 'HTML + CSS markup' },
+            { label: 'Output', value: 'PNG, JPEG, WebP' },
+            { label: 'Max resolution', value: '3× device pixel ratio' },
+            { label: 'Engine', value: 'html2canvas (client-side)' },
+        ],
+        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
+    },
+    {
         id: 'image-converter',
         title: 'Image Converter',
         description: 'Batch convert images between PNG, JPG, and WebP.',
@@ -1139,38 +1163,11 @@ export const TOOLS: ToolItem[] = [
         ],
         privacyNotes: 'SVG files are read locally in-browser. No data is uploaded.'
     },
-    {
-        id: 'html-to-image',
-        title: 'HTML to Image',
-        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
-        category: ToolCategory.DEV,
-        icon: MonitorDown,
-        component: <HtmlToImage />,
-        popular: true,
-        guideTitle: 'How to convert HTML and CSS to an image',
-        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
-        faqs: [
-            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
-            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
-            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
-            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
-        ],
-        specs: [
-            { label: 'Input', value: 'HTML + CSS markup' },
-            { label: 'Output', value: 'PNG, JPEG, WebP' },
-            { label: 'Max resolution', value: '3× device pixel ratio' },
-            { label: 'Engine', value: 'html2canvas (client-side)' },
-        ],
-        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
-    },
 ];
 
 import { useNavigate } from 'react-router-dom';
 import { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
-
-// ... imports ...
-
 import { useIsMobile } from '../hooks/useIsMobile';
 
 interface DashboardProps {
