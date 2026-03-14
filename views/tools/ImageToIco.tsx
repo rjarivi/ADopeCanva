@@ -216,7 +216,7 @@ export const ImageToIco: React.FC = () => {
                                                 px-4 py-3 rounded-xl text-sm font-semibold transition-all border
                                                 ${isSelected
                                                     ? 'bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-500/20 scale-105 z-10'
-                                                    : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600'
+                                                    : 'bg-zinc-800/50 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
                                                 }
                                                 ${(isProcessing || isDone) ? 'opacity-50 cursor-not-allowed' : ''}
                                             `}

@@ -440,7 +440,7 @@ export const UniversalDocConverter: React.FC = () => {
             onClick={() => setConversionType(type)}
             className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${conversionType === type
                 ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.2)]'
-                : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-indigo-500/40 hover:bg-indigo-500/5 hover:text-zinc-200'
                 }`}
         >
             <div className={`p-2 rounded-xl ${conversionType === type ? 'bg-indigo-500/20' : 'bg-zinc-800'}`}>
@@ -649,7 +649,7 @@ export const UniversalDocConverter: React.FC = () => {
                                 { icon: ImageIcon, label: 'Images', desc: 'HEIC, ZIP, PDF-to-Img', color: 'text-pink-400' },
                                 { icon: FileSpreadsheet, label: 'Data', desc: 'Excel, CSV & JSON', color: 'text-green-400' }
                             ].map((item, i) => (
-                                <div key={i} className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 hover:border-zinc-700 transition-all group flex flex-col items-center text-center">
+                                <div key={i} className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all group flex flex-col items-center text-center">
                                     <item.icon className={`${item.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
                                     <h4 className="text-white text-xs font-bold mb-1 uppercase tracking-wider">{item.label}</h4>
                                     <p className="text-zinc-500 text-[10px] font-medium leading-tight">{item.desc}</p>

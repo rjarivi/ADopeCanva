@@ -538,14 +538,14 @@ export const ImageCropper: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setRotation(r => r - 45)}
-                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-zinc-400 hover:text-indigo-300"
                                 >
                                     <RotateCcw size={16} />
                                     <span className="text-[10px] font-bold uppercase">-45°</span>
                                 </button>
                                 <button
                                     onClick={() => setRotation(r => r + 45)}
-                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-zinc-400 hover:text-indigo-300"
                                 >
                                     <RotateCw size={16} />
                                     <span className="text-[10px] font-bold uppercase">+45°</span>

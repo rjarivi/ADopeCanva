@@ -195,13 +195,13 @@ export const SpreadsheetTools: React.FC = () => {
                 <div className="flex justify-center gap-4 mt-6">
                     <button
                         onClick={() => { setMode('excel-to-other'); setFile(null); setResult(null); }}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Excel → Other
                     </button>
                     <button
                         onClick={() => { setMode('other-to-excel'); setFile(null); setResult(null); }}
-                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'}`}
+                        className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Other → Excel
                     </button>

@@ -270,7 +270,7 @@ export const AudioReplacer: React.FC = () => {
                                             disabled={isProcessing || isDone}
                                             className={`px-3 py-2 rounded-lg text-sm font-medium border transition-all ${outputFormat === fmt
                                                 ? 'bg-indigo-500/10 border-indigo-500 text-indigo-400'
-                                                : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:bg-zinc-700'
+                                                : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:border-zinc-700 hover:text-zinc-300'
                                                 }`}
                                         >
                                             {fmt}
