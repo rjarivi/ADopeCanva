@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -48,6 +48,7 @@ import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
+import { HtmlToImage } from './tools/HtmlToImage';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -1137,6 +1138,30 @@ export const TOOLS: ToolItem[] = [
             { label: 'Preview', value: 'Live render in browser' },
         ],
         privacyNotes: 'SVG files are read locally in-browser. No data is uploaded.'
+    },
+    {
+        id: 'html-to-image',
+        title: 'HTML to Image',
+        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
+        category: ToolCategory.DEV,
+        icon: MonitorDown,
+        component: <HtmlToImage />,
+        popular: true,
+        guideTitle: 'How to convert HTML and CSS to an image',
+        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
+        faqs: [
+            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
+            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
+            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
+            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
+        ],
+        specs: [
+            { label: 'Input', value: 'HTML + CSS markup' },
+            { label: 'Output', value: 'PNG, JPEG, WebP' },
+            { label: 'Max resolution', value: '3× device pixel ratio' },
+            { label: 'Engine', value: 'html2canvas (client-side)' },
+        ],
+        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
     },
 ];
 
