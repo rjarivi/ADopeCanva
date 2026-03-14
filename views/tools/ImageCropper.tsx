@@ -538,14 +538,14 @@ export const ImageCropper: React.FC = () => {
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setRotation(r => r - 45)}
-                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-zinc-400 hover:text-indigo-300"
                                 >
                                     <RotateCcw size={16} />
                                     <span className="text-[10px] font-bold uppercase">-45°</span>
                                 </button>
                                 <button
                                     onClick={() => setRotation(r => r + 45)}
-                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-zinc-700 transition-all text-zinc-400 hover:text-white"
+                                    className="flex items-center justify-center gap-2 py-3 bg-zinc-900 border border-zinc-800 rounded-xl hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-zinc-400 hover:text-indigo-300"
                                 >
                                     <RotateCw size={16} />
                                     <span className="text-[10px] font-bold uppercase">+45°</span>
@@ -578,7 +578,7 @@ export const ImageCropper: React.FC = () => {
                         </section>
 
                         <div className="pt-4 space-y-3">
-                            <Button className="w-full h-12 bg-blue-500 hover:bg-blue-600 border-none shadow-lg shadow-blue-500/20 font-bold text-xs tracking-widest uppercase" onClick={handleCropImage} >
+                            <Button className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 border-none shadow-lg shadow-indigo-500/20 font-bold text-xs tracking-widest uppercase" onClick={handleCropImage} >
                                 <Check size={18} className="mr-2" /> Apply Changes
                             </Button>
                             <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold text-xs tracking-widest uppercase" onClick={() => fileInputRef.current?.click()}

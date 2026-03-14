@@ -81,7 +81,7 @@ export const SvgConverter: React.FC = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div className="flex items-center gap-3">
-                    <FileCode2 size={32} className="text-violet-400" />
+                    <FileCode2 size={32} className="text-indigo-400" />
                     <div>
                         <h2 className="text-2xl font-black text-white font-unbounded">SVG Code → SVG</h2>
                         <p className="text-xs text-zinc-500">Paste SVG markup, preview and download instantly</p>
@@ -97,7 +97,7 @@ export const SvgConverter: React.FC = () => {
                                 onClick={() => setPreviewBg(bg)}
                                 className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all capitalize ${
                                     previewBg === bg
-                                        ? 'bg-violet-600 text-white shadow-sm'
+                                        ? 'bg-indigo-600 text-white shadow-sm'
                                         : 'text-zinc-500 hover:text-zinc-300'
                                 }`}
                             >
@@ -122,7 +122,7 @@ export const SvgConverter: React.FC = () => {
                         onClick={handleDownload}
                         size="sm"
                         disabled={!isValid}
-                        className="bg-violet-600 hover:bg-violet-700 text-white border-none disabled:opacity-40"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white border-none disabled:opacity-40"
                     >
                         <Download size={14} className="mr-2" /> Download SVG
                     </Button>
@@ -157,7 +157,7 @@ export const SvgConverter: React.FC = () => {
 
                     <div className="flex-1 relative">
                         <textarea
-                            className="w-full h-full bg-zinc-950 p-5 font-mono text-sm text-zinc-300 resize-none outline-none leading-relaxed custom-scrollbar focus:bg-black transition-colors"
+                            className="w-full h-full bg-zinc-950 p-5 font-mono text-sm text-zinc-300 resize-none outline-none leading-relaxed custom-scrollbar focus:bg-black focus:ring-1 focus:ring-indigo-500/50 transition-colors"
                             placeholder={`Paste your SVG code here...\n\nExample:\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n  <circle cx="50" cy="50" r="40" fill="#6366f1" />\n</svg>`}
                             value={code}
                             onChange={e => setCode(e.target.value)}
@@ -249,7 +249,7 @@ export const SvgConverter: React.FC = () => {
                         key={i}
                         className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group"
                     >
-                        <div className="p-2 bg-violet-500/10 rounded-full text-violet-400 group-hover:scale-110 group-hover:bg-violet-500/20 transition-all">
+                        <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
                             <feat.icon size={18} />
                         </div>
                         <div>

@@ -123,7 +123,7 @@ export const SvgToCode: React.FC = () => {
                     <Button
                         onClick={handleDownload}
                         size="sm"
-                        className="bg-violet-600 hover:bg-violet-700 text-white border-none"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white border-none"
                     >
                         <Download size={14} className="mr-2" /> Download
                     </Button>
@@ -145,7 +145,7 @@ export const SvgToCode: React.FC = () => {
                     </div>
                     <div className="flex-1 relative">
                         <textarea
-                            className="w-full h-full bg-zinc-950 p-5 font-mono text-sm text-zinc-300 resize-none outline-none leading-relaxed custom-scrollbar"
+                            className="w-full h-full bg-zinc-950 p-5 font-mono text-sm text-zinc-300 resize-none outline-none leading-relaxed custom-scrollbar focus:ring-1 focus:ring-indigo-500/50"
                             value={code}
                             onChange={e => setCode(e.target.value)}
                             spellCheck={false}

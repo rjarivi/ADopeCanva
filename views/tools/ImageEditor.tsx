@@ -1843,7 +1843,7 @@ export const ImageEditor: React.FC = () => {
                                         className="relative w-full overflow-hidden rounded-xl bg-gradient-to-br from-blue-600/20 to-indigo-600/20 p-px group transition-all hover:scale-[1.01] active:scale-[0.99]"
                                     >
                                         <div className="relative bg-zinc-950/80 backdrop-blur-md rounded-[11px] py-5 px-4 flex items-center justify-center gap-3 transition-all group-hover:bg-blue-600/10">
-                                            <div className="p-1 px-1.5 rounded-md bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                            <div className="p-1 px-1.5 rounded-md bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
                                                 <Plus size={14} strokeWidth={3} />
                                             </div>
                                             <span className="text-[11px] font-bold text-zinc-300 group-hover:text-white transition-colors uppercase tracking-widest ml-1">Add New Text</span>

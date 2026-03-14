@@ -63,11 +63,11 @@ const FormatSelector: React.FC<{
                             key={option.value}
                             onClick={() => { onChange(option.value); setIsOpen(false); }}
                             className={`w-full text-left px-3 py-2 text-xs font-medium flex items-center gap-2 transition-colors ${value === option.value
-                                ? 'bg-blue-500/10 text-blue-400'
+                                ? 'bg-indigo-500/10 text-indigo-400'
                                 : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
                                 }`}
                         >
-                            <option.icon size={14} className={value === option.value ? 'text-blue-400' : 'text-zinc-500'} />
+                            <option.icon size={14} className={value === option.value ? 'text-indigo-400' : 'text-zinc-500'} />
                             <span className="flex-1">{option.label}</span>
                             {value === option.value && <Check size={12} />}
                         </button>
@@ -200,10 +200,10 @@ export const UniversalConverter: React.FC = () => {
             {/* Main Converter Area */}
             <div className="flex-1 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-[500px]">
                 {/* Input Panel */}
-                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
+                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-indigo-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-blue-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
+                            <span className="text-xs font-black text-indigo-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
                                 <ArrowRightLeft size={16} /> Input
                             </span>
                             <FormatSelector value={inputFormat} onChange={setInputFormat} />
@@ -222,7 +222,7 @@ export const UniversalConverter: React.FC = () => {
                 </div>
 
                 {/* Output Panel */}
-                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-blue-500/30 transition-colors">
+                <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-indigo-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-black text-indigo-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
@@ -243,7 +243,7 @@ export const UniversalConverter: React.FC = () => {
                         value={output}
                         readOnly
                         placeholder={`Resulting ${outputFormat.toUpperCase()} will appear here...`}
-                        className="flex-1 w-full bg-black/40 p-6 text-sm font-mono text-blue-400 outline-none resize-none placeholder:text-zinc-800"
+                        className="flex-1 w-full bg-black/40 p-6 text-sm font-mono text-indigo-400 outline-none resize-none placeholder:text-zinc-800"
                         spellCheck={false}
                     />
                 </div>
@@ -258,7 +258,7 @@ export const UniversalConverter: React.FC = () => {
                     { icon: FileText, label: 'YAML Config', desc: 'DevOps friendly' }
                 ].map((feat, i) => (
                     <div key={i} className="flex flex-col items-center text-center space-y-2 p-2 rounded-xl hover:bg-zinc-900/50 transition-colors">
-                        <div className="text-blue-500/50">
+                        <div className="text-indigo-500/50">
                             <feat.icon size={16} />
                         </div>
                         <div>

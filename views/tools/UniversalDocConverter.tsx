@@ -440,7 +440,7 @@ export const UniversalDocConverter: React.FC = () => {
             onClick={() => setConversionType(type)}
             className={`p-4 rounded-2xl border flex flex-col items-center gap-2 transition-all ${conversionType === type
                 ? 'bg-indigo-500/20 border-indigo-500 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.2)]'
-                : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
+                : 'bg-zinc-900/50 border-zinc-800 text-zinc-400 hover:border-indigo-500/40 hover:bg-indigo-500/5 hover:text-zinc-200'
                 }`}
         >
             <div className={`p-2 rounded-xl ${conversionType === type ? 'bg-indigo-500/20' : 'bg-zinc-800'}`}>
@@ -613,10 +613,10 @@ export const UniversalDocConverter: React.FC = () => {
                 {resultUrl ? (
                     <div className="flex-1 p-6 bg-zinc-900/50 flex flex-col items-center justify-center animate-fade-in text-center">
                         <div className="relative">
-                            <div className="w-32 h-32 bg-green-500/10 text-green-500 rounded-[2.5rem] flex items-center justify-center mb-8 border border-green-500/20 shadow-2xl shadow-green-500/10 relative z-10">
+                            <div className="w-32 h-32 bg-indigo-500/10 text-indigo-400 rounded-[2.5rem] flex items-center justify-center mb-8 border border-indigo-500/20 shadow-2xl shadow-indigo-500/10 relative z-10">
                                 <CheckCircle size={64} />
                             </div>
-                            <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full -z-10 animate-pulse"></div>
+                            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full -z-10 animate-pulse"></div>
                         </div>
 
                         <h3 className="text-2xl font-bold text-white mb-3">Conversion Ready!</h3>
@@ -628,7 +628,7 @@ export const UniversalDocConverter: React.FC = () => {
                             <a
                                 href={resultUrl}
                                 download={resultName}
-                                className="flex items-center justify-center w-full px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-green-600/20 transform hover:translate-y-[-2px] active:translate-y-[1px]"
+                                className="flex items-center justify-center w-full px-8 py-4 bg-white hover:bg-zinc-100 text-black rounded-2xl font-bold text-lg transition-all shadow-xl transform hover:translate-y-[-2px] active:translate-y-[1px]"
                             >
                                 <Download size={24} className="mr-3" /> Download Result
                             </a>
@@ -649,7 +649,7 @@ export const UniversalDocConverter: React.FC = () => {
                                 { icon: ImageIcon, label: 'Images', desc: 'HEIC, ZIP, PDF-to-Img', color: 'text-pink-400' },
                                 { icon: FileSpreadsheet, label: 'Data', desc: 'Excel, CSV & JSON', color: 'text-green-400' }
                             ].map((item, i) => (
-                                <div key={i} className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 hover:border-zinc-700 transition-all group flex flex-col items-center text-center">
+                                <div key={i} className="p-5 bg-zinc-900/30 rounded-2xl border border-zinc-800/50 hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all group flex flex-col items-center text-center">
                                     <item.icon className={`${item.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
                                     <h4 className="text-white text-xs font-bold mb-1 uppercase tracking-wider">{item.label}</h4>
                                     <p className="text-zinc-500 text-[10px] font-medium leading-tight">{item.desc}</p>

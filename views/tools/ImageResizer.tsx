@@ -229,7 +229,7 @@ export const ImageResizer: React.FC = () => {
                                         type="number"
                                         value={newWidth}
                                         onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
                                     />
                                 </div>
 
@@ -247,7 +247,7 @@ export const ImageResizer: React.FC = () => {
                                         type="number"
                                         value={newHeight}
                                         onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none"
                                     />
                                 </div>
                             </div>
@@ -261,7 +261,7 @@ export const ImageResizer: React.FC = () => {
                                     <button
                                         key={scale}
                                         onClick={() => applyScale(scale)}
-                                        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 transition-all"
+                                        className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 transition-all"
                                     >
                                         {scale}%
                                     </button>
@@ -277,7 +277,7 @@ export const ImageResizer: React.FC = () => {
                                     <button
                                         key={preset.name}
                                         onClick={() => applyPreset(preset)}
-                                        className="flex items-center justify-between bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs transition-all group"
+                                        className="flex items-center justify-between bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-indigo-500/50 rounded-lg px-3 py-2 text-xs transition-all group"
                                     >
                                         <span className="flex items-center gap-2">
                                             <span>{preset.icon}</span>

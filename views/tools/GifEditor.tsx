@@ -459,35 +459,35 @@ export const GifEditor: React.FC = () => {
             <div className={`${isMobile ? 'order-3 w-full border-t flex-row justify-around py-3 px-2 overflow-x-auto' : 'w-16 border-r flex-col items-center py-6'} border-zinc-800 flex gap-4 bg-[#0c0c0e] shrink-0 custom-scrollbar`}>
                 <button
                     onClick={() => setActiveTool('crop')}
-                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'crop' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'crop' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Crop"
                 >
                     <Crop size={22} />
                 </button>
                 <button
                     onClick={() => setActiveTool('transform')}
-                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'transform' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'transform' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Adjustments"
                 >
                     <RotateCw size={22} />
                 </button>
                 <button
                     onClick={() => setActiveTool('text')}
-                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'text' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'text' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Text"
                 >
                     <Type size={22} />
                 </button>
                 <button
                     onClick={() => setActiveTool('trim')}
-                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'trim' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'trim' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Trim"
                 >
                     <Scissors size={22} />
                 </button>
                 <button
                     onClick={() => setActiveTool('sprite')}
-                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'sprite' ? 'bg-[#1a1a1d] text-white shadow-lg shadow-black/50' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`p-3 rounded-xl transition-all duration-200 ${activeTool === 'sprite' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/50' : 'text-zinc-500 hover:text-zinc-300'}`}
                     title="Sprite Sheet"
                 >
                     <Grid size={22} />
