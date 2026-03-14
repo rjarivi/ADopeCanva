@@ -1182,6 +1182,7 @@ const getCategoryStyles = (category: ToolCategory) => {
         case ToolCategory.AUDIO: return { icon: 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20', badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20' };
         case ToolCategory.DOCS: return { icon: 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20', badge: 'bg-red-500/10 text-red-400 border-red-500/20' };
         case ToolCategory.TEXT: return { icon: 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20', badge: 'bg-orange-500/10 text-orange-400 border-orange-500/20' };
+        case ToolCategory.DEV: return { icon: 'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20', badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' };
         default: return { icon: 'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20', badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' };
     }
 };
