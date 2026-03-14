@@ -20,8 +20,8 @@ import heic2any from 'heic2any';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import ePub from 'epubjs';
 
-// Set worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Set worker source — use local copy to satisfy worker-src CSP ('self' blob: only)
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 type ConversionType =
     'docx-to-html' | 'docx-to-pdf' |
