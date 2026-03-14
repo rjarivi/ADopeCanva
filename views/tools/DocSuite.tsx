@@ -318,7 +318,7 @@ export const PdfSuite: React.FC = () => {
                                     onClick={() => handleModeChange(m.id as Mode)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all gap-1.5 ${mode === m.id
                                         ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.1)]'
-                                        : 'bg-[#121214] border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300 hover:bg-zinc-800'
+                                        : 'bg-[#121214] border-zinc-800/50 text-zinc-500 hover:border-indigo-500/40 hover:text-zinc-300 hover:bg-indigo-500/5'
                                         }`}
                                 >
                                     <m.icon size={16} className={mode === m.id ? 'text-indigo-400' : 'opacity-70'} />
@@ -338,7 +338,7 @@ export const PdfSuite: React.FC = () => {
                                 </div>
                                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                                     {files.map((file, i) => (
-                                        <div key={i} className="bg-[#121214] border border-zinc-800/50 p-3 rounded-2xl flex items-center gap-3 group hover:border-zinc-700 transition-all">
+                                        <div key={i} className="bg-[#121214] border border-zinc-800/50 p-3 rounded-2xl flex items-center gap-3 group hover:border-indigo-500/40 transition-all">
                                             <div className="w-10 h-10 bg-indigo-500/10 text-indigo-400 rounded-xl flex items-center justify-center shrink-0 shadow-inner">
                                                 <FileText size={20} />
                                             </div>
@@ -561,7 +561,7 @@ export const PdfSuite: React.FC = () => {
                  rounded-[24px] border-2 bg-zinc-900/40 backdrop-blur-xl shadow-2xl overflow-hidden
                  ${isSelected
                                         ? 'border-indigo-500 -translate-y-3 scale-105 ring-8 ring-indigo-500/5 shadow-indigo-500/10'
-                                        : 'border-zinc-800/50 hover:border-zinc-600 hover:-translate-y-2'
+                                        : 'border-zinc-800/50 hover:border-indigo-500/50 hover:-translate-y-2'
                                     }
               `}
                             >
