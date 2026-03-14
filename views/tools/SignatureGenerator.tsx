@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
-import { Download, RefreshCcw, Undo, Play, Video, Film, PenTool, Eraser, Loader2, Eye, Edit2, ChevronUp } from 'lucide-react';
+import { Download, RefreshCcw, Undo, Play, Video, Film, PenTool, Eraser, Loader2, Eye, Edit2, ChevronUp, Info } from 'lucide-react';
 import { SectionLabel, SliderControl, ColorPicker } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -239,17 +239,16 @@ export const SignatureGenerator: React.FC = () => {
             const ctx = offscreen.getContext('2d');
             if (!ctx) throw new Error("Canvas context failed");
 
-            // Check codec support
-            let mimeType = 'video/webm;codecs=vp9';
+            // Capture stream - Use VP8 for maximum decoding compatibility in WASM
+            let mimeType = 'video/webm;codecs=vp8';
             if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = 'video/webm'; // Fallback
+                mimeType = 'video/webm'; 
             }
 
-            // Capture stream
             const stream = offscreen.captureStream(30);
             const mediaRecorder = new MediaRecorder(stream, {
                 mimeType,
-                videoBitsPerSecond: 2500000
+                videoBitsPerSecond: 1500000 // Slightly lower for stability
             });
 
             const chunks: Blob[] = [];
@@ -302,72 +301,58 @@ export const SignatureGenerator: React.FC = () => {
             const webmBlob = await recordPromise;
             setIsRecording(false);
 
-            // 2. FFmpeg INIT
             setStatus('Loading engine...');
             const ffmpeg = await getFFmpeg();
-            if (!ffmpeg) throw new Error("Failed to load engine");
+            if (!ffmpeg) throw new Error("Failed to load engine. Please check your internet connection.");
 
             // Hook logger
             ffmpeg.on('log', ({ message }) => {
                 console.log('FFmpeg:', message);
-                // Optional: update status with detailed progress if needed, but simple is better for UI
+                // Detection for "Aborted()" - only show if we are still processing and NO file has been created yet.
+                // We'll also check a local 'isDone' flag to be extra sure.
+                if (message.includes('Aborted()') && !gifUrl) {
+                    // We'll set a delayed error check to see if the process actually recovered
+                    setTimeout(() => {
+                        if (!document.querySelector('[data-success="true"]')) {
+                            // Only set error if we truly have nothing
+                            setError("Stability issue detected. Please try drawing a slightly shorter signature.");
+                        }
+                    }, 500);
+                }
             });
 
             await writeFileToFFmpeg(ffmpeg, 'input.webm', webmBlob);
 
-            // 3. GENERATE MP4 (Fastest)
-            setIsEncodingMP4(true);
-            setStatus('Creating MP4...');
-
-            await ffmpeg.exec([
-                '-i', 'input.webm',
-                '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-movflags', 'faststart',
-                '-pix_fmt', 'yuv420p',
-                'output.mp4'
-            ]);
-
-            const mp4Data = await readFileFromFFmpeg(ffmpeg, 'output.mp4', 'video/mp4');
-            setMp4Url(mp4Data);
-
-            // Cleanup MP4 to free memory for GIF operation
-            await cleanupFiles(ffmpeg, ['output.mp4']);
-
-            setIsEncodingMP4(false);
-
-            // 4. GENERATE GIF (Safest Method)
+            // 4. GENERATE GIF (Priority)
             setIsEncodingGIF(true);
             setStatus('Creating GIF...');
 
-            // We use a 2-step process or a known safe filter chain.
-            // Using a simple palettegen approach in one command is standard, but if it hangs,
-            // it's often due to complexity. We'll use the most standard "high quality" palette approach.
-            // If this still hangs, the issue is likely WASM memory, but cleaning MP4 above helps.
-
             await ffmpeg.exec([
+                '-threads', '1',
                 '-i', 'input.webm',
-                '-vf', 'fps=15,scale=400:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse',
+                '-vf', 'fps=12,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=reserve_transparent=1[p];[s1][p]paletteuse=alpha_threshold=128',
                 '-loop', '0',
                 'output.gif'
             ]);
 
             const gifData = await readFileFromFFmpeg(ffmpeg, 'output.gif', 'image/gif');
             setGifUrl(gifData);
+            setError(null); // Explicitly clear any transient "Aborted()" errors
 
             // Final Cleanup
-            await cleanupFiles(ffmpeg, ['input.webm', 'output.gif']);
+            await ffmpeg.deleteFile('input.webm').catch(() => {});
+            await ffmpeg.deleteFile('output.gif').catch(() => {});
 
             setIsEncodingGIF(false);
 
         } catch (err: any) {
             console.error(err);
-            setError("Processing failed. Please try again.");
-            // Force cleanup on error
-            try {
-                const f = await getFFmpeg();
-                await cleanupFiles(f, ['input.webm', 'output.mp4', 'output.gif']);
-            } catch (e) { }
+            const msg = err.message || "Processing failed.";
+            if (msg.includes('SharedArrayBuffer') || msg.includes('Isolated')) {
+                setError("Security Error: This browser tool requires Cross-Origin Isolation headers. Please ensure you are viewing via the main AdopeCanva hub.");
+            } else {
+                setError(msg);
+            }
         } finally {
             setIsRecording(false);
             setIsEncodingMP4(false);
@@ -460,12 +445,33 @@ export const SignatureGenerator: React.FC = () => {
                                     </Button>
                                 </>
                             ) : (
-                                <div className="space-y-3 animate-slide-up">
-                                    {/* UNIFIED DOWNLOAD BUTTON */}
-                                    <div className="relative flex items-stretch mt-4 group shadow-sm">
-                                        <Button className={`flex-1 ${(!isProcessing && mp4Url) ? 'rounded-r-none border-r border-white/20' : ''} ${(gifUrl || isProcessing) ? 'bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 disabled:opacity-100 disabled:cursor-wait' : 'bg-zinc-800 text-zinc-500 disabled:opacity-50' }`} disabled={!gifUrl && !isProcessing} onClick={() => {
-                                                if (isProcessing) return;
-                                                if (!gifUrl) return;
+                                <div className="space-y-4 animate-slide-up">
+                                    {error && (
+                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-red-400">
+                                            <Info size={16} className="shrink-0 mt-0.5" />
+                                            <div className="text-[11px] leading-relaxed">
+                                                <p className="font-bold">Error during export</p>
+                                                <p className="opacity-80">{error}</p>
+                                                <button 
+                                                    onClick={() => generateExports()}
+                                                    className="mt-2 text-primary hover:underline font-bold uppercase tracking-widest text-[9px]"
+                                                >
+                                                    Try Again
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Action Buttons */}
+                                    <div className="space-y-3">
+                                    {/* SIMPLIFIED DOWNLOAD BUTTON */}
+                                    <div className="flex h-12 w-full mt-4 shadow-lg shadow-primary/20 rounded-xl overflow-hidden">
+                                        <button 
+                                            className={`flex-1 h-full flex items-center justify-center font-bold text-sm transition-all rounded-xl ${(gifUrl || isProcessing) ? 'bg-primary text-white hover:bg-primary/90 disabled:opacity-100 disabled:cursor-wait' : 'bg-zinc-800 text-zinc-500' }`} 
+                                            disabled={!gifUrl && !isProcessing} 
+                                            data-success={!!gifUrl}
+                                            onClick={() => {
+                                                if (isProcessing || !gifUrl) return;
                                                 const a = document.createElement("a");
                                                 a.href = gifUrl;
                                                 a.download = "signature.gif";
@@ -475,48 +481,23 @@ export const SignatureGenerator: React.FC = () => {
                                             {isRecording ? (
                                                 <><Loader2 size={16} className="animate-spin mr-2" /> Recording...</>
                                             ) : isEncodingMP4 ? (
-                                                <><Loader2 size={16} className="animate-spin mr-2" /> Creating MP4...</>
+                                                <><Loader2 size={16} className="animate-spin mr-2" /> Preparing...</>
                                             ) : isEncodingGIF ? (
                                                 <><Loader2 size={16} className="animate-spin mr-2" /> Creating GIF...</>
+                                            ) : status === 'Loading engine...' ? (
+                                                <><Loader2 size={16} className="animate-spin mr-2" /> Starting...</>
                                             ) : gifUrl ? (
                                                 <><Film size={18} className="mr-2" /> Download GIF</>
+                                            ) : error ? (
+                                                <><RefreshCcw size={16} className="mr-2" /> Retry Export</>
                                             ) : (
-                                                <span className="opacity-50">Initializing...</span>
+                                                <><Loader2 size={16} className="animate-spin mr-2" /> Initializing...</>
                                             )}
-                                        </Button>
-
-                                        {!isProcessing && mp4Url && (
-                                            <button
-                                                className={`px-3 flex items-center justify-center rounded-r-md transition-colors ${(gifUrl)
-                                                        ? 'bg-primary text-white hover:bg-primary/90 border-l border-white/20'
-                                                        : 'bg-zinc-800 text-zinc-500 border-l border-zinc-700'
-                                                    }`}
-                                                onClick={() => setShowDownloadMenu(!showDownloadMenu)}
-                                            >
-                                                <ChevronUp size={16} />
-                                            </button>
-                                        )}
-
-                                        {/* Dropdown */}
-                                        {showDownloadMenu && !isProcessing && mp4Url && (
-                                            <div className="absolute bottom-full right-0 mb-2 w-full bg-zinc-900 border border-zinc-800 rounded-xl shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 p-1">
-                                                <button
-                                                    className="w-full text-left px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white rounded-lg flex items-center gap-2 transition-colors"
-                                                    onClick={() => {
-                                                        const a = document.createElement("a");
-                                                        a.href = mp4Url;
-                                                        a.download = "signature.mp4";
-                                                        a.click();
-                                                        setShowDownloadMenu(false);
-                                                    }}
-                                                >
-                                                    <Video size={14} /> Download Video (MP4)
-                                                </button>
-                                            </div>
-                                        )}
+                                        </button>
+                                    </div>
                                     </div>
 
-                                    <Button variant="secondary" className="w-full mt-2" onClick={() => { setView('draw'); setError(null); }}
+                                    <Button variant="secondary" className="w-full mt-2" onClick={() => { setView('draw'); setError(null); setStatus(''); }}
                                     >
                                         <Edit2 size={16} className="mr-2" /> Continue Drawing
                                     </Button>

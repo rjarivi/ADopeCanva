@@ -48,6 +48,7 @@ import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
+import HTMLToImage from './tools/HTMLToImage';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -614,6 +615,26 @@ export const TOOLS: ToolItem[] = [
             { label: 'Compatibility', value: 'Modern Browsers' }
         ],
         privacyNotes: 'Animations are rendered in your browser memory.'
+    },
+    {
+        id: 'html-to-image',
+        title: 'HTML to Image',
+        description: 'Convert HTML/CSS code into high-quality images.',
+        category: ToolCategory.IMAGE,
+        icon: Code,
+        component: <HTMLToImage />,
+        guideTitle: 'Render HTML snippets to high-resolution images',
+        guideContent: 'Need a quick way to share a code snippet or a UI component? Our HTML to Image tool renders your code exactly as it appears in the browser. Customize the dimensions, format, and scale to get pixel-perfect exports for your documentation or social media.',
+        faqs: [
+            { question: 'Does it support external CSS?', answer: 'We recommend using inline styles for the best compatibility, as external stylesheets may be blocked by security policies.' },
+            { question: 'Can I choose the output quality?', answer: 'Yes, you can adjust the Pixel Ratio up to 4x for ultra-sharp Retina images.' }
+        ],
+        specs: [
+            { label: 'Engine', value: 'html2canvas' },
+            { label: 'Formats', value: 'PNG, JPG, WebP' },
+            { label: 'Scale', value: 'Up to 4x (Retina)' }
+        ],
+        privacyNotes: 'HTML rendering and image capture are performed 100% locally in your browser cache.'
     },
     {
         id: 'image-to-ico',

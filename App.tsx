@@ -49,8 +49,8 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     }, [tool, setActiveCategory]);
 
     return (
-        <div className={`animate-fade-in h-full ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6 pb-20'}`}>
-            <div className={`h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
+        <div className={`animate-fade-in min-h-full ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6 pb-20'}`}>
+            <div className={`min-h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
                 {/* Breadcrumb / Back navigation */}
                 {!isMobile && (
                     <div className="flex items-center gap-2 mb-4">
@@ -66,7 +66,7 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                     </div>
                 )}
 
-                <div className="h-full">
+                <div className="mb-12">
                     {tool.component}
                 </div>
 
