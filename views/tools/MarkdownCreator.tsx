@@ -601,7 +601,7 @@ const MarkdownCreator: React.FC = () => {
                         <button
                             key={tool.id}
                             onClick={() => { setActiveTool(tool.id); setPlacementData(null); setSelection(null); setActiveComponentId(null); }}
-                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeTool === tool.id && !activeComponentId ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900/50 border-zinc-900 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'}`}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeTool === tool.id && !activeComponentId ? 'bg-indigo-500/10 border-indigo-500/50 text-indigo-400' : 'bg-zinc-900/50 border-zinc-900 text-zinc-500 hover:border-indigo-500/40 hover:text-zinc-300'}`}
                         >
                             <tool.icon size={18} />
                             <span className="text-[10px] font-bold mt-2 uppercase">{tool.label}</span>

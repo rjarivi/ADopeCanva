@@ -45,7 +45,7 @@ export const TextCleaner: React.FC = () => {
                                 value={cleanerInput}
                                 onChange={(e) => setCleanerInput(e.target.value)}
                                 placeholder="Paste your messy text here..."
-                                className="flex-1 w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-zinc-300 outline-none focus:ring-1 focus:ring-blue-500/50 resize-none font-mono text-sm leading-relaxed custom-scrollbar"
+                                className="flex-1 w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none font-mono text-sm leading-relaxed custom-scrollbar"
                             />
                         </div>
                         <div className="h-1/3 flex flex-col gap-2">
@@ -62,7 +62,7 @@ export const TextCleaner: React.FC = () => {
                                     type="checkbox"
                                     checked={removeEmptyLines}
                                     onChange={(e) => setRemoveEmptyLines(e.target.checked)}
-                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-blue-500 focus:ring-offset-0 focus:ring-blue-500/50"
+                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-offset-0 focus:ring-indigo-500/50"
                                 />
                                 <label htmlFor="remove-lines" className="text-sm text-zinc-500 cursor-pointer select-none">Remove empty lines</label>
                             </div>

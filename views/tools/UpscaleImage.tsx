@@ -170,14 +170,14 @@ export const UpscaleImage: React.FC = () => {
                 </div>
 
                 {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-blue-500/50 transition-colors shadow-2xl">
+                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFileSelect={setFile}
                         accept="image/*"
                         label="Upload Image to Upscale"
                         description="JPG, PNG, WEBP supported"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-blue-500/50 bg-zinc-950/50 rounded-2xl transition-all"
+                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
 
@@ -190,7 +190,7 @@ export const UpscaleImage: React.FC = () => {
                         { icon: RefreshCcw, label: 'Enhancement', desc: 'Noise Reduction' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-blue-500/10 rounded-full text-blue-400">
+                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
                                 <feat.icon size={20} />
                             </div>
                             <div>
@@ -210,7 +210,7 @@ export const UpscaleImage: React.FC = () => {
             {/* Settings Panel (Middle) */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden transition-all' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-black text-xs text-blue-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <Maximize2 size={20} /> AI Upscaler
                     </h2>
                     <button onClick={handleReset} className="text-zinc-600 hover:text-red-400 transition-colors">
@@ -238,7 +238,7 @@ export const UpscaleImage: React.FC = () => {
                                         type="button"
                                         onClick={() => setIsScaleDropdownOpen(!isScaleDropdownOpen)}
                                         disabled={isProcessing}
-                                        className={`w-full bg-zinc-900 border ${isScaleDropdownOpen ? 'border-blue-500/50' : 'border-zinc-800'} hover:border-blue-500/50 rounded-xl p-3 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-blue-500 transition-all flex items-center justify-between font-medium ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className={`w-full bg-zinc-900 border ${isScaleDropdownOpen ? 'border-indigo-500/50' : 'border-zinc-800'} hover:border-indigo-500/50 rounded-xl p-3 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500 transition-all flex items-center justify-between font-medium ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <span className="truncate pr-4 text-left">{UPSCALE_OPTIONS.find(o => o.id === upscaleOption)?.name}</span>
                                         <ChevronDown className={`shrink-0 text-zinc-500 transition-transform ${isScaleDropdownOpen ? 'rotate-180' : ''}`} size={16} />
@@ -254,7 +254,7 @@ export const UpscaleImage: React.FC = () => {
                                                             setUpscaleOption(o.id);
                                                             setIsScaleDropdownOpen(false);
                                                         }}
-                                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2 ${upscaleOption === o.id ? 'bg-blue-500/10 text-blue-400 font-bold' : 'text-zinc-300 hover:bg-zinc-700'}`}
+                                                        className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all flex items-center gap-2 ${upscaleOption === o.id ? 'bg-indigo-500/10 text-indigo-400 font-bold' : 'text-zinc-300 hover:bg-zinc-700'}`}
                                                     >
                                                         <div className={`w-1.5 h-1.5 rounded-full ${upscaleOption === o.id ? 'bg-blue-400' : 'bg-transparent'}`} />
                                                         {o.name}
@@ -272,13 +272,13 @@ export const UpscaleImage: React.FC = () => {
                                     value={customPrompt}
                                     onChange={(e) => setCustomPrompt((e.target as HTMLTextAreaElement).value)}
                                     placeholder='e.g., "Make textures more gritty" or "Soften the lighting"'
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-blue-500 min-h-[80px] resize-none placeholder:text-zinc-600 transition-all font-medium"
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500 min-h-[80px] resize-none placeholder:text-zinc-600 transition-all font-medium"
                                     disabled={isProcessing}
                                 />
                             </section>
 
                             {!resultImage ? (
-                                <Button className="w-full h-12 border-none shadow-lg shadow-blue-500/20 active:scale-[0.98] transition-all" onClick={handleUpscale} isLoading={isProcessing} disabled={isProcessing || !apiKey} >
+                                <Button className="w-full h-12 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all" onClick={handleUpscale} isLoading={isProcessing} disabled={isProcessing || !apiKey} >
                                     <Maximize2 size={18} className="mr-2" />
                                     {isProcessing ? 'Processing AI...' : 'Upscale Image'}
                                 </Button>
@@ -322,7 +322,7 @@ export const UpscaleImage: React.FC = () => {
 
                         <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800 mt-auto">
                             <h4 className="font-semibold text-zinc-400 mb-2 text-[10px] uppercase tracking-widest flex items-center gap-2 font-bold">
-                                <Sparkles size={14} className="text-blue-400" /> Pro Tip
+                                <Sparkles size={14} className="text-indigo-400" /> Pro Tip
                             </h4>
                             <p className="text-[10px] text-zinc-500 font-bold tracking-tight">
                                 For best results on older images, try the Noise Reduction option before running a 4x upscale.
@@ -354,14 +354,14 @@ export const UpscaleImage: React.FC = () => {
                                 <div className="absolute top-4 left-4 bg-black/60 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold pointer-events-none tracking-widest uppercase">
                                     Before
                                 </div>
-                                <div className="absolute top-4 right-4 bg-blue-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold shadow-lg shadow-blue-500/20 pointer-events-none tracking-widest uppercase">
+                                <div className="absolute top-4 right-4 bg-indigo-600/90 backdrop-blur text-[10px] text-white px-2 py-1 rounded border border-white/10 font-bold shadow-lg shadow-indigo-500/20 pointer-events-none tracking-widest uppercase">
                                     After
                                 </div>
 
                                 {/* Slider UI */}
                                 <div className="absolute inset-y-0" style={{ left: `${sliderPosition}%` }}>
                                     <div className="absolute inset-y-0 -left-px w-0.5 bg-white shadow-xl"></div>
-                                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-black/20 text-blue-600">
+                                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 bg-zinc-100 rounded-full flex items-center justify-center shadow-2xl ring-4 ring-black/20 text-indigo-500">
                                         <Sliders size={14} className="rotate-90" />
                                     </div>
                                 </div>

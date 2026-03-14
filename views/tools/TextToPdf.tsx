@@ -120,10 +120,10 @@ export const TextToPdf: React.FC = () => {
             {/* Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
-                    <h2 className="font-black text-xs text-emerald-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
+                    <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <FileText size={20} /> Text to PDF
                     </h2>
-                    <button onClick={handleReset} className="text-zinc-600 hover:text-emerald-400 transition-colors">
+                    <button onClick={handleReset} className="text-zinc-600 hover:text-indigo-400 transition-colors">
                         <RefreshCcw size={14} />
                     </button>
                 </div>
@@ -139,7 +139,7 @@ export const TextToPdf: React.FC = () => {
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-xs text-zinc-500 font-medium">Words</span>
-                                <span className="text-xs text-emerald-400 font-mono font-bold">{wordCount.toLocaleString()}</span>
+                                <span className="text-xs text-indigo-400 font-mono font-bold">{wordCount.toLocaleString()}</span>
                             </div>
                         </section>
 
@@ -164,7 +164,8 @@ export const TextToPdf: React.FC = () => {
                                 <select
                                     value={lineSpacing}
                                     onChange={(e) => setLineSpacing(parseFloat(e.target.value))}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 outline-none"
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-8 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none appearance-none hover:border-indigo-500/50 transition-colors cursor-pointer"
+                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
                                 >
                                     <option value={1}>Single (1×)</option>
                                     <option value={1.15}>Compact (1.15×)</option>
@@ -186,7 +187,7 @@ export const TextToPdf: React.FC = () => {
 
                         {/* Actions */}
                         <div className="space-y-3">
-                            <Button className="w-full h-12 border-none shadow-lg shadow-emerald-900/20" onClick={generatePdf} isLoading={isProcessing} disabled={isProcessing || !hasText} >
+                            <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={generatePdf} isLoading={isProcessing} disabled={isProcessing || !hasText} >
                                 <Zap size={18} className="mr-2" />
                                 {isProcessing ? 'Generating...' : 'Preview PDF'}
                             </Button>
@@ -223,7 +224,7 @@ export const TextToPdf: React.FC = () => {
                         <textarea
                             value={text}
                             onChange={(e) => setText(e.target.value)}
-                            className="flex-1 w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl text-zinc-200 text-sm font-mono p-6 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all custom-scrollbar"
+                            className="flex-1 w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl text-zinc-200 text-sm font-mono p-6 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all custom-scrollbar"
                             placeholder="Type or paste your text here...
 
 Your text will be converted to a professional PDF document with customizable font size, line spacing, and margins.
@@ -235,8 +236,8 @@ Supports multi-page documents with automatic page breaks."
                     <div className="relative flex-1 flex flex-col">
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                                <FileText size={16} className="text-emerald-400" />
-                                <span className="text-xs text-emerald-400 font-bold uppercase tracking-widest">PDF Preview</span>
+                                <FileText size={16} className="text-indigo-400" />
+                                <span className="text-xs text-indigo-400 font-bold uppercase tracking-widest">PDF Preview</span>
                             </div>
                             <button
                                 onClick={() => {

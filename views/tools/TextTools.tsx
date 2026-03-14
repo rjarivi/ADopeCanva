@@ -295,7 +295,7 @@ export const TextTools: React.FC = () => {
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             placeholder="Type text here..."
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-center text-xl text-white outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-zinc-700 font-sans"
+                            className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-center text-xl text-white outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-indigo-500/30 font-sans"
                         />
                         {text !== 'Type something...' && text.length > 0 && (
                             <button
@@ -346,7 +346,7 @@ export const TextTools: React.FC = () => {
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
                                     placeholder="Type your text here..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-5 py-4 text-xl text-white outline-none focus:ring-2 focus:ring-primary/50 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-zinc-600 font-sans"
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 text-xl text-white outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 placeholder:text-zinc-600 transition-all shadow-inner group-hover:border-indigo-500/30 font-sans"
                                 />
                                 {text !== 'Type something...' && text.length > 0 && (
                                     <button
