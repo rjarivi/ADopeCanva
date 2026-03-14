@@ -14,6 +14,42 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.5.2',
+        date: 'Mar 14, 2026',
+        items: [
+            {
+                icon: GitBranch,
+                title: 'Batch HTML Studio',
+                description: 'Complete overhaul of the HTML to Image tool into a two-step studio workflow. Added multi-file queue management, isolated Iframe rendering, and bulk ZIP export.',
+                type: 'update'
+            },
+            {
+                icon: Zap,
+                title: 'Signature Engine Fix',
+                description: 'Resolved a critical "Protocol Error" in the WASM processing engine. Improved encoding stability for transparent GIFs and simplified the export UI.',
+                type: 'fix'
+            },
+            {
+                icon: Sparkles,
+                title: 'UI Stability Prep',
+                description: 'Refined split-button layouts and added proactive error recovery for browser-based media tools.',
+                type: 'update'
+            }
+        ]
+    },
+    {
+        version: '1.5.1',
+        date: 'Mar 14, 2026',
+        items: [
+            {
+                icon: GitBranch,
+                title: 'HTML to Image',
+                description: 'New design tool: Convert HTML and CSS snippets into high-quality PNG, JPG, or WebP images with custom resolution and retina scaling.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.5.0',
         date: 'Mar 13, 2026',
         items: [
