@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
 import {
     Play, Pause, Scissors, Download, AlertCircle, Loader2,
-    Film, Plus, Trash2, Copy, VolumeX, Volume2,
+    Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
     ZoomIn, Gauge, Music,
@@ -283,6 +283,23 @@ export const QuickVideoEditor: React.FC = () => {
         if (flipV) vf.push('vflip');
         if (speed !== 1) vf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
 
+        // Apply canvas aspect ratio / scale
+        if (aspectRatio !== 'original') {
+            const canvasDims: Record<string, [number, number]> = {
+                '16:9': [1920, 1080],
+                '9:16': [1080, 1920],
+                '1:1': [1080, 1080],
+            };
+            const [tw, th] = canvasDims[aspectRatio] ?? [1920, 1080];
+            if (scaleMode === 'fit') {
+                vf.push(`scale=${tw}:${th}:force_original_aspect_ratio=decrease`);
+                vf.push(`pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2,setsar=1`);
+            } else {
+                vf.push(`scale=${tw}:${th}:force_original_aspect_ratio=increase`);
+                vf.push(`crop=${tw}:${th},setsar=1`);
+            }
+        }
+
         if (speed !== 1) {
             const clamped = Math.max(0.5, Math.min(2, speed));
             af.push(`atempo=${clamped.toFixed(2)}`);
@@ -361,6 +378,50 @@ export const QuickVideoEditor: React.FC = () => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+    };
+
+    // ── Export separate clips (no concat) ──
+    const handleExportSeparate = async () => {
+        if (!ffmpegRef.current || clips.length === 0) return;
+        setIsProcessing(true);
+        setProgress(0);
+        const ffmpeg = ffmpegRef.current;
+        const onProg = ({ progress: p }: { progress: number }) => {
+            if (p >= 0 && p <= 1) setProgress(Math.round(p * 100));
+        };
+        ffmpeg.on('progress', onProg);
+
+        try {
+            const { vf, af } = buildFilters();
+            for (let i = 0; i < clips.length; i++) {
+                const clip = clips[i];
+                const inName = `sep_in_${i}.mp4`;
+                const outName = `sep_out_${i}.mp4`;
+                await writeFileToFFmpeg(ffmpeg, inName, clip.file);
+                const args = ['-y', '-ss', String(clip.trimStart), '-to', String(clip.trimEnd), '-i', inName];
+                if (vf.length) args.push('-vf', vf.join(','));
+                if (af.length) args.push('-af', af.join(','));
+                args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
+                await ffmpeg.exec(args);
+                await ffmpeg.deleteFile(inName);
+                const url = await readFileFromFFmpeg(ffmpeg, outName, 'video/mp4');
+                await ffmpeg.deleteFile(outName);
+                const baseName = clip.file.name.replace(/\.[^.]+$/, '');
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `clip_${i + 1}_${baseName}.mp4`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setProgress(Math.round(((i + 1) / clips.length) * 100));
+            }
+        } catch (err) {
+            console.error('Separate export failed:', err);
+            alert('Export failed. See console for details.');
+        } finally {
+            ffmpeg.off('progress', onProg);
+            setIsProcessing(false);
+        }
     };
 
     // ── Progress bar helpers ──
@@ -700,7 +761,7 @@ export const QuickVideoEditor: React.FC = () => {
                             {exportUrl ? (
                                 <>
                                     <Button
-                                        className="w-full h-11 bg-white text-black hover:bg-zinc-100 rounded-xl font-bold border-none"
+                                        className="w-full h-11 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl font-bold border-none shadow-lg shadow-indigo-500/20"
                                         onClick={handleDownload}
                                     >
                                         <Download size={15} className="mr-2" /> Download
@@ -713,16 +774,29 @@ export const QuickVideoEditor: React.FC = () => {
                                     </button>
                                 </>
                             ) : (
-                                <Button
-                                    className="w-full h-11 shadow-lg shadow-indigo-500/20 rounded-xl font-bold border-none"
-                                    onClick={handleExport}
-                                    isLoading={isProcessing}
-                                    disabled={isProcessing}
-                                >
-                                    {clips.length > 1
-                                        ? <><Film size={15} className="mr-2" /> Merge & Export</>
-                                        : <><Scissors size={15} className="mr-2" /> Export Video</>}
-                                </Button>
+                                <>
+                                    <Button
+                                        className="w-full h-11 shadow-lg shadow-indigo-500/20 rounded-xl font-bold border-none"
+                                        onClick={handleExport}
+                                        isLoading={isProcessing}
+                                        disabled={isProcessing}
+                                    >
+                                        {clips.length > 1
+                                            ? <><Film size={15} className="mr-2" /> Merge & Export</>
+                                            : <><Scissors size={15} className="mr-2" /> Export Video</>}
+                                    </Button>
+                                    {clips.length > 1 && (
+                                        <button
+                                            onClick={handleExportSeparate}
+                                            disabled={isProcessing}
+                                            className="w-full flex items-center justify-center gap-1.5 py-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors disabled:opacity-30"
+                                            title="Process and download each clip as a separate file"
+                                        >
+                                            <Layers size={11} />
+                                            export clips separately
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>
