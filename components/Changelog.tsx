@@ -14,6 +14,24 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.6.0',
+        date: 'Mar 14, 2026',
+        items: [
+            {
+                icon: Sparkles,
+                title: 'HTML to Image',
+                description: 'New DEV tool: write HTML & CSS in a live code editor, preview the result in real-time, and export as PNG, JPEG, or WebP at up to 3× resolution — all in-browser with html2canvas.',
+                type: 'feature'
+            },
+            {
+                icon: Zap,
+                title: 'UI/UX Consistency Pass',
+                description: 'Comprehensive brand and interaction polish across 35+ tools: unified indigo-500 accent, consistent focus rings, indigo hover states on interactive cards, redesigned QR Generator, improved select element styling.',
+                type: 'update'
+            }
+        ]
+    },
+    {
         version: '1.5.2',
         date: 'Mar 14, 2026',
         items: [

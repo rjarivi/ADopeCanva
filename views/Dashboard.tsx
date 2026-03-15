@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -51,6 +51,30 @@ import { SvgToCode } from './tools/SvgToCode';
 import HTMLToImage from './tools/HTMLToImage';
 
 export const TOOLS: ToolItem[] = [
+    {
+        id: 'html-to-image',
+        title: 'HTML to Image',
+        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
+        category: ToolCategory.DEV,
+        icon: MonitorDown,
+        component: <HTMLToImage />,
+        popular: true,
+        guideTitle: 'How to convert HTML and CSS to an image',
+        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
+        faqs: [
+            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
+            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
+            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
+            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
+        ],
+        specs: [
+            { label: 'Input', value: 'HTML + CSS markup' },
+            { label: 'Output', value: 'PNG, JPEG, WebP' },
+            { label: 'Max resolution', value: '3× device pixel ratio' },
+            { label: 'Engine', value: 'html2canvas (client-side)' },
+        ],
+        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
+    },
     {
         id: 'image-converter',
         title: 'Image Converter',
@@ -617,26 +641,6 @@ export const TOOLS: ToolItem[] = [
         privacyNotes: 'Animations are rendered in your browser memory.'
     },
     {
-        id: 'html-to-image',
-        title: 'HTML to Image',
-        description: 'Convert HTML/CSS code into high-quality images.',
-        category: ToolCategory.IMAGE,
-        icon: Code,
-        component: <HTMLToImage />,
-        guideTitle: 'Render HTML snippets to high-resolution images',
-        guideContent: 'Need a quick way to share a code snippet or a UI component? Our HTML to Image tool renders your code exactly as it appears in the browser. Customize the dimensions, format, and scale to get pixel-perfect exports for your documentation or social media.',
-        faqs: [
-            { question: 'Does it support external CSS?', answer: 'We recommend using inline styles for the best compatibility, as external stylesheets may be blocked by security policies.' },
-            { question: 'Can I choose the output quality?', answer: 'Yes, you can adjust the Pixel Ratio up to 4x for ultra-sharp Retina images.' }
-        ],
-        specs: [
-            { label: 'Engine', value: 'html2canvas' },
-            { label: 'Formats', value: 'PNG, JPG, WebP' },
-            { label: 'Scale', value: 'Up to 4x (Retina)' }
-        ],
-        privacyNotes: 'HTML rendering and image capture are performed 100% locally in your browser cache.'
-    },
-    {
         id: 'image-to-ico',
         title: 'Image to ICO',
         description: 'Convert any image to a favicon (.ico).',
@@ -1164,9 +1168,6 @@ export const TOOLS: ToolItem[] = [
 import { useNavigate } from 'react-router-dom';
 import { useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
-
-// ... imports ...
-
 import { useIsMobile } from '../hooks/useIsMobile';
 
 interface DashboardProps {
@@ -1181,6 +1182,7 @@ const getCategoryStyles = (category: ToolCategory) => {
         case ToolCategory.AUDIO: return { icon: 'bg-violet-500/10 text-violet-500 group-hover:bg-violet-500/20', badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20' };
         case ToolCategory.DOCS: return { icon: 'bg-red-500/10 text-red-500 group-hover:bg-red-500/20', badge: 'bg-red-500/10 text-red-400 border-red-500/20' };
         case ToolCategory.TEXT: return { icon: 'bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20', badge: 'bg-orange-500/10 text-orange-400 border-orange-500/20' };
+        case ToolCategory.DEV: return { icon: 'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500/20', badge: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' };
         default: return { icon: 'bg-yellow-500/10 text-yellow-500 group-hover:bg-yellow-500/20', badge: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' };
     }
 };
