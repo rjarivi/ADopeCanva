@@ -48,7 +48,7 @@ import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
-import { HtmlToImage } from './tools/HtmlToImage';
+import HTMLToImage from './tools/HTMLToImage';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -57,7 +57,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
         category: ToolCategory.DEV,
         icon: MonitorDown,
-        component: <HtmlToImage />,
+        component: <HTMLToImage />,
         popular: true,
         guideTitle: 'How to convert HTML and CSS to an image',
         guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
