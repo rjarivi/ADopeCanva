@@ -283,6 +283,23 @@ export const QuickVideoEditor: React.FC = () => {
         if (flipV) vf.push('vflip');
         if (speed !== 1) vf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
 
+        // Apply canvas aspect ratio / scale
+        if (aspectRatio !== 'original') {
+            const canvasDims: Record<string, [number, number]> = {
+                '16:9': [1920, 1080],
+                '9:16': [1080, 1920],
+                '1:1': [1080, 1080],
+            };
+            const [tw, th] = canvasDims[aspectRatio] ?? [1920, 1080];
+            if (scaleMode === 'fit') {
+                vf.push(`scale=${tw}:${th}:force_original_aspect_ratio=decrease`);
+                vf.push(`pad=${tw}:${th}:(ow-iw)/2:(oh-ih)/2,setsar=1`);
+            } else {
+                vf.push(`scale=${tw}:${th}:force_original_aspect_ratio=increase`);
+                vf.push(`crop=${tw}:${th},setsar=1`);
+            }
+        }
+
         if (speed !== 1) {
             const clamped = Math.max(0.5, Math.min(2, speed));
             af.push(`atempo=${clamped.toFixed(2)}`);
@@ -700,7 +717,7 @@ export const QuickVideoEditor: React.FC = () => {
                             {exportUrl ? (
                                 <>
                                     <Button
-                                        className="w-full h-11 bg-white text-black hover:bg-zinc-100 rounded-xl font-bold border-none"
+                                        className="w-full h-11 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl font-bold border-none shadow-lg shadow-indigo-500/20"
                                         onClick={handleDownload}
                                     >
                                         <Download size={15} className="mr-2" /> Download
