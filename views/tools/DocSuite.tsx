@@ -331,12 +331,15 @@ export const PdfSuite: React.FC = () => {
             } else if (mode === 'compress') {
                 const srcFile = files[0].file;
                 const arrayBuffer = await srcFile.arrayBuffer();
+                const originalBytes = new Uint8Array(arrayBuffer);
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                // Scale render resolution proportionally to quality — lower quality = smaller images
+                const renderScale = Math.max(0.5, compressionQuality / 100);
                 const doc = new jsPDF({ orientation: 'portrait', unit: 'px', hotfixes: ['px_scaling'] });
                 const totalPages = pdf.numPages;
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.5 });
+                    const viewport = page.getViewport({ scale: renderScale });
                     const canvas = document.createElement('canvas');
                     canvas.width = viewport.width;
                     canvas.height = viewport.height;
@@ -354,7 +357,9 @@ export const PdfSuite: React.FC = () => {
                 }
                 const blob = doc.output('blob');
                 const resultBuffer = await blob.arrayBuffer();
-                setResultBytes(new Uint8Array(resultBuffer));
+                const compressedBytes = new Uint8Array(resultBuffer);
+                // Never return a larger file — fall back to original if compression didn't help
+                setResultBytes(compressedBytes.length < originalBytes.length ? compressedBytes : originalBytes);
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
