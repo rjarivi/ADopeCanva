@@ -13,7 +13,6 @@ import {
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { PDFDocument, degrees } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
-import { jsPDF } from 'jspdf';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
@@ -331,35 +330,30 @@ export const PdfSuite: React.FC = () => {
             } else if (mode === 'compress') {
                 const srcFile = files[0].file;
                 const arrayBuffer = await srcFile.arrayBuffer();
-                const originalBytes = new Uint8Array(arrayBuffer);
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                // Scale render resolution proportionally to quality — lower quality = smaller images
-                const renderScale = Math.max(0.5, compressionQuality / 100);
-                const doc = new jsPDF({ orientation: 'portrait', unit: 'px', hotfixes: ['px_scaling'] });
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+                const outDoc = await PDFDocument.create();
+                const scale = Math.max(0.3, compressionQuality / 100);
+                const jpegQuality = compressionQuality / 100;
                 const totalPages = pdf.numPages;
                 for (let i = 1; i <= totalPages; i++) {
                     const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: renderScale });
+                    const viewport = page.getViewport({ scale });
                     const canvas = document.createElement('canvas');
-                    canvas.width = viewport.width;
-                    canvas.height = viewport.height;
+                    canvas.width = Math.round(viewport.width);
+                    canvas.height = Math.round(viewport.height);
                     const ctx = canvas.getContext('2d');
                     if (!ctx) throw new Error('Canvas context not available');
                     await page.render({ canvasContext: ctx, viewport } as any).promise;
-                    const imgData = canvas.toDataURL('image/jpeg', compressionQuality / 100);
-                    if (i > 1) {
-                        doc.addPage([viewport.width, viewport.height]);
-                    } else {
-                        doc.internal.pageSize.width = viewport.width;
-                        doc.internal.pageSize.height = viewport.height;
-                    }
-                    doc.addImage(imgData, 'JPEG', 0, 0, viewport.width, viewport.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
+                    const base64 = dataUrl.split(',')[1];
+                    const jpegBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                    const jpegImage = await outDoc.embedJpg(jpegBytes);
+                    const pdfPage = outDoc.addPage([canvas.width, canvas.height]);
+                    pdfPage.drawImage(jpegImage, { x: 0, y: 0, width: canvas.width, height: canvas.height });
                 }
-                const blob = doc.output('blob');
-                const resultBuffer = await blob.arrayBuffer();
-                const compressedBytes = new Uint8Array(resultBuffer);
-                // Never return a larger file — fall back to original if compression didn't help
-                setResultBytes(compressedBytes.length < originalBytes.length ? compressedBytes : originalBytes);
+                const compressed = await outDoc.save();
+                const original = new Uint8Array(arrayBuffer);
+                setResultBytes(compressed.length < original.length ? compressed : original);
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
