@@ -88,6 +88,7 @@ export const PdfSuite: React.FC = () => {
     // Compression
     const [compressionQuality, setCompressionQuality] = useState<number>(70);
     const [smartCompress, setSmartCompress] = useState(false);
+    const [compressionProgress, setCompressionProgress] = useState<{ current: number; total: number } | null>(null);
 
     // Drag-and-drop reorder
     const dragSrcIndex = useRef<number | null>(null);
@@ -332,6 +333,7 @@ export const PdfSuite: React.FC = () => {
                 const srcFile = files[0].file;
                 const arrayBuffer = await srcFile.arrayBuffer();
                 const original = new Uint8Array(arrayBuffer);
+                setCompressionProgress(null);
 
                 if (smartCompress) {
                     // Smart compression: re-save with deflated object streams.
@@ -353,6 +355,7 @@ export const PdfSuite: React.FC = () => {
                     const scale = Math.max(0.3, compressionQuality / 100);
                     const jpegQuality = compressionQuality / 100;
                     const totalPages = pdf.numPages;
+                    setCompressionProgress({ current: 0, total: totalPages });
                     for (let i = 1; i <= totalPages; i++) {
                         const page = await pdf.getPage(i);
                         const viewport = page.getViewport({ scale });
@@ -368,10 +371,12 @@ export const PdfSuite: React.FC = () => {
                         const jpegImage = await outDoc.embedJpg(jpegBytes);
                         const pdfPage = outDoc.addPage([canvas.width, canvas.height]);
                         pdfPage.drawImage(jpegImage, { x: 0, y: 0, width: canvas.width, height: canvas.height });
+                        setCompressionProgress({ current: i, total: totalPages });
                     }
                     const compressed = await outDoc.save();
                     setResultBytes(compressed.length < original.length ? compressed : original);
                 }
+                setCompressionProgress(null);
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
@@ -847,20 +852,40 @@ export const PdfSuite: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    <Button
-                                        className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={handleProcess}
-                                        disabled={isProcessing || files.length === 0}
-                                    >
-                                        {isProcessing ? (
-                                            <Loader2 size={24} className="animate-spin" />
-                                        ) : (
-                                            <><Zap size={20} fill="currentColor" /> Process Studio</>
-                                        )}
-                                    </Button>
+                                    {isProcessing && mode === 'compress' && compressionProgress ? (
+                                        // Progress bar button for page-by-page image compression
+                                        <div className="w-full h-14 bg-indigo-950 border border-indigo-700/50 rounded-2xl overflow-hidden relative flex flex-col items-center justify-center gap-1">
+                                            <div
+                                                className="absolute inset-0 bg-indigo-600 transition-all duration-200 origin-left"
+                                                style={{ transform: `scaleX(${compressionProgress.current / compressionProgress.total})` }}
+                                            />
+                                            <span className="relative z-10 text-[10px] font-black uppercase tracking-widest font-unbounded text-white">
+                                                Page {compressionProgress.current} / {compressionProgress.total}
+                                            </span>
+                                            <span className="relative z-10 text-[8px] font-bold uppercase tracking-widest text-indigo-200 opacity-80">
+                                                {Math.round((compressionProgress.current / compressionProgress.total) * 100)}% complete
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            className="w-full h-14 bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 font-black uppercase text-xs tracking-[0.1em] font-unbounded gap-3 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onClick={handleProcess}
+                                            disabled={isProcessing || files.length === 0}
+                                        >
+                                            {isProcessing ? (
+                                                <Loader2 size={24} className="animate-spin" />
+                                            ) : (
+                                                <><Zap size={20} fill="currentColor" /> Process Studio</>
+                                            )}
+                                        </Button>
+                                    )}
                                     {isProcessing && (
                                         <div className="text-center">
-                                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest animate-pulse font-unbounded">Compiling Document Data...</p>
+                                            <p className="text-[10px] text-zinc-500 font-black uppercase tracking-widest animate-pulse font-unbounded">
+                                                {mode === 'compress' && compressionProgress
+                                                    ? 'Compressing Pages...'
+                                                    : 'Compiling Document Data...'}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
