@@ -628,7 +628,7 @@ export const UniversalDocConverter: React.FC = () => {
                             <a
                                 href={resultUrl}
                                 download={resultName}
-                                className="flex items-center justify-center w-full px-8 py-4 bg-white hover:bg-zinc-100 text-black rounded-2xl font-bold text-lg transition-all shadow-xl transform hover:translate-y-[-2px] active:translate-y-[1px]"
+                                className="flex items-center justify-center w-full px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-indigo-500/20 transform hover:translate-y-[-2px] active:translate-y-[1px]"
                             >
                                 <Download size={24} className="mr-3" /> Download Result
                             </a>

@@ -407,7 +407,7 @@ const HTMLToImage = () => {
                                     </div>
                                     <button 
                                         onClick={() => { const link = document.createElement('a'); link.download = `${currentFile.name.replace('.html', '')}.${format}`; link.href = currentFile.previewUrl!; link.click(); }}
-                                        className="px-8 py-3 bg-white text-indigo-950 rounded-xl font-bold flex items-center gap-2 hover:bg-zinc-100 transition-all hover:scale-105"
+                                        className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold flex items-center gap-2 hover:bg-indigo-500 transition-all hover:scale-105"
                                     >
                                         <Download size={20} /> Download This {format.toUpperCase()}
                                     </button>

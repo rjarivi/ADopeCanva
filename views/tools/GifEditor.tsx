@@ -697,7 +697,7 @@ export const GifEditor: React.FC = () => {
                             <button
                                 onClick={() => handleProcess('sprite', true)}
                                 disabled={isProcessing}
-                                className="w-full py-4 bg-white text-black rounded-2xl font-bold text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group"
+                                className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 group"
                             >
                                 <Grid size={18} className="group-hover:rotate-12 transition-transform" />
                                 {isProcessing && isSpriteWorker ? 'Generating...' : 'Export Sprite Sheet'}
@@ -822,7 +822,7 @@ export const GifEditor: React.FC = () => {
                                 <ArrowLeft size={18} />
                                 Edit More
                             </button>
-                            <button className="px-8 py-4 bg-white text-black rounded-2xl font-extrabold flex items-center gap-2 hover:bg-zinc-200 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
+                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
                                 <Download size={18} />
                                 Download Final
                             </button>

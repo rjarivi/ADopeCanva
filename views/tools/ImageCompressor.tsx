@@ -224,7 +224,7 @@ export const ImageCompressor: React.FC = () => {
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={() => {
+                  <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={() => {
                     const link = document.createElement('a');
                     link.href = resultImage!; // Changed from compressedImage to resultImage to match existing state
                     link.download = `optimized-${file!.file.name}`; // Added ! for file and removed split('.')[0]}.jpg to match new format

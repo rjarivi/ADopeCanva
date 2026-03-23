@@ -253,7 +253,7 @@ export const HtmlToImage: React.FC = () => {
                     </Button>
                     <Button
                         size="sm"
-                        className="bg-white text-black hover:bg-zinc-100 border-none text-xs font-black gap-1.5"
+                        className="bg-indigo-600 text-white hover:bg-indigo-500 border-none text-xs font-black gap-1.5"
                         onClick={handleDownload}
                         isLoading={isCapturing}
                         disabled={isCapturing}
@@ -380,7 +380,7 @@ export const HtmlToImage: React.FC = () => {
                         </section>
 
                         <Button
-                            className="w-full bg-white text-black hover:bg-zinc-100 border-none text-[10px] font-black uppercase tracking-widest gap-1.5"
+                            className="w-full bg-indigo-600 text-white hover:bg-indigo-500 border-none text-[10px] font-black uppercase tracking-widest gap-1.5"
                             onClick={handleDownload}
                             isLoading={isCapturing}
                             disabled={isCapturing}

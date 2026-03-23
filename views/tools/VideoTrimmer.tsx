@@ -373,7 +373,7 @@ export const VideoTrimmer: React.FC = () => {
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 shadow-lg" onClick={downloadTrimmed} >
+                                    <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg" onClick={downloadTrimmed} >
                                         <Download size={18} className="mr-2" /> Download Clip
                                     </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={() => {
