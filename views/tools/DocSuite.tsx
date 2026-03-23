@@ -330,7 +330,7 @@ export const PdfSuite: React.FC = () => {
             } else if (mode === 'compress') {
                 const srcFile = files[0].file;
                 const arrayBuffer = await srcFile.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer.slice(0)) }).promise;
                 const outDoc = await PDFDocument.create();
                 const scale = Math.max(0.3, compressionQuality / 100);
                 const jpegQuality = compressionQuality / 100;
