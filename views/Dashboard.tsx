@@ -48,7 +48,7 @@ import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
-import HTMLToImage from './tools/HTMLToImage';
+import { HtmlToImage } from './tools/HtmlToImage';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -57,7 +57,7 @@ export const TOOLS: ToolItem[] = [
         description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
         category: ToolCategory.DEV,
         icon: MonitorDown,
-        component: <HTMLToImage />,
+        component: <HtmlToImage />,
         popular: true,
         guideTitle: 'How to convert HTML and CSS to an image',
         guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
@@ -642,22 +642,27 @@ export const TOOLS: ToolItem[] = [
     },
     {
         id: 'image-to-ico',
-        title: 'Image to ICO',
-        description: 'Convert any image to a favicon (.ico).',
+        title: 'Favicon Generator',
+        description: 'Generate a full favicon bundle — ICO, PNG variants, apple-touch-icon, android icons, and webmanifest.',
         category: ToolCategory.IMAGE,
         icon: ImageIcon,
         component: <ImageToIco />,
-        guideTitle: 'How to convert images to Favicons',
-        guideContent: 'Create perfect favicons for your website instantly. Upload any PNG, JPG, or WebP graphic, select a resolution from 16x16 up to 256x256, and save it directly as a .ico file compatible with all web browsers.',
+        popular: true,
+        guideTitle: 'How to generate a complete favicon bundle for your website',
+        guideContent: 'Upload any image and instantly generate a complete, production-ready favicon package. The bundle includes a multi-size favicon.ico, PNG variants for every platform (16px, 32px, 48px), an apple-touch-icon for iOS home screens (180px), Android Chrome icons (192px and 512px), and a site.webmanifest for PWA support. Just extract the ZIP into your public folder and add the provided HTML snippet.',
         faqs: [
-            { question: 'What size should a favicon be?', answer: 'Standard favicons use 16x16 or 32x32. For desktop icons and modern apps, larger sizes like 128x128 or 256x256 are recommended.' },
-            { question: 'Does it keep transparency?', answer: 'Yes, if your original image has a transparent background (like a PNG), the ICO will preserve it.' }
+            { question: 'What is included in the SEO bundle?', answer: 'The bundle contains favicon.ico (multi-size: 16, 32, 48px), favicon-16x16.png, favicon-32x32.png, favicon-48x48.png, apple-touch-icon.png (180px), android-chrome-192x192.png, android-chrome-512x512.png, and site.webmanifest.' },
+            { question: 'Does it support transparent backgrounds?', answer: 'Yes. PNG and SVG images with transparency will have their alpha channel preserved in all output files.' },
+            { question: 'What image formats can I upload?', answer: 'Any browser-renderable image: PNG, JPG, WebP, SVG, GIF, AVIF, and more.' },
+            { question: 'Is my image uploaded anywhere?', answer: 'No. All processing happens locally in your browser using the Canvas API. Nothing is sent to a server.' },
         ],
         specs: [
-            { label: 'Supported Inputs', value: 'PNG, JPG, WebP' },
-            { label: 'Output', value: 'Windows Icon (.ico)' }
+            { label: 'Supported Inputs', value: 'PNG, SVG, JPG, WebP, AVIF, GIF' },
+            { label: 'ICO Output', value: 'Multi-size (16, 32, 48px)' },
+            { label: 'PNG Outputs', value: '16, 32, 48, 180, 192, 512px' },
+            { label: 'Extras', value: 'apple-touch-icon + site.webmanifest' },
         ],
-        privacyNotes: 'Images are converted locally in your browser.'
+        privacyNotes: 'All favicon generation happens locally in your browser — no images are uploaded to any server.',
     },
     {
         id: 'video-to-apng',
