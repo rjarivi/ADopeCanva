@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ThumbsUp, Plus, CheckCircle2, Clock, Loader2 } from 'lucide-react';
+import { ThumbsUp, Plus, CheckCircle2, Clock, Loader2, Flame } from 'lucide-react';
 import { Button } from './ui/Button';
 import { fetchFeatures, submitFeature, voteFeature } from '../utils/feedbackApi';
+
+// Minimum votes required before a requested feature is considered for implementation
+const VOTE_THRESHOLD = 10;
 
 type FeatureStatus = 'requested' | 'in-progress' | 'completed';
 
@@ -201,35 +204,75 @@ export const FeatureBoard = () => {
                             <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider sticky top-0 bg-zinc-900 py-1 z-10 flex items-center gap-2">
                                 {getStatusIcon(statusGroup as FeatureStatus)}
                                 {statusGroup.replace('-', ' ')}
+                                {statusGroup === 'requested' && (
+                                    <span className="ml-auto text-[10px] font-normal text-zinc-600 normal-case tracking-normal">
+                                        {VOTE_THRESHOLD} votes to proceed
+                                    </span>
+                                )}
                             </div>
                             {groupFeatures.length === 0 && (
                                 <div className="text-center text-zinc-600 text-xs py-6 border border-dashed border-zinc-800 rounded-xl">
                                     No features yet
                                 </div>
                             )}
-                            {groupFeatures.map(feature => (
-                                <div key={feature.id} className="bg-zinc-800/50 hover:bg-zinc-800 border border-zinc-700/50 rounded-xl p-4 transition-colors group">
-                                    <div className="flex gap-3">
-                                        <button
-                                            onClick={() => handleVote(feature.id)}
-                                            className={`flex flex-col items-center justify-center p-2 rounded-lg h-fit transition-colors ${feature.hasVoted
-                                                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-                                                : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
-                                                }`}
-                                        >
-                                            <ThumbsUp size={16} className={feature.hasVoted ? 'fill-current' : ''} />
-                                            <span className="text-xs font-bold mt-1">{feature.votes}</span>
-                                        </button>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <h4 className="font-semibold text-zinc-200 text-sm truncate">{feature.title}</h4>
-                                                {/* Status Badge */}
+                            {groupFeatures.map(feature => {
+                                const isRequested = feature.status === 'requested';
+                                const pct = isRequested ? Math.min((feature.votes / VOTE_THRESHOLD) * 100, 100) : 0;
+                                const reached = isRequested && feature.votes >= VOTE_THRESHOLD;
+                                const remaining = Math.max(VOTE_THRESHOLD - feature.votes, 0);
+
+                                return (
+                                    <div
+                                        key={feature.id}
+                                        className={`border rounded-xl p-4 transition-colors group ${reached
+                                            ? 'bg-indigo-500/10 border-indigo-500/40 hover:bg-indigo-500/15'
+                                            : 'bg-zinc-800/50 hover:bg-zinc-800 border-zinc-700/50'
+                                        }`}
+                                    >
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={() => handleVote(feature.id)}
+                                                className={`flex flex-col items-center justify-center p-2 rounded-lg h-fit transition-colors flex-shrink-0 ${feature.hasVoted
+                                                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
+                                                    : 'bg-zinc-900/50 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900'
+                                                    }`}
+                                            >
+                                                <ThumbsUp size={16} className={feature.hasVoted ? 'fill-current' : ''} />
+                                                <span className="text-xs font-bold mt-1">{feature.votes}</span>
+                                            </button>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <h4 className="font-semibold text-zinc-200 text-sm truncate">{feature.title}</h4>
+                                                    {reached && (
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-300 bg-indigo-500/20 px-1.5 py-0.5 rounded-full flex-shrink-0 uppercase tracking-wide">
+                                                            <Flame size={9} /> Hot
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{feature.description}</p>
+
+                                                {/* Threshold progress — requested only */}
+                                                {isRequested && (
+                                                    <div className="mt-3 space-y-1">
+                                                        <div className="h-1 w-full bg-zinc-700/60 rounded-full overflow-hidden">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all duration-500 ${reached ? 'bg-indigo-400' : 'bg-zinc-500'}`}
+                                                                style={{ width: `${pct}%` }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-[10px] text-zinc-600 font-mono">
+                                                            {reached
+                                                                ? `${feature.votes} votes — eligible for implementation`
+                                                                : `${feature.votes}/${VOTE_THRESHOLD} votes needed`
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{feature.description}</p>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     );
                 })}
