@@ -10,7 +10,8 @@ import { ToolCategory } from './types';
 // import { ProEditor } from './views/ProEditor';
 import { ComingSoon } from './views/ComingSoon';
 import { Feedback } from './components/Feedback';
-
+import { SponsorsPanel } from './components/SponsorsPanel';
+import { AdvertisePanel } from './components/AdvertisePanel';
 
 import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
@@ -366,6 +367,20 @@ const App = () => {
             </main>
 
             {!isProMode && !toolFocused && <Feedback />}
+
+            {/* Advertise panel — floats in the left whitespace */}
+            {!isProMode && !toolFocused && location.pathname === '/' && (
+                <div className="hidden 2xl:block fixed top-20 pt-4 pl-4" style={{ left: '8px' }}>
+                    <AdvertisePanel />
+                </div>
+            )}
+
+            {/* Sponsors panel — floats in the right whitespace */}
+            {!isProMode && !toolFocused && location.pathname === '/' && (
+                <div className="hidden 2xl:block fixed top-20 pt-4 pr-4" style={{ right: '24px' }}>
+                    <SponsorsPanel />
+                </div>
+            )}
         </div>
         </FocusedModeCtx.Provider>
     );
