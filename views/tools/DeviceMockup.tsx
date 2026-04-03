@@ -310,27 +310,9 @@ export const DeviceMockup: React.FC = () => {
             }
 
             // ── Fallback: thum.io (authenticated) ────────────────────────────
+            // Note: can't probe with new Image() under COEP — use directly
             if (!shotUrl) {
-                const thumUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
-                try {
-                    await new Promise<void>((resolve, reject) => {
-                        const img = new window.Image()
-                        const timer = setTimeout(() => reject(new Error('timeout')), 15000)
-                        img.onload = () => {
-                            clearTimeout(timer)
-                            if (img.naturalWidth > 0 && img.naturalWidth < 100) {
-                                reject(new Error('restricted'))
-                            } else {
-                                resolve()
-                            }
-                        }
-                        img.onerror = () => { clearTimeout(timer); reject(new Error('load error')) }
-                        img.src = thumUrl
-                    })
-                    shotUrl = thumUrl
-                } catch {
-                    // fall through
-                }
+                shotUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
             }
 
             if (!shotUrl) throw new Error('Could not capture this URL — try uploading a screenshot directly instead')
