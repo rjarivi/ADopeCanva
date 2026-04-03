@@ -402,6 +402,8 @@ export const DeviceMockup: React.FC = () => {
             // because the browser's own CSS engine does the rendering.
             const dataUrl = await toPng(previewRef.current, {
                 pixelRatio: ratio,
+                // Skip external font embedding — avoids SecurityError from Google Fonts CORS
+                skipFonts: true,
                 // Transparent bg: force canvas to stay clear so PNG alpha works
                 ...(settings.bgId === 'transparent' && { backgroundColor: 'rgba(0,0,0,0)' }),
                 // Skip UI chrome (hint label, focus button, checkerboard overlay)
@@ -761,7 +763,7 @@ export const DeviceMockup: React.FC = () => {
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
                         <button
                             onClick={() => toggleSection('camera')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
                         >
                             <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
                                 <Camera className="w-3 h-3" /> 3D Settings
@@ -784,7 +786,7 @@ export const DeviceMockup: React.FC = () => {
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
                         <button
                             onClick={() => toggleSection('dof')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
                         >
                             <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
                                 <Focus className="w-3 h-3" /> Depth of Field
@@ -835,7 +837,7 @@ export const DeviceMockup: React.FC = () => {
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
                         <button
                             onClick={() => toggleSection('style')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
                         >
                             <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
                                 <Layers className="w-3 h-3" /> Style Options
