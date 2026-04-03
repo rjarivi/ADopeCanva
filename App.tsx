@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { FocusedModeCtx } from './contexts/FocusedMode';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
     Wand2, LayoutGrid,
@@ -105,6 +106,7 @@ const App = () => {
     const [isProMode, setIsProMode] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [showBanner, setShowBanner] = useState(true);
+    const [toolFocused, setToolFocused] = useState(false);
 
     const categories = ['All', ...Object.values(ToolCategory)];
 
@@ -152,8 +154,9 @@ const App = () => {
         };
     }, [location]);
 
-    // Sync Pro Mode with URL
+    // Sync Pro Mode with URL; reset focused mode on navigation
     React.useLayoutEffect(() => {
+        setToolFocused(false);
         if (location.pathname === '/studio') {
             if (isMobile) {
                 navigate('/', { replace: true });
@@ -287,10 +290,11 @@ const App = () => {
     }
 
     return (
+        <FocusedModeCtx.Provider value={{ focused: toolFocused, setFocused: setToolFocused }}>
         <div className="flex flex-col h-screen overflow-hidden bg-background text-zinc-100 font-sans selection:bg-primary/30">
 
-            {/* Header */}
-            <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 md:px-8 bg-background/95 backdrop-blur-md z-40 shrink-0 gap-4">
+            {/* Header — hidden in focused/presentation mode */}
+            {!toolFocused && <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 md:px-8 bg-background/95 backdrop-blur-md z-40 shrink-0 gap-4">
                 {/* Brand */}
                 <div
                     className="flex items-center gap-3 cursor-pointer group select-none shrink-0"
@@ -354,16 +358,16 @@ const App = () => {
                         <span className="hidden sm:inline">Studio</span>
                     </button>
                 </div>
-            </header>
+            </header>}
 
             {/* Main Content */}
             <main className={`flex-1 relative scroll-smooth bg-background dot-grid ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
                 {content}
             </main>
 
-
-            {!isProMode && <Feedback />}
+            {!isProMode && !toolFocused && <Feedback />}
         </div>
+        </FocusedModeCtx.Provider>
     );
 };
 
