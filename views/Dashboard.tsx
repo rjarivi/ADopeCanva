@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -49,6 +49,7 @@ import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
 import { HtmlToImage } from './tools/HtmlToImage';
+import { DeviceMockup } from './tools/DeviceMockup';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -74,6 +75,31 @@ export const TOOLS: ToolItem[] = [
             { label: 'Engine', value: 'html2canvas (client-side)' },
         ],
         privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
+    },
+    {
+        id: 'mockup-generator',
+        title: 'Mockup Generator',
+        description: 'Drop your screenshot into a cinematic device frame — iPhone, Android, iPad, MacBook, Browser, or Window.',
+        category: ToolCategory.IMAGE,
+        icon: Smartphone,
+        component: <DeviceMockup />,
+        popular: true,
+        guideTitle: 'How to create device mockups from screenshots',
+        guideContent: 'Upload any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3× resolution — all client-side with no uploads required.',
+        faqs: [
+            { question: 'What image formats are supported?', answer: 'PNG, JPG, and WebP screenshots are all supported. Any aspect ratio will be cover-fitted to the device screen.' },
+            { question: 'Can I export with a transparent background?', answer: 'Yes — choose the "None" background preset and export as PNG to get a transparent background behind the device frame.' },
+            { question: 'What does the export scale mean?', answer: '1× outputs 1200×900 px, 2× outputs 2400×1800 px, and 3× outputs 3600×2700 px. Use 2× or 3× for sharp, retina-quality images.' },
+            { question: 'Is my screenshot uploaded anywhere?', answer: 'No — all rendering happens locally in your browser using the Canvas API. Your screenshots never leave your device.' },
+        ],
+        specs: [
+            { label: 'Input',    value: 'PNG, JPG, WebP' },
+            { label: 'Output',   value: 'PNG' },
+            { label: 'Devices',  value: 'iPhone 15 Pro, Android, iPad Pro, MacBook, Browser, App Window' },
+            { label: 'Max resolution', value: '3× (3600 × 2700 px)' },
+            { label: 'Engine',   value: 'Canvas API (client-side)' },
+        ],
+        privacyNotes: 'All mockup rendering is performed locally in your browser using the Canvas API. No screenshots or generated images are sent to any server.',
     },
     {
         id: 'image-converter',
