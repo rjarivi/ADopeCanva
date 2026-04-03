@@ -205,7 +205,7 @@ export const BackgroundRemover: React.FC = () => {
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={() => {
+                  <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
                       link.download = `no-bg-${file.file.name.split('.')[0]}.png`;

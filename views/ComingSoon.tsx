@@ -28,7 +28,7 @@ export const ComingSoon: React.FC = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                     <button
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-semibold hover:bg-zinc-200 transition-all shadow-lg shadow-white/10"
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
                     >
                         <ArrowLeft size={18} />
                         Back to Tools

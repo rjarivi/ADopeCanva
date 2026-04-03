@@ -493,7 +493,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button onClick={handleDownload} className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" >
+                  <Button onClick={handleDownload} className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" >
                     <Download size={18} className="mr-2" /> Download {outputFormat.toUpperCase()}
                   </Button>
                   <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={() => {

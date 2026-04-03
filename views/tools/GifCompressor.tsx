@@ -284,7 +284,7 @@ export const GifCompressor: React.FC = () => {
                                         a.download = 'compressed.gif';
                                         a.click();
                                     }}
-                                    className="w-full h-12 bg-white text-black hover:bg-zinc-200 font-bold uppercase text-[10px] tracking-widest border-none shadow-lg"
+                                    className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 font-bold uppercase text-[10px] tracking-widest border-none shadow-lg"
                                 >
                                     <Download size={18} className="mr-2" /> Download GIF
                                 </Button>

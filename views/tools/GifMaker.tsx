@@ -675,7 +675,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
               </Button>
             ) : (
               <div className="space-y-3 animate-slide-up">
-                <Button className="w-full h-14 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleDownload} >
+                <Button className="w-full h-14 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={handleDownload} >
                   <Download size={18} className="mr-2" /> Download Output
                 </Button>
                 <div className="flex gap-3">
