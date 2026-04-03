@@ -182,7 +182,7 @@ export const QrGenerator: React.FC = () => {
                     </Button>
                     <Button
                         onClick={handleDownload}
-                        className="flex-1 h-11 bg-white text-black hover:bg-zinc-200 border-none text-xs font-bold uppercase tracking-widest"
+                        className="flex-1 h-11 bg-indigo-600 text-white hover:bg-indigo-500 border-none text-xs font-bold uppercase tracking-widest"
                     >
                         <Download size={16} className="mr-2" /> Download
                     </Button>

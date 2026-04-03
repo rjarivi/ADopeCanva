@@ -181,7 +181,7 @@ export const PdfToText: React.FC = () => {
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
-                                    <Button className="w-full h-12 bg-white text-black hover:bg-zinc-200 border-none shadow-lg" onClick={handleCopy} >
+                                    <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={handleCopy} >
                                         {copied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
                                         {copied ? 'Copied!' : 'Copy to Clipboard'}
                                     </Button>

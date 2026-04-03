@@ -120,7 +120,7 @@ export const Comparison: React.FC = () => {
                 <h2 className="text-3xl font-bold text-white mb-6">Ready to experience the future of online tools?</h2>
                 <button
                     onClick={() => navigate('/')}
-                    className="bg-white text-black px-10 py-4 rounded-2xl font-black text-lg hover:bg-zinc-200 transition-all shadow-xl shadow-white/10 active:scale-95"
+                    className="bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-lg hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
                 >
                     Get Started Free
                 </button>

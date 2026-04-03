@@ -545,7 +545,7 @@ export const GifMaker: React.FC = () => {
                <div className="mt-6 flex items-center gap-4 bg-zinc-900/80 p-2 rounded-full border border-zinc-700 backdrop-blur">
                   <button 
                     onClick={() => setIsPreviewPlaying(!isPreviewPlaying)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white text-black hover:bg-zinc-200 transition-colors"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-500 transition-colors"
                   >
                     {isPreviewPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
                   </button>

@@ -265,7 +265,7 @@ export const SpreadsheetTools: React.FC = () => {
                                 <a
                                     href={downloadUrl}
                                     download={`converted_${file?.file.name.split('.')[0]}.${mode === 'excel-to-other' ? targetFormat : 'xlsx'}`}
-                                    className="inline-flex items-center px-4 py-2 bg-zinc-100 hover:bg-white text-zinc-900 rounded-lg font-bold text-sm transition-colors"
+                                    className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm transition-colors"
                                 >
                                     <Download size={16} className="mr-2" />
                                     Download File
