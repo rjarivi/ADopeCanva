@@ -392,17 +392,24 @@ export const DeviceMockup: React.FC = () => {
         if (!imageUrl || !previewRef.current) return
         setExporting(true)
 
+        // Temporarily disable cross-origin stylesheets so html-to-image
+        // doesn't hit SecurityError reading cssRules from Google Fonts etc.
+        const disabledSheets: CSSStyleSheet[] = []
+        for (const sheet of Array.from(document.styleSheets)) {
+            try {
+                if (sheet.href && !sheet.href.startsWith(window.location.origin)) {
+                    sheet.disabled = true
+                    disabledSheets.push(sheet)
+                }
+            } catch { /* cross-origin sheet — already inaccessible, skip */ }
+        }
+
         try {
             const rect  = previewRef.current.getBoundingClientRect()
             const ratio = 3840 / rect.width
 
-            // html-to-image lets the browser render the element natively at any
-            // pixel ratio. CSS 3D transforms, perspective, filter: blur(), gloss,
-            // background gradients — everything matches the live preview exactly
-            // because the browser's own CSS engine does the rendering.
             const dataUrl = await toPng(previewRef.current, {
                 pixelRatio: ratio,
-                // Skip external font embedding — avoids SecurityError from Google Fonts CORS
                 skipFonts: true,
                 // Transparent bg: force canvas to stay clear so PNG alpha works
                 ...(settings.bgId === 'transparent' && { backgroundColor: 'rgba(0,0,0,0)' }),
@@ -420,6 +427,8 @@ export const DeviceMockup: React.FC = () => {
         } catch (err) {
             console.error('Export failed:', err)
         } finally {
+            // Re-enable stylesheets regardless of success or failure
+            for (const sheet of disabledSheets) sheet.disabled = false
             setExporting(false)
         }
     }, [imageUrl, isExternalImage, settings])
