@@ -290,35 +290,49 @@ export const DeviceMockup: React.FC = () => {
         setCaptureError('')
         setCapturing(true)
         try {
-            // thum.io — supports CORS, no API key required for basic use
-            const services = [
-                `https://image.thum.io/get/width/1280/${normalized}`,
-            ]
             let shotUrl = ''
-            for (const url of services) {
+
+            // ── Primary: microlink.io (free, no API key, reliable) ────────────
+            try {
+                const controller = new AbortController()
+                const timer = setTimeout(() => controller.abort(), 20000)
+                const res = await fetch(
+                    `https://api.microlink.io/?url=${encodeURIComponent(normalized)}&screenshot=true&meta=false`,
+                    { signal: controller.signal }
+                )
+                clearTimeout(timer)
+                const json = await res.json()
+                if (json.status === 'success' && json.data?.screenshot?.url) {
+                    shotUrl = json.data.screenshot.url
+                }
+            } catch {
+                // fall through to next service
+            }
+
+            // ── Fallback: thum.io (authenticated) ────────────────────────────
+            if (!shotUrl) {
+                const thumUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
                 try {
                     await new Promise<void>((resolve, reject) => {
                         const img = new window.Image()
                         const timer = setTimeout(() => reject(new Error('timeout')), 15000)
                         img.onload = () => {
                             clearTimeout(timer)
-                            // thum.io returns a small error image (< 400px wide) when the URL
-                            // is restricted, instead of a 4xx. Reject those silently.
-                            if (img.naturalWidth > 0 && img.naturalWidth < 400) {
+                            if (img.naturalWidth > 0 && img.naturalWidth < 100) {
                                 reject(new Error('restricted'))
                             } else {
                                 resolve()
                             }
                         }
                         img.onerror = () => { clearTimeout(timer); reject(new Error('load error')) }
-                        img.src = url
+                        img.src = thumUrl
                     })
-                    shotUrl = url
-                    break
+                    shotUrl = thumUrl
                 } catch {
-                    // Try next service
+                    // fall through
                 }
             }
+
             if (!shotUrl) throw new Error('Could not capture this URL — try uploading a screenshot directly instead')
             setFileData({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
             setImageUrl(shotUrl)
@@ -512,7 +526,7 @@ export const DeviceMockup: React.FC = () => {
                             )}
                             <p className="text-xs text-zinc-600 font-jakarta">
                                 Screenshots powered by{' '}
-                                <a href="https://thum.io" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">thum.io</a>
+                                <a href="https://microlink.io" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400 transition-colors">microlink.io</a>
                                 {' '}— no API key required.
                             </p>
                         </div>
