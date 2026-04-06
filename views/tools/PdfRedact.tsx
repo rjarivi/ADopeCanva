@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
     EyeOff, Download, Loader2, Trash2, Undo2, ShieldCheck,
-    FileText, ChevronLeft, ChevronRight, RefreshCcw, Lock, Shield,
+    FileText, ChevronLeft, ChevronRight, RefreshCcw, Lock, Shield, Layers,
 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -171,6 +171,36 @@ export const PdfRedact: React.FC = () => {
         return next;
     });
     const clearPage = () => setRedactions(prev => { const n = new Map(prev); n.set(currentPage, []); return n; });
+
+    // Copy all bars from current page → every other page (merges, does not overwrite)
+    const applyToAllPages = () => {
+        const sourceRects = redactions.get(currentPage) ?? [];
+        if (!sourceRects.length) return;
+        setRedactions(prev => {
+            const next = new Map(prev);
+            for (let p = 1; p <= pageCount; p++) {
+                if (p === currentPage) continue;
+                next.set(p, [...(prev.get(p) ?? []), ...sourceRects]);
+            }
+            return next;
+        });
+    };
+
+    // Copy only the last-drawn bar on this page → every other page
+    const repeatLastOnAllPages = () => {
+        const sourceRects = redactions.get(currentPage) ?? [];
+        if (!sourceRects.length) return;
+        const last = sourceRects[sourceRects.length - 1];
+        setRedactions(prev => {
+            const next = new Map(prev);
+            for (let p = 1; p <= pageCount; p++) {
+                if (p === currentPage) continue;
+                next.set(p, [...(prev.get(p) ?? []), last]);
+            }
+            return next;
+        });
+    };
+
     const reset = () => {
         setFile(null); setRawBytes(null); setPageCount(0); setPages(new Map());
         setRedactions(new Map()); setCurrentPage(1); setError('');
@@ -399,6 +429,28 @@ export const PdfRedact: React.FC = () => {
                         className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-300 transition-all">
                         <Trash2 size={11} /> Clear
                     </button>
+
+                    {/* Repeat on all pages */}
+                    {pageCount > 1 && pageRects.length > 0 && (
+                        <>
+                            <div className="w-px h-5 bg-zinc-800" />
+                            <button
+                                onClick={repeatLastOnAllPages}
+                                title="Copy the last drawn bar to all pages at the same position"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-indigo-800/60 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300 transition-all"
+                            >
+                                <Layers size={11} /> Last → All
+                            </button>
+                            <button
+                                onClick={applyToAllPages}
+                                title={`Copy all ${pageRects.length} bar${pageRects.length !== 1 ? 's' : ''} from this page to every other page`}
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-indigo-700/60 bg-indigo-800/20 hover:bg-indigo-800/40 text-indigo-200 transition-all"
+                            >
+                                <Layers size={11} /> Page → All
+                            </button>
+                        </>
+                    )}
+
                     {totalRedactions > 0 && (
                         <span className="px-2 py-1 rounded-md bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 text-[10px] font-bold">
                             {totalRedactions} bar{totalRedactions !== 1 ? 's' : ''}
