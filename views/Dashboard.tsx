@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -50,6 +50,7 @@ import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
 import { HtmlToImage } from './tools/HtmlToImage';
 import { DeviceMockup } from './tools/DeviceMockup';
+import { AudioWaveformExporter } from './tools/AudioWaveformExporter';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -583,6 +584,29 @@ export const TOOLS: ToolItem[] = [
             { label: 'Output', value: 'Lossless WAV or optimized MP3' }
         ],
         privacyNotes: 'Merging is done via your local CPU/RAM using WebAssembly.'
+    },
+    {
+        id: 'audio-waveform',
+        title: 'Audio Waveform SVG',
+        description: 'Export your audio as a scalable SVG waveform — bars, sharp, or smooth with gradients and image masking.',
+        category: ToolCategory.AUDIO,
+        icon: AudioWaveform,
+        component: <AudioWaveformExporter />,
+        guideTitle: 'How to generate an SVG waveform from audio',
+        guideContent: 'Upload any audio file and instantly visualize it as a clean SVG waveform. Choose from bars, sharp polyline, or smooth bezier styles. Apply solid colors, linear/radial gradients, or even use an image as a fill mask. Export at any resolution — SVGs scale infinitely with no quality loss.',
+        faqs: [
+            { question: 'What audio formats are supported?', answer: 'MP3, WAV, OGG, FLAC, M4A, and AAC — decoded entirely in your browser using the Web Audio API.' },
+            { question: 'Can I use the SVG in Figma or Illustrator?', answer: 'Yes. The exported SVG is standard and opens in any vector editor.' },
+            { question: 'What is image masking?', answer: 'Image masking fills the waveform shape with a photo or texture instead of a flat color, creating a striking visual effect.' },
+        ],
+        specs: [
+            { label: 'Styles', value: 'Bars, Sharp, Smooth' },
+            { label: 'Color modes', value: 'Solid, Gradient (H/V/Radial), Image Mask' },
+            { label: 'Max export size', value: '4000 × 1000 px' },
+            { label: 'Output', value: 'SVG (vector, infinitely scalable)' },
+            { label: 'Processing', value: 'Web Audio API — fully client-side' },
+        ],
+        privacyNotes: 'Audio is decoded in-browser using the Web Audio API. No audio data is ever uploaded.',
     },
     {
         id: 'pdf-tools',
