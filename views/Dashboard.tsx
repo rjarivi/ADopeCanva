@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -38,6 +38,7 @@ import { PdfToText } from './tools/PdfToText';
 import { TextToPdf } from './tools/TextToPdf';
 import { ImageResizer } from './tools/ImageResizer';
 import { PdfToJpg } from './tools/PdfToJpg';
+import { PdfRedact } from './tools/PdfRedact';
 import { SignatureGenerator } from './tools/SignatureGenerator';
 import { TextUtilities } from './tools/TextUtilities';
 import { Tooltip } from '../components/ui/Tooltip';
@@ -1172,6 +1173,28 @@ export const TOOLS: ToolItem[] = [
             { label: "Engine", value: "PDF.js" }
         ],
         privacyNotes: "Your PDF pages are rendered to images locally."
+    },
+    {
+        id: 'pdf-redact',
+        title: 'PDF Redactor',
+        description: 'Draw black bars over sensitive text. Normal or permanent true-redact mode.',
+        category: ToolCategory.DOCS,
+        icon: EyeOff,
+        component: <PdfRedact />,
+        guideTitle: 'How to permanently redact sensitive information from a PDF',
+        guideContent: 'Drag to draw black redaction bars over any text or images you want to hide. Normal mode paints a black rectangle on the PDF layer — fast and small. True Redact mode rasterizes every page into pixels before applying the bars, destroying the text data entirely so no tool, search engine, or AI can recover it.',
+        faqs: [
+            { question: "What is the difference between Normal and True Redact?", answer: "Normal mode draws a black filled rectangle directly onto the PDF vector layer — it looks redacted but the underlying text may still be extractable with specialized tools. True Redact converts each page into a flat image first, then burns the black bars into the pixels. The output has no text layer at all, making recovery impossible." },
+            { question: "Can AI see through the redactions?", answer: "In True Redact mode, no. The output is a purely image-based PDF. There is no text content stream, so no language model, OCR tool, or search index can read the redacted content. Normal mode bars can theoretically be removed by editing the PDF structure." },
+            { question: "Does this upload my PDF anywhere?", answer: "Never. All rendering, redaction drawing, and export happen entirely in your browser using PDF.js and pdf-lib. Your document never leaves your device." },
+            { question: "Can I undo a redaction after exporting?", answer: "Once exported in True Redact mode, the information is gone forever. In Normal mode the bar is embedded in the PDF but technically reversible with low-level editors. Use True Redact for legally sensitive documents." },
+        ],
+        specs: [
+            { label: "Normal mode engine", value: "pdf-lib (vector)" },
+            { label: "True Redact engine", value: "PDF.js + jsPDF (image)" },
+            { label: "Output", value: "PDF (no upload)" },
+        ],
+        privacyNotes: "All processing is 100% client-side. Your PDF is never uploaded or transmitted.",
     },
     {
         id: 'svg-converter',
