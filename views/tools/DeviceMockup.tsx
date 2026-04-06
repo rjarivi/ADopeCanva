@@ -3,7 +3,7 @@ import { toPng } from 'html-to-image'
 import {
     Download, RotateCcw, Image as ImageIcon,
     Sparkles, Camera, Focus, Layers, SlidersHorizontal, ExternalLink,
-    Globe, Loader2, Link, Maximize2, Minimize2, ChevronDown,
+    Globe, Loader2, Link, Maximize2, Minimize2,
 } from 'lucide-react'
 import { FileUploader } from '../../components/FileUploader'
 import { Button } from '../../components/ui/Button'
@@ -26,6 +26,8 @@ interface Settings {
     dofType: DofType
     blur: number
     dofDirection: number
+    dofFocalX: number   // 0–100, focal point X for radial/lens
+    dofFocalY: number   // 0–100, focal point Y for radial/lens
     canvasBlur: boolean
     borderRadius: number
     bgId: string
@@ -37,9 +39,9 @@ interface Settings {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULTS: Settings = {
-    tiltX: 6, tiltY: -20, roll: 4, zoom: 1.18, posX: -10, posY: 100,
+    tiltX: 8, tiltY: -15, roll: 3, zoom: 1.4, posX: 60, posY: 30,
     perspective: 900,
-    dofType: 'dir', blur: 0.5, dofDirection: 151, canvasBlur: false,
+    dofType: 'dir', blur: 0.5, dofDirection: 151, dofFocalX: 50, dofFocalY: 50, canvasBlur: false,
     borderRadius: 12, bgId: 'indigo', shadow: true, bloom: false,
     canvasRatio: '16/9',
 }
@@ -61,12 +63,18 @@ const DOF_TOOLTIPS: Record<DofType, string> = {
 }
 
 const PRESETS: { name: string; s: Partial<Settings> }[] = [
-    { name: 'Flat',      s: { tiltX: 0,  tiltY: 0,   roll: 0, zoom: 1,    posX: 0,   posY: 0,   dofType: 'off',  blur: 0,   bgId: 'light' } },
-    { name: 'Cinematic', s: { tiltX: 6,  tiltY: -20, roll: 4, zoom: 1.18, posX: -10, posY: 100, dofType: 'dir',  blur: 0.5, dofDirection: 151, bgId: 'indigo' } },
-    { name: 'Tilt',      s: { tiltX: 8,  tiltY: -18, roll: 3, zoom: 1.4,  posX: 60,  posY: 80,  dofType: 'tilt', blur: 1.1, bgId: 'ocean' } },
-    { name: 'Side',      s: { tiltX: 5,  tiltY: -38, roll: 3, zoom: 1.8,  posX: 280, posY: 120, dofType: 'dir',  blur: 1.2, dofDirection: 160, bgId: 'sunset' } },
-    { name: 'Overhead',  s: { tiltX: 22, tiltY: 0,   roll: 0, zoom: 1.3,  posX: 0,   posY: -80, dofType: 'tilt', blur: 0.8, bgId: 'forest' } },
-    { name: 'Dramatic',  s: { tiltX: 8,  tiltY: -28, roll: 6, zoom: 2,    posX: 340, posY: 180, dofType: 'lens', blur: 1.5, bgId: 'mesh' } },
+    // Flat: no transform, clean light bg, no blur
+    { name: 'Flat',      s: { tiltX: 0,  tiltY: 0,   roll: 0, zoom: 1.0, posX: 0,   posY: 0,   dofType: 'off',    blur: 0,   bgId: 'light' } },
+    // Cinematic: subtle left lean, slight tilt, directional blur from right edge
+    { name: 'Cinematic', s: { tiltX: 6,  tiltY: -12, roll: 2, zoom: 1.2, posX: 40,  posY: 20,  dofType: 'dir',    blur: 0.5, dofDirection: 160, bgId: 'indigo' } },
+    // Tilt: overhead-ish tilt, mild Y, tilt-shift blur top+bottom
+    { name: 'Tilt',      s: { tiltX: 18, tiltY: -10, roll: 2, zoom: 1.25,posX: 20,  posY: 20,  dofType: 'tilt',   blur: 0.7, bgId: 'ocean' } },
+    // Side: strong Y rotation so it sweeps left, directional blur from right
+    { name: 'Side',      s: { tiltX: 4,  tiltY: -32, roll: 2, zoom: 1.3, posX: -60, posY: 20,  dofType: 'dir',    blur: 0.8, dofDirection: 165, bgId: 'sunset' } },
+    // Overhead: looking down, top-to-bottom tilt, tilt-shift
+    { name: 'Overhead',  s: { tiltX: 20, tiltY: 0,   roll: 0, zoom: 1.2, posX: 0,   posY: 10,  dofType: 'tilt',   blur: 0.5, bgId: 'forest' } },
+    // Dramatic: strong angle + lens bokeh on the edge
+    { name: 'Dramatic',  s: { tiltX: 10, tiltY: -22, roll: 5, zoom: 1.35,posX: 80,  posY: 30,  dofType: 'radial', blur: 1.0, dofFocalX: 30, dofFocalY: 40, bgId: 'mesh' } },
 ]
 
 const BACKGROUNDS: { id: string; label: string; value: string }[] = [
@@ -94,12 +102,11 @@ const DOF_TYPES: { id: DofType; label: string }[] = [
 // Each higher-blur layer is visible in a NARROWER region (extreme edges only).
 // Wide 28% feather zone + mid-opacity easing stop for cinematic softness.
 
-function getLayerMask(type: DofType, blurLevel: number, direction: number): string {
-    // blurLevel: 0 = lightest layer, 1 = strongest layer
+function getLayerMask(type: DofType, blurLevel: number, direction: number, fx: number, fy: number): string {
+    const at = `${fx}% ${fy}%`
     if (type === 'tilt') {
-        // Both top and bottom blur. Centre zone shrinks as blurLevel increases.
-        const coverage = (0.42 - blurLevel * 0.30) * 100 // 42% → 12% clear centre half-width
-        const fade = 18                                    // wide feather
+        const coverage = (0.42 - blurLevel * 0.30) * 100
+        const fade = 18
         const p1 = Math.max(0, coverage - fade).toFixed(1)
         const p2 = coverage.toFixed(1)
         const p3 = (100 - coverage).toFixed(1)
@@ -110,19 +117,16 @@ function getLayerMask(type: DofType, blurLevel: number, direction: number): stri
         const inner = (0.72 - blurLevel * 0.32) * 100
         const mid   = Math.min(inner + 15, 100)
         const outer = Math.min(inner + 30, 100)
-        return `radial-gradient(ellipse at center, transparent ${inner.toFixed(0)}%, rgba(0,0,0,0.5) ${mid.toFixed(0)}%, black ${outer.toFixed(0)}%)`
+        return `radial-gradient(ellipse at ${at}, transparent ${inner.toFixed(0)}%, rgba(0,0,0,0.5) ${mid.toFixed(0)}%, black ${outer.toFixed(0)}%)`
     }
     if (type === 'lens') {
         const inner = (0.52 - blurLevel * 0.30) * 100
         const mid   = Math.min(inner + 16, 100)
         const outer = Math.min(inner + 32, 100)
-        return `radial-gradient(circle at center, transparent ${inner.toFixed(0)}%, rgba(0,0,0,0.5) ${mid.toFixed(0)}%, black ${outer.toFixed(0)}%)`
+        return `radial-gradient(circle at ${at}, transparent ${inner.toFixed(0)}%, rgba(0,0,0,0.5) ${mid.toFixed(0)}%, black ${outer.toFixed(0)}%)`
     }
     if (type === 'dir') {
-        // ONE-SIDED: transparent (sharp) at start → blurry at direction end.
-        // 5 layers each reveal themselves progressively further from the sharp edge.
-        // 28% feather + mid-stop at 50% opacity for smooth easing.
-        const sharpEnd = (0.08 + blurLevel * 0.57) * 100  // 8% → 65% across 5 levels
+        const sharpEnd = (0.08 + blurLevel * 0.57) * 100
         const midStop  = Math.min(sharpEnd + 14, 100)
         const blurEnd  = Math.min(sharpEnd + 28, 100)
         return `linear-gradient(${direction}deg, transparent 0%, transparent ${sharpEnd.toFixed(1)}%, rgba(0,0,0,0.5) ${midStop.toFixed(1)}%, black ${blurEnd.toFixed(1)}%)`
@@ -130,19 +134,16 @@ function getLayerMask(type: DofType, blurLevel: number, direction: number): stri
     return 'none'
 }
 
-// ─── Canvas blur overlay mask ─────────────────────────────────────────────────
-// Single gradient used for the backdrop-filter overlay on the preview canvas.
-// Transparent = scene shows through sharply; opaque = backdrop blur is visible.
-
-function getCanvasMask(type: DofType, direction: number): string {
+function getCanvasMask(type: DofType, direction: number, fx: number, fy: number): string {
+    const at = `${fx}% ${fy}%`
     if (type === 'tilt') {
         return 'linear-gradient(to bottom, black 0%, transparent 30%, transparent 70%, black 100%)'
     }
     if (type === 'radial') {
-        return 'radial-gradient(ellipse at center, transparent 35%, black 70%)'
+        return `radial-gradient(ellipse at ${at}, transparent 35%, black 70%)`
     }
     if (type === 'lens') {
-        return 'radial-gradient(circle at center, transparent 30%, black 65%)'
+        return `radial-gradient(circle at ${at}, transparent 30%, black 65%)`
     }
     if (type === 'dir') {
         return `linear-gradient(${direction}deg, transparent 0%, transparent 30%, black 55%)`
@@ -238,14 +239,8 @@ export const DeviceMockup: React.FC = () => {
     const [exporting, setExporting] = useState(false)
     const { focused, setFocused }   = useFocusedMode()
     const [activePreset, setActivePreset] = useState<string | null>(null)
-    const [openSections, setOpenSections] = useState({ camera: true, dof: false, style: false })
+    const [activeTab, setActiveTab] = useState<'camera' | 'dof' | 'style'>('dof')
     const [customBgColor, setCustomBgColor] = useState('#6366f1')
-
-    const toggleSection = (s: keyof typeof openSections) =>
-        setOpenSections(prev => ({
-            camera: false, dof: false, style: false,
-            [s]: !prev[s],
-        }))
     const [isDragging, setIsDragging] = useState(false)
     const [inputMode, setInputMode]   = useState<'upload' | 'url'>('upload')
     const [urlInput, setUrlInput]     = useState('')
@@ -301,7 +296,7 @@ export const DeviceMockup: React.FC = () => {
                     { signal: controller.signal }
                 )
                 clearTimeout(timer)
-                const json = await res.json()
+                const json = await res.json() as { status?: string; data?: { screenshot?: { url?: string } } }
                 if (json.status === 'success' && json.data?.screenshot?.url) {
                     shotUrl = json.data.screenshot.url
                 }
@@ -434,7 +429,7 @@ export const DeviceMockup: React.FC = () => {
     }, [imageUrl, isExternalImage, settings])
 
     const { tiltX, tiltY, roll, zoom, posX, posY, perspective,
-            dofType, blur, dofDirection, canvasBlur, borderRadius, bgId, shadow, bloom, canvasRatio } = settings
+            dofType, blur, dofDirection, dofFocalX, dofFocalY, canvasBlur, borderRadius, bgId, shadow, bloom, canvasRatio } = settings
 
     const bg = bgId === 'custom'
         ? { id: 'custom', label: 'Custom', value: customBgColor }
@@ -456,20 +451,18 @@ export const DeviceMockup: React.FC = () => {
 
     if (!fileData || !imageUrl) {
         return (
-            <div className="flex flex-col items-center justify-center w-full min-h-[80vh] animate-fade-in px-4 py-12">
-                <div className="flex flex-col items-center text-center mb-10">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-5">
-                        <Camera className="w-8 h-8 text-indigo-400" />
-                    </div>
-                    <h1 className="font-unbounded text-3xl font-black tracking-tight bg-gradient-to-r from-indigo-400 to-indigo-200 bg-clip-text text-transparent mb-3">
-                        Mockup Generator
+            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+                <div className="flex-none space-y-3 mb-10">
+                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-4 font-unbounded">
+                        <div className="text-indigo-400"><Camera size={42} /></div>
+                        <span className="text-white">Mockup Generator</span>
                     </h1>
-                    <p className="text-zinc-400 text-base max-w-md">
+                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
                         Turn flat screenshots into cinematic 3D presentations — perspective, depth-of-field, drag & zoom.
                     </p>
                 </div>
                 {/* Input mode tabs + input area */}
-                <div className="w-full max-w-xl mb-12">
+                <div className="flex-1 w-full max-w-4xl mx-auto flex flex-col mb-8">
                     <div className="flex rounded-xl border border-zinc-800 overflow-hidden mb-4">
                         {(['upload', 'url'] as const).map(mode => (
                             <button
@@ -488,7 +481,12 @@ export const DeviceMockup: React.FC = () => {
                     </div>
 
                     {inputMode === 'upload' ? (
-                        <FileUploader onFileSelect={handleFile} accept="image/*" label="Upload Screenshot" description="PNG, JPG, WebP" icon={ImageIcon} />
+                        <div className="flex-1 bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl" style={{ minHeight: 200 }}>
+                            <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <FileUploader onFileSelect={handleFile} accept="image/*" label="Upload Screenshot" description="PNG, JPG, WebP" icon={ImageIcon}
+                                className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all" />
+                        </div>
                     ) : (
                         <div className="flex flex-col gap-3">
                             <div className="flex gap-2">
@@ -525,34 +523,25 @@ export const DeviceMockup: React.FC = () => {
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-2xl">
+                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
                     {[
-                        { icon: Camera,            title: '3D Camera',          desc: 'Tilt, roll, zoom & pan with full perspective control' },
-                        { icon: Focus,             title: 'Progressive DOF',     desc: '3-layer depth-of-field: smooth blur falloff like a real lens' },
-                        { icon: Sparkles,          title: 'Cinematic Presets',   desc: '5 one-click looks: Flat, Tilt, Side, Overhead, Dramatic' },
-                        { icon: SlidersHorizontal, title: 'Drag & Scroll',       desc: 'Drag to reposition, scroll wheel to zoom, live preview' },
+                        { icon: Camera,            title: '3D Camera',        desc: 'Tilt, Roll, Zoom & Pan' },
+                        { icon: Focus,             title: 'Progressive DOF',  desc: 'Cinematic lens blur' },
+                        { icon: Sparkles,          title: 'Presets',          desc: 'One-click cinematic looks' },
+                        { icon: SlidersHorizontal, title: 'Drag & Scroll',    desc: 'Live interactive preview' },
                     ].map(({ icon: Icon, title, desc }) => (
-                        <div key={title} className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-900 border border-zinc-800">
-                            <Icon className="w-5 h-5 text-indigo-400" />
-                            <p className="font-jakarta font-semibold text-white text-sm">{title}</p>
-                            <p className="font-jakarta text-zinc-500 text-xs">{desc}</p>
+                        <div key={title} className="flex flex-col items-center text-center space-y-2 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors group">
+                            <div className="p-3 bg-zinc-900 rounded-full text-indigo-400 group-hover:scale-110 transition-transform shadow-inner">
+                                <Icon size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black text-zinc-300 uppercase tracking-wider font-unbounded">{title}</h3>
+                                <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{desc}</p>
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Credit */}
-                <p className="mt-6 text-xs text-zinc-600">
-                    Inspired by{' '}
-                    <a
-                        href="https://ultramock.io"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-zinc-500 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
-                    >
-                        Ultramock <ExternalLink size={10} />
-                    </a>
-                    {' '}— cinematic browser mockups
-                </p>
             </div>
         )
     }
@@ -639,7 +628,7 @@ export const DeviceMockup: React.FC = () => {
                             {/* ── Progressive DOF blur layers ──────────────── */}
                             {hasDof && DOF_LEVELS.map((level: number) => {
                                 const blurPx = maxBlurPx * (0.25 + level * 0.75)
-                                const mask   = getLayerMask(dofType, level, dofDirection)
+                                const mask   = getLayerMask(dofType, level, dofDirection, dofFocalX, dofFocalY)
                                 return (
                                     <img
                                         key={level}
@@ -693,8 +682,8 @@ export const DeviceMockup: React.FC = () => {
                             pointerEvents: 'none',
                             backdropFilter: `blur(${maxBlurPx}px)`,
                             WebkitBackdropFilter: `blur(${maxBlurPx}px)`,
-                            WebkitMaskImage: getCanvasMask(dofType, dofDirection),
-                            maskImage: getCanvasMask(dofType, dofDirection),
+                            WebkitMaskImage: getCanvasMask(dofType, dofDirection, dofFocalX, dofFocalY),
+                            maskImage: getCanvasMask(dofType, dofDirection, dofFocalX, dofFocalY),
                             WebkitMaskSize: '100% 100%',
                             maskSize: '100% 100%',
                         }}
@@ -768,42 +757,32 @@ export const DeviceMockup: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 3D Settings — collapsible */}
+                    {/* ── 3-tab panel ──────────────────────────────────────── */}
                     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('camera')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
-                        >
-                            <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
-                                <Camera className="w-3 h-3" /> 3D Settings
-                            </span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-zinc-600 transition-transform duration-200 ${openSections.camera ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openSections.camera && (
-                            <div className="px-4 pb-4 flex flex-col gap-3.5 border-t border-zinc-800/50">
-                                <Slider label="Tilt X"     tooltip="Rotates the image up or down (X axis)"             value={tiltX} min={-40}  max={40}  step={1}    unit="°"  defaultValue={DEFAULTS.tiltX} onChange={v => set('tiltX', v)} />
-                                <Slider label="Tilt Y"     tooltip="Rotates the image left or right (Y axis)"          value={tiltY} min={-50}  max={50}  step={1}    unit="°"  defaultValue={DEFAULTS.tiltY} onChange={v => set('tiltY', v)} />
-                                <Slider label="Roll"       tooltip="Rotates the image clockwise or counter-clockwise"  value={roll}  min={-25}  max={25}  step={1}    unit="°"  defaultValue={DEFAULTS.roll}  onChange={v => set('roll', v)} />
-                                <Slider label="Zoom"       tooltip="Scale the image in or out"                         value={zoom}  min={0.3}  max={4}   step={0.01} unit="×"  defaultValue={DEFAULTS.zoom}  onChange={v => set('zoom', v)} />
-                                <Slider label="Position X" tooltip="Move the image left or right"                      value={posX}  min={-700} max={700} step={2}    unit="px" defaultValue={DEFAULTS.posX}  onChange={v => set('posX', v)} />
-                                <Slider label="Position Y" tooltip="Move the image up or down"                         value={posY}  min={-500} max={500} step={2}    unit="px" defaultValue={DEFAULTS.posY}  onChange={v => set('posY', v)} />
-                            </div>
-                        )}
-                    </div>
+                        {/* Tab bar */}
+                        <div className="flex border-b border-zinc-800">
+                            {([
+                                { id: 'dof'    as const, icon: Focus,  label: 'DOF'   },
+                                { id: 'camera' as const, icon: Camera, label: '3D'    },
+                                { id: 'style'  as const, icon: Layers, label: 'Style' },
+                            ]).map(t => (
+                                <button
+                                    key={t.id}
+                                    onClick={() => setActiveTab(t.id)}
+                                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-bold font-jakarta uppercase tracking-wider border-b-2 transition-all ${
+                                        activeTab === t.id
+                                            ? 'border-indigo-500 text-indigo-400 bg-indigo-500/5'
+                                            : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/3'
+                                    }`}
+                                >
+                                    <t.icon className="w-3 h-3" /> {t.label}
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Depth of Field — collapsible */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('dof')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
-                        >
-                            <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
-                                <Focus className="w-3 h-3" /> Depth of Field
-                            </span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-zinc-600 transition-transform duration-200 ${openSections.dof ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openSections.dof && (
-                            <div className="px-4 pb-4 flex flex-col gap-3.5 border-t border-zinc-800/50">
+                        {/* DOF tab */}
+                        {activeTab === 'dof' && (
+                            <div className="p-4 flex flex-col gap-3.5">
                                 <div className="flex gap-1">
                                     {DOF_TYPES.map(d => (
                                         <button
@@ -824,6 +803,12 @@ export const DeviceMockup: React.FC = () => {
                                 {dofType === 'dir' && (
                                     <Slider label="Direction" tooltip="Angle the blur originates from (0–360°)" value={dofDirection} min={0} max={360} step={1} unit="°" defaultValue={DEFAULTS.dofDirection} onChange={v => set('dofDirection', v)} />
                                 )}
+                                {(dofType === 'radial' || dofType === 'lens') && (
+                                    <>
+                                        <Slider label="Focal X" tooltip="Horizontal position of the sharp focus point" value={dofFocalX} min={0} max={100} step={1} unit="%" defaultValue={DEFAULTS.dofFocalX} onChange={v => set('dofFocalX', v)} />
+                                        <Slider label="Focal Y" tooltip="Vertical position of the sharp focus point" value={dofFocalY} min={0} max={100} step={1} unit="%" defaultValue={DEFAULTS.dofFocalY} onChange={v => set('dofFocalY', v)} />
+                                    </>
+                                )}
                                 {hasDof && (
                                     <button
                                         onClick={() => set('canvasBlur', !canvasBlur)}
@@ -840,21 +825,22 @@ export const DeviceMockup: React.FC = () => {
                                 )}
                             </div>
                         )}
-                    </div>
 
-                    {/* Style Options — collapsible */}
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                        <button
-                            onClick={() => toggleSection('style')}
-                            className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors outline-none"
-                        >
-                            <span className="text-[10px] font-bold tracking-[0.15em] text-zinc-400 uppercase font-jakarta flex items-center gap-1.5">
-                                <Layers className="w-3 h-3" /> Style Options
-                            </span>
-                            <ChevronDown className={`w-3.5 h-3.5 text-zinc-600 transition-transform duration-200 ${openSections.style ? 'rotate-180' : ''}`} />
-                        </button>
-                        {openSections.style && (
-                            <div className="px-4 pb-4 flex flex-col gap-3.5 border-t border-zinc-800/50">
+                        {/* 3D tab */}
+                        {activeTab === 'camera' && (
+                            <div className="p-4 flex flex-col gap-3.5">
+                                <Slider label="Tilt X"     tooltip="Rotates the image up or down (X axis)"             value={tiltX} min={-40}  max={40}  step={1}    unit="°"  defaultValue={DEFAULTS.tiltX} onChange={v => set('tiltX', v)} />
+                                <Slider label="Tilt Y"     tooltip="Rotates the image left or right (Y axis)"          value={tiltY} min={-50}  max={50}  step={1}    unit="°"  defaultValue={DEFAULTS.tiltY} onChange={v => set('tiltY', v)} />
+                                <Slider label="Roll"       tooltip="Rotates the image clockwise or counter-clockwise"  value={roll}  min={-25}  max={25}  step={1}    unit="°"  defaultValue={DEFAULTS.roll}  onChange={v => set('roll', v)} />
+                                <Slider label="Zoom"       tooltip="Scale the image in or out"                         value={zoom}  min={0.3}  max={5}   step={0.01} unit="×"  defaultValue={DEFAULTS.zoom}  onChange={v => set('zoom', v)} />
+                                <Slider label="Position X" tooltip="Move the image left or right"                      value={posX}  min={-700} max={700} step={2}    unit="px" defaultValue={DEFAULTS.posX}  onChange={v => set('posX', v)} />
+                                <Slider label="Position Y" tooltip="Move the image up or down"                         value={posY}  min={-500} max={500} step={2}    unit="px" defaultValue={DEFAULTS.posY}  onChange={v => set('posY', v)} />
+                            </div>
+                        )}
+
+                        {/* Style tab */}
+                        {activeTab === 'style' && (
+                            <div className="p-4 flex flex-col gap-3.5">
                                 <div>
                                     <p className="text-[10px] font-bold tracking-[0.12em] text-zinc-500 uppercase font-jakarta mb-2">Background</p>
                                     <div className="grid grid-cols-4 gap-1.5 mb-2">
@@ -870,7 +856,6 @@ export const DeviceMockup: React.FC = () => {
                                             />
                                         ))}
                                     </div>
-                                    {/* Custom color picker */}
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="color"
@@ -888,9 +873,7 @@ export const DeviceMockup: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-
                                 <Slider label="Border Radius" tooltip="Round the corners of the screenshot" value={borderRadius} min={0} max={40} step={1} unit="px" defaultValue={DEFAULTS.borderRadius} onChange={v => set('borderRadius', v)} />
-
                                 <div className="flex gap-2">
                                     {(['shadow', 'bloom'] as const).map(key => (
                                         <button
