@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
     EyeOff, Download, Loader2, Trash2, Undo2, ShieldCheck,
-    FileText, ChevronLeft, ChevronRight, RefreshCcw, Lock, Shield, Layers,
+    ChevronLeft, ChevronRight, RefreshCcw, Lock, Shield, Layers,
 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -42,6 +42,10 @@ export const PdfRedact: React.FC = () => {
     const [isDrawing, setIsDrawing]     = useState(false);
     const drawStartRef = useRef<{ x: number; y: number } | null>(null);
     const [previewRect, setPreviewRect] = useState<Rect | null>(null);
+
+    // Selection (click existing rect to select → delete)
+    const [selectedRectIdx, setSelectedRectIdx] = useState<number | null>(null);
+    const [isOverRect, setIsOverRect]           = useState(false);
 
     const canvasRef  = useRef<HTMLCanvasElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
@@ -106,6 +110,9 @@ export const PdfRedact: React.FC = () => {
 
     useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
 
+    // Clear selection when changing pages
+    useEffect(() => { setSelectedRectIdx(null); setIsOverRect(false); }, [currentPage]);
+
     // ── Canvas coordinate helpers ─────────────────────────────────────────────
     const toCanvasCoords = (clientX: number, clientY: number) => {
         const canvas = canvasRef.current!;
@@ -116,14 +123,60 @@ export const PdfRedact: React.FC = () => {
         };
     };
 
+    // ── Hit-test helpers ──────────────────────────────────────────────────────
+    const findRectAtPoint = (cx: number, cy: number): number => {
+        const rects = redactions.get(currentPage) ?? [];
+        for (let i = rects.length - 1; i >= 0; i--) {
+            const r = rects[i];
+            if (cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h) return i;
+        }
+        return -1;
+    };
+
+    const deleteRect = useCallback((idx: number) => {
+        setRedactions(prev => {
+            const next  = new Map(prev);
+            const rects = [...(prev.get(currentPage) ?? [])];
+            rects.splice(idx, 1);
+            next.set(currentPage, rects);
+            return next;
+        });
+        setSelectedRectIdx(null);
+    }, [currentPage]);
+
+    // Keyboard: Delete/Backspace removes selected bar, Escape deselects
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectIdx !== null) {
+                deleteRect(selectedRectIdx);
+            }
+            if (e.key === 'Escape') setSelectedRectIdx(null);
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selectedRectIdx, deleteRect]);
+
     // ── Drawing handlers ──────────────────────────────────────────────────────
     const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         e.preventDefault();
-        drawStartRef.current = toCanvasCoords(e.clientX, e.clientY);
+        const pt = toCanvasCoords(e.clientX, e.clientY);
+        const hitIdx = findRectAtPoint(pt.x, pt.y);
+        if (hitIdx >= 0) {
+            // Click on existing rect → toggle selection (don't draw)
+            setSelectedRectIdx(prev => prev === hitIdx ? null : hitIdx);
+            return;
+        }
+        // Click on empty area → deselect + start drawing
+        setSelectedRectIdx(null);
+        drawStartRef.current = pt;
         setIsDrawing(true);
         setPreviewRect(null);
     };
     const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDrawing) {
+            const pt = toCanvasCoords(e.clientX, e.clientY);
+            setIsOverRect(findRectAtPoint(pt.x, pt.y) >= 0);
+        }
         if (!isDrawing || !drawStartRef.current) return;
         const p = toCanvasCoords(e.clientX, e.clientY);
         const s = drawStartRef.current;
@@ -146,11 +199,15 @@ export const PdfRedact: React.FC = () => {
         setPreviewRect(null);
     };
     const onMouseUp    = (e: React.MouseEvent<HTMLDivElement>) => commitDraw(e.clientX, e.clientY);
-    const onMouseLeave = () => { setIsDrawing(false); drawStartRef.current = null; setPreviewRect(null); };
+    const onMouseLeave = () => { setIsDrawing(false); drawStartRef.current = null; setPreviewRect(null); setIsOverRect(false); };
 
     const onTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         e.preventDefault();
-        drawStartRef.current = toCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        const pt = toCanvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+        const hitIdx = findRectAtPoint(pt.x, pt.y);
+        if (hitIdx >= 0) { setSelectedRectIdx(prev => prev === hitIdx ? null : hitIdx); return; }
+        setSelectedRectIdx(null);
+        drawStartRef.current = pt;
         setIsDrawing(true);
     };
     const onTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -234,7 +291,7 @@ export const PdfRedact: React.FC = () => {
         }
 
         const bytes = await pdfDoc.save();
-        const blob  = new Blob([bytes], { type: 'application/pdf' });
+        const blob  = new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
         const url   = URL.createObjectURL(blob);
         const a     = document.createElement('a');
         a.href = url; a.download = `redacted-${file?.file.name ?? 'document.pdf'}`; a.click();
@@ -437,14 +494,14 @@ export const PdfRedact: React.FC = () => {
                             <button
                                 onClick={repeatLastOnAllPages}
                                 title="Copy the last drawn bar to all pages at the same position"
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-indigo-800/60 bg-indigo-900/20 hover:bg-indigo-900/40 text-indigo-300 transition-all"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
                             >
                                 <Layers size={11} /> Last → All
                             </button>
                             <button
                                 onClick={applyToAllPages}
                                 title={`Copy all ${pageRects.length} bar${pageRects.length !== 1 ? 's' : ''} from this page to every other page`}
-                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-indigo-700/60 bg-indigo-800/20 hover:bg-indigo-800/40 text-indigo-200 transition-all"
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-all"
                             >
                                 <Layers size={11} /> Page → All
                             </button>
@@ -516,7 +573,7 @@ export const PdfRedact: React.FC = () => {
                     <div
                         ref={wrapperRef}
                         className="relative select-none"
-                        style={{ cursor: 'crosshair', maxWidth: '100%' }}
+                        style={{ cursor: isOverRect ? 'pointer' : 'crosshair', maxWidth: '100%' }}
                         onMouseDown={onMouseDown}
                         onMouseMove={onMouseMove}
                         onMouseUp={onMouseUp}
@@ -531,28 +588,67 @@ export const PdfRedact: React.FC = () => {
                             style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
                         />
 
-                        {/* SVG overlay — live preview rect while dragging */}
-                        {previewRect && pageData && (
+                        {/* SVG overlay — selection handles + live preview */}
+                        {pageData && (pageRects.length > 0 || previewRect) && (
                             <svg
-                                className="absolute inset-0 w-full h-full pointer-events-none"
+                                className="absolute inset-0 w-full h-full"
+                                style={{ pointerEvents: 'none' }}
                                 viewBox={`0 0 ${pageData.width} ${pageData.height}`}
                                 preserveAspectRatio="none"
                             >
-                                <rect
-                                    x={previewRect.x} y={previewRect.y}
-                                    width={previewRect.w} height={previewRect.h}
-                                    fill="rgba(0,0,0,0.85)"
-                                    stroke="#ef4444"
-                                    strokeWidth={3}
-                                    strokeDasharray="12 6"
-                                />
+                                {/* Interactive handles on each committed rect */}
+                                {pageRects.map((r, idx) => {
+                                    const isSelected = selectedRectIdx === idx;
+                                    const btnR = Math.max(14, Math.min(r.w, r.h) * 0.18);
+                                    return (
+                                        <g key={idx} style={{ pointerEvents: 'auto' }}>
+                                            {/* Invisible hit area over the whole rect */}
+                                            <rect
+                                                x={r.x} y={r.y} width={r.w} height={r.h}
+                                                fill="transparent"
+                                                stroke={isSelected ? '#f43f5e' : 'rgba(255,255,255,0.18)'}
+                                                strokeWidth={isSelected ? 3 : 1.5}
+                                                style={{ cursor: 'pointer' }}
+                                                onClick={(e) => { e.stopPropagation(); setSelectedRectIdx(prev => prev === idx ? null : idx); }}
+                                            />
+                                            {/* Delete button — top-right corner, only when selected */}
+                                            {isSelected && (
+                                                <g
+                                                    style={{ cursor: 'pointer' }}
+                                                    onClick={(e) => { e.stopPropagation(); deleteRect(idx); }}
+                                                >
+                                                    <circle cx={r.x + r.w} cy={r.y} r={btnR} fill="#f43f5e" />
+                                                    <line x1={r.x + r.w - btnR * 0.45} y1={r.y - btnR * 0.45}
+                                                          x2={r.x + r.w + btnR * 0.45} y2={r.y + btnR * 0.45}
+                                                          stroke="white" strokeWidth={Math.max(2, btnR * 0.25)} strokeLinecap="round" />
+                                                    <line x1={r.x + r.w + btnR * 0.45} y1={r.y - btnR * 0.45}
+                                                          x2={r.x + r.w - btnR * 0.45} y2={r.y + btnR * 0.45}
+                                                          stroke="white" strokeWidth={Math.max(2, btnR * 0.25)} strokeLinecap="round" />
+                                                </g>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+
+                                {/* Live preview while drawing */}
+                                {previewRect && (
+                                    <rect
+                                        x={previewRect.x} y={previewRect.y}
+                                        width={previewRect.w} height={previewRect.h}
+                                        fill="rgba(0,0,0,0.85)"
+                                        stroke="#ef4444"
+                                        strokeWidth={3}
+                                        strokeDasharray="12 6"
+                                        style={{ pointerEvents: 'none' }}
+                                    />
+                                )}
                             </svg>
                         )}
 
                         {pages.size > 0 && pageRects.length === 0 && !isDrawing && (
                             <div className="absolute inset-0 flex items-end justify-center pb-6 pointer-events-none">
                                 <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm text-zinc-400 text-xs px-4 py-2 rounded-full">
-                                    <EyeOff size={11} /> Drag to draw a redaction bar
+                                    <EyeOff size={11} /> Drag to draw · click a bar to select &amp; delete
                                 </div>
                             </div>
                         )}
