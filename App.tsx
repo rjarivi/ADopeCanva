@@ -157,6 +157,7 @@ const App = () => {
 
     // Sync Pro Mode with URL; reset focused mode on navigation
     React.useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         setToolFocused(false);
         if (location.pathname === '/studio') {
             if (isMobile) {
