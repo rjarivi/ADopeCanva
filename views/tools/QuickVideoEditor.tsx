@@ -288,6 +288,7 @@ export const QuickVideoEditor: React.FC = () => {
             const canvasDims: Record<string, [number, number]> = {
                 '16:9': [1920, 1080],
                 '9:16': [1080, 1920],
+                '4:5': [1080, 1350],
                 '1:1': [1080, 1080],
             };
             const [tw, th] = canvasDims[aspectRatio] ?? [1920, 1080];
@@ -451,6 +452,7 @@ export const QuickVideoEditor: React.FC = () => {
     // ── Aspect ratio style ──
     const arStyle = aspectRatio === '16:9' ? { aspectRatio: '16/9' }
         : aspectRatio === '9:16' ? { aspectRatio: '9/16' }
+        : aspectRatio === '4:5' ? { aspectRatio: '4/5' }
         : aspectRatio === '1:1' ? { aspectRatio: '1/1' }
         : {};
 
@@ -629,6 +631,7 @@ export const QuickVideoEditor: React.FC = () => {
                                         { id: 'original', label: 'Original', icon: Maximize2 },
                                         { id: '16:9', label: '16:9', icon: Monitor },
                                         { id: '9:16', label: '9:16', icon: Smartphone },
+                                        { id: '4:5', label: '4:5 IG', icon: Smartphone },
                                         { id: '1:1', label: '1:1', icon: Square },
                                     ].map(opt => (
                                         <button
