@@ -298,6 +298,15 @@ export const QuickVideoEditor: React.FC = () => {
                 vf.push(`scale=${tw}:${th}:force_original_aspect_ratio=increase`);
                 vf.push(`crop=${tw}:${th},setsar=1`);
             }
+            // Apply zoom: scale up then crop back to canvas dimensions
+            if (zoom !== 1) {
+                vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
+                vf.push(`crop=${tw}:${th}`);
+            }
+        } else if (zoom !== 1) {
+            // No aspect ratio change — scale up and crop center back to original dimensions
+            vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
+            vf.push(`crop=iw/${zoom.toFixed(4)}:ih/${zoom.toFixed(4)}`);
         }
 
         if (speed !== 1) {
