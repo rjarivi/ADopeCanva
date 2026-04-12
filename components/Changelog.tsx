@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,36 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.7.0',
+        date: 'Apr 12, 2026',
+        items: [
+            {
+                icon: GitCompare,
+                title: 'Text Compare Tool',
+                description: 'New TEXT tool: paste two versions of any text and get a side-by-side LCS diff with colour-coded added (green) and removed (red) lines plus an added/removed/unchanged summary.',
+                type: 'feature'
+            },
+            {
+                icon: Palette,
+                title: 'Gradient Creator',
+                description: 'New IMAGE tool: design linear, radial, and conic gradients with unlimited colour stops, angle control, 8 one-click presets, and export at any resolution as PNG or JPEG.',
+                type: 'feature'
+            },
+            {
+                icon: FileDown,
+                title: 'File to Markdown',
+                description: 'New DOCS tool: convert PDFs, DOCX, CSV, JSON, YAML, XML, HTML, and plain text to clean Markdown — fully in-browser using PDF.js, Mammoth, and PapaParse.',
+                type: 'feature'
+            },
+            {
+                icon: Type,
+                title: 'Font Previewer',
+                description: 'New DEV tool: browse 100+ curated Google Fonts with your own preview text. Click any font for a full weight showcase, alphabet sample, heading/body mockup, and copy-ready CSS snippet.',
+                type: 'feature'
+            }
+        ]
+    },
     {
         version: '1.6.0',
         date: 'Mar 14, 2026',
