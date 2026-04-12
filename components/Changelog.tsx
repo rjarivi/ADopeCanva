@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, Maximize2, Eraser } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,30 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.7.0',
+        date: 'Apr 12, 2026',
+        items: [
+            {
+                icon: Maximize2,
+                title: 'AI Image Upscaler',
+                description: 'Now live: upscale images up to 4x using Gemini 2.5 Flash/Pro with before/after comparison slider. Supports noise reduction and detail enhancement modes.',
+                type: 'feature'
+            },
+            {
+                icon: Eraser,
+                title: 'Smart BG Remover',
+                description: 'Now live: remove image backgrounds instantly with Gemini Vision AI. Exports transparent PNG with precise edge detection and before/after preview.',
+                type: 'feature'
+            },
+            {
+                icon: Sparkles,
+                title: 'Magic Image Editor',
+                description: 'Now live: edit images using natural language prompts powered by Gemini 2.5. Supports style transfer, object removal, inpainting, and creative transformations.',
+                type: 'feature'
+            }
+        ]
+    },
     {
         version: '1.6.0',
         date: 'Mar 14, 2026',

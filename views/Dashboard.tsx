@@ -141,7 +141,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Options', value: '2x, 4x, Denoise, Enhance' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
-        comingSoon: true,
         privacyNotes: 'Processing is done via the Google Gemini API using your personal key.'
     },
     {
@@ -311,7 +310,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Output Format', value: 'Transparent PNG' },
             { label: 'Speed', value: '< 2 seconds' }
         ],
-        comingSoon: true,
         privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
         beforeAfterImage: {
             before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
@@ -397,7 +395,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Capabilities', value: 'Inpainting, Style Transfer, Object Removal' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
-        comingSoon: true,
         privacyNotes: 'AI requests are sent to Google Gemini API. Your API keys are stored only in your browser.'
     },
     {
