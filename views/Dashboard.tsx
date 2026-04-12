@@ -4,7 +4,8 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
+    GitCompare, Palette, FileDown
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -52,6 +53,10 @@ import { SvgToCode } from './tools/SvgToCode';
 import { HtmlToImage } from './tools/HtmlToImage';
 import { DeviceMockup } from './tools/DeviceMockup';
 import { AudioWaveformExporter } from './tools/AudioWaveformExporter';
+import { TextCompareTool } from './tools/TextCompareTool';
+import { GradientCreator } from './tools/GradientCreator';
+import { FileToMarkdown } from './tools/FileToMarkdown';
+import { FontPreviewer } from './tools/FontPreviewer';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -141,6 +146,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Options', value: '2x, 4x, Denoise, Enhance' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
+        comingSoon: true,
         privacyNotes: 'Processing is done via the Google Gemini API using your personal key.'
     },
     {
@@ -310,6 +316,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Output Format', value: 'Transparent PNG' },
             { label: 'Speed', value: '< 2 seconds' }
         ],
+        comingSoon: true,
         privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
         beforeAfterImage: {
             before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
@@ -395,6 +402,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Capabilities', value: 'Inpainting, Style Transfer, Object Removal' },
             { label: 'Privacy', value: 'Requires API Key' }
         ],
+        comingSoon: true,
         privacyNotes: 'AI requests are sent to Google Gemini API. Your API keys are stored only in your browser.'
     },
     {
@@ -1237,6 +1245,87 @@ export const TOOLS: ToolItem[] = [
             { label: 'Preview', value: 'Live render in browser' },
         ],
         privacyNotes: 'SVG files are read locally in-browser. No data is uploaded.'
+    },
+    {
+        id: 'text-compare',
+        title: 'Text Compare',
+        description: 'Compare two text blocks side-by-side with highlighted diff.',
+        category: ToolCategory.TEXT,
+        icon: GitCompare,
+        component: <TextCompareTool />,
+        guideTitle: 'How to compare and diff two text documents',
+        guideContent: 'Paste two versions of any text into the left and right panels, then click Compare to see a colour-coded diff. Added lines appear in green, removed lines in red, and unchanged lines stay neutral — making code reviews, document revisions, and data reconciliation fast and visual.',
+        faqs: [
+            { question: 'What algorithm is used for diffing?', answer: 'We use a line-by-line LCS (Longest Common Subsequence) algorithm — the same underlying approach as the Unix diff utility.' },
+            { question: 'Is my text sent to a server?', answer: 'No — the entire comparison runs in your browser. Your text never leaves your device.' },
+        ],
+        specs: [
+            { label: 'Algorithm', value: 'LCS line-by-line diff' },
+            { label: 'Output', value: 'Side-by-side colour diff' },
+            { label: 'Stats', value: 'Added / removed / unchanged counts' },
+        ],
+        privacyNotes: 'All text comparison happens entirely in your browser. Nothing is sent to any server.'
+    },
+    {
+        id: 'gradient-creator',
+        title: 'Gradient Creator',
+        description: 'Design linear, radial, and conic gradients and export as PNG.',
+        category: ToolCategory.IMAGE,
+        icon: Palette,
+        component: <GradientCreator />,
+        guideTitle: 'How to create and export gradient images',
+        guideContent: 'Build beautiful gradients for backgrounds, banners, and UI components. Choose from linear, radial, or conic types, add multiple colour stops, and fine-tune positions. Use built-in presets for instant inspiration, then export at any custom resolution.',
+        faqs: [
+            { question: 'What sizes can I export?', answer: 'You can choose from common presets (Square, HD, FHD, Story, Banner) or enter any custom width and height.' },
+            { question: 'Can I copy the CSS gradient?', answer: 'Yes — the tool shows the equivalent CSS gradient string that you can copy and paste directly into your stylesheet.' },
+        ],
+        specs: [
+            { label: 'Types', value: 'Linear, Radial, Conic' },
+            { label: 'Color stops', value: 'Unlimited, freely positioned' },
+            { label: 'Export', value: 'PNG or JPEG at any resolution' },
+        ],
+        privacyNotes: 'Gradients are rendered on an HTML Canvas in your browser. No data is uploaded.'
+    },
+    {
+        id: 'file-to-markdown',
+        title: 'File to Markdown',
+        description: 'Convert PDFs, DOCX, CSV, HTML, and more to clean Markdown.',
+        category: ToolCategory.DOCS,
+        icon: FileDown,
+        component: <FileToMarkdown />,
+        guideTitle: 'How to convert any document to Markdown',
+        guideContent: 'Drop in a PDF, Word document, CSV spreadsheet, HTML page, JSON, YAML, or plain text file and get a clean Markdown version in seconds. Perfect for feeding content into AI tools, static-site generators, or documentation pipelines — all without uploading to any server.',
+        faqs: [
+            { question: 'Which formats are supported?', answer: 'PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, and MD files are all supported.' },
+            { question: 'How are PDFs converted?', answer: 'We use PDF.js to extract text from each page and structure it as Markdown headings and paragraphs.' },
+            { question: 'What about Word documents?', answer: 'DOCX files are processed with the Mammoth library, which preserves headings, bold, italic, and links.' },
+        ],
+        specs: [
+            { label: 'Input formats', value: 'PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, MD' },
+            { label: 'Output', value: 'Clean .md file' },
+            { label: 'Engine', value: 'PDF.js · Mammoth · PapaParse' },
+        ],
+        privacyNotes: 'All parsing and conversion runs locally in your browser. Your files are never uploaded.'
+    },
+    {
+        id: 'font-previewer',
+        title: 'Font Previewer',
+        description: 'Browse and preview 100+ Google Fonts with custom text and sizes.',
+        category: ToolCategory.DEV,
+        icon: Type,
+        component: <FontPreviewer />,
+        guideTitle: 'How to find the perfect font for your project',
+        guideContent: 'Type your own sample text, adjust the size, and scroll through a curated library of Google Fonts to find your perfect typeface. Click any font for a deep-dive view showing regular and bold weights, full alphabet, a heading/body mockup, and a ready-to-paste CSS snippet.',
+        faqs: [
+            { question: 'Are fonts loaded for free?', answer: 'Yes — fonts are loaded directly from Google Fonts at no cost. An internet connection is required to render them.' },
+            { question: 'Can I copy the CSS code?', answer: 'Yes — each font card has a one-click "Copy CSS" button that copies the font-family declaration. The detail view also provides the full @import URL.' },
+        ],
+        specs: [
+            { label: 'Font library', value: '100+ curated Google Fonts' },
+            { label: 'Preview', value: 'Custom text, size, regular & bold weights' },
+            { label: 'Export', value: 'CSS @import + font-family snippet' },
+        ],
+        privacyNotes: 'Font requests are made to fonts.googleapis.com. No user data is collected or transmitted.'
     },
 ];
 
