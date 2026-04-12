@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, Maximize2, Eraser } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -18,21 +18,27 @@ const CHANGES: ChangeEntry[] = [
         date: 'Apr 12, 2026',
         items: [
             {
-                icon: Maximize2,
-                title: 'AI Image Upscaler',
-                description: 'Now live: upscale images up to 4x using Gemini 2.5 Flash/Pro with before/after comparison slider. Supports noise reduction and detail enhancement modes.',
+                icon: GitCompare,
+                title: 'Text Compare Tool',
+                description: 'New TEXT tool: paste two versions of any text and get a side-by-side LCS diff with colour-coded added (green) and removed (red) lines plus an added/removed/unchanged summary.',
                 type: 'feature'
             },
             {
-                icon: Eraser,
-                title: 'Smart BG Remover',
-                description: 'Now live: remove image backgrounds instantly with Gemini Vision AI. Exports transparent PNG with precise edge detection and before/after preview.',
+                icon: Palette,
+                title: 'Gradient Creator',
+                description: 'New IMAGE tool: design linear, radial, and conic gradients with unlimited colour stops, angle control, 8 one-click presets, and export at any resolution as PNG or JPEG.',
                 type: 'feature'
             },
             {
-                icon: Sparkles,
-                title: 'Magic Image Editor',
-                description: 'Now live: edit images using natural language prompts powered by Gemini 2.5. Supports style transfer, object removal, inpainting, and creative transformations.',
+                icon: FileDown,
+                title: 'File to Markdown',
+                description: 'New DOCS tool: convert PDFs, DOCX, CSV, JSON, YAML, XML, HTML, and plain text to clean Markdown — fully in-browser using PDF.js, Mammoth, and PapaParse.',
+                type: 'feature'
+            },
+            {
+                icon: Type,
+                title: 'Font Previewer',
+                description: 'New DEV tool: browse 100+ curated Google Fonts with your own preview text. Click any font for a full weight showcase, alphabet sample, heading/body mockup, and copy-ready CSS snippet.',
                 type: 'feature'
             }
         ]
