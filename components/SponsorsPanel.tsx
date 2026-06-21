@@ -15,15 +15,14 @@ interface Sponsor {
     handle: string;
     name: string;
     avatar: string;
-    twitterUrl: string;
+    twitterUrl?: string;
 }
 
 const SPONSORS: Sponsor[] = [
     {
         handle: 'rjarivi',
-        name: 'rjarivi',
+        name: 'RJ',
         avatar: 'https://pbs.twimg.com/profile_images/2038989459069468672/YTcP3YlU_400x400.jpg',
-        twitterUrl: 'https://x.com/rjarivi',
     },
 ];
 
@@ -64,29 +63,53 @@ export const SponsorsPanel: React.FC = () => {
                 className="flex flex-col gap-2 transition-opacity duration-300"
                 style={{ opacity: fading ? 0 : 1 }}
             >
-                {visible.map(sponsor => (
-                    <a
-                        key={sponsor.handle}
-                        href={sponsor.twitterUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800/60 hover:border-indigo-500/40 hover:bg-zinc-800/80 transition-all group"
-                    >
-                        <img
-                            src={sponsor.avatar}
-                            alt={sponsor.name}
-                            className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700 group-hover:ring-indigo-500/50 transition-all shrink-0"
-                            crossOrigin="anonymous"
-                            onError={e => {
-                                (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sponsor.name)}&background=3f3f46&color=fff&size=64`;
-                            }}
-                        />
-                        <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate flex-1">
-                            {sponsor.name}
-                        </span>
-                        <ExternalLink size={11} className="text-zinc-600 group-hover:text-indigo-400 shrink-0 transition-colors" />
-                    </a>
-                ))}
+                {visible.map(sponsor => {
+                    const hasLink = !!sponsor.twitterUrl;
+                    if (hasLink) {
+                        return (
+                            <a
+                                key={sponsor.handle}
+                                href={sponsor.twitterUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800/60 hover:border-indigo-500/40 hover:bg-zinc-800/80 transition-all group"
+                            >
+                                <img
+                                    src={sponsor.avatar}
+                                    alt={sponsor.name}
+                                    className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700 group-hover:ring-indigo-500/50 transition-all shrink-0"
+                                    crossOrigin="anonymous"
+                                    onError={e => {
+                                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sponsor.name)}&background=3f3f46&color=fff&size=64`;
+                                    }}
+                                />
+                                <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate flex-1">
+                                    {sponsor.name}
+                                </span>
+                                <ExternalLink size={11} className="text-zinc-600 group-hover:text-indigo-400 shrink-0 transition-colors" />
+                            </a>
+                        );
+                    }
+                    return (
+                        <div
+                            key={sponsor.handle}
+                            className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800/60 transition-all"
+                        >
+                            <img
+                                src={sponsor.avatar}
+                                alt={sponsor.name}
+                                className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700 transition-all shrink-0"
+                                crossOrigin="anonymous"
+                                onError={e => {
+                                    (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sponsor.name)}&background=3f3f46&color=fff&size=64`;
+                                }}
+                            />
+                            <span className="text-xs font-semibold text-zinc-300 transition-colors truncate flex-1">
+                                {sponsor.name}
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Placeholder slots when fewer than VISIBLE_COUNT sponsors */}
