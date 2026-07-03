@@ -181,11 +181,16 @@ export const AudioTrimmer: React.FC = () => {
 
             await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
+            const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+                ? Math.min(navigator.hardwareConcurrency, 4).toString()
+                : '2';
+
             await ffmpeg.exec([
                 '-y',
                 '-ss', startTime,
                 '-i', inputName,
                 '-t', durationTime,
+                '-threads', threads,
                 '-c:a', 'libmp3lame',
                 '-q:a', '2', // High quality VBR
                 outputName

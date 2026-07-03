@@ -106,9 +106,14 @@ export const GifCompressor: React.FC = () => {
             // dither=bayer:bayer_scale=1 for significantly better compression than floyd_steinberg.
             const filter = `scale=iw*${scaleFactor}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`;
 
+            const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+                ? Math.min(navigator.hardwareConcurrency, 4).toString()
+                : '2';
+
             await ffmpeg.exec([
                 '-y',
                 '-i', inputName,
+                '-threads', threads,
                 '-vf', filter,
                 outputName
             ]);

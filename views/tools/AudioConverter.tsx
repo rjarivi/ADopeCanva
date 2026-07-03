@@ -66,7 +66,10 @@ export const AudioConverter: React.FC = () => {
 
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
-      const args = ['-y', '-i', inputName];
+      const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+        ? Math.min(navigator.hardwareConcurrency, 4).toString()
+        : '2';
+      const args = ['-y', '-i', inputName, '-threads', threads];
 
       // Audio Codec Logic
       switch (format) {
