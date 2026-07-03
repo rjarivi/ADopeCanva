@@ -329,6 +329,10 @@ export const QuickVideoEditor: React.FC = () => {
         };
         ffmpeg.on('progress', onProg);
 
+        const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? Math.min(navigator.hardwareConcurrency, 4).toString()
+            : '2';
+
         try {
             const { vf, af } = buildFilters();
 
@@ -336,6 +340,7 @@ export const QuickVideoEditor: React.FC = () => {
                 const args = ['-y', '-ss', String(trimStart), '-to', String(trimEnd), '-i', inName];
                 if (vf.length) args.push('-vf', vf.join(','));
                 if (af.length) args.push('-af', af.join(','));
+                args.push('-threads', threads);
                 args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
                 return args;
             };
@@ -360,6 +365,7 @@ export const QuickVideoEditor: React.FC = () => {
                 await ffmpeg.writeFile('list.txt', new TextEncoder().encode(list));
                 await ffmpeg.exec([
                     '-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt',
+                    '-threads', threads,
                     '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac',
                     'out.mp4',
                 ]);
@@ -400,6 +406,10 @@ export const QuickVideoEditor: React.FC = () => {
         };
         ffmpeg.on('progress', onProg);
 
+        const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? Math.min(navigator.hardwareConcurrency, 4).toString()
+            : '2';
+
         try {
             const { vf, af } = buildFilters();
             for (let i = 0; i < clips.length; i++) {
@@ -410,6 +420,7 @@ export const QuickVideoEditor: React.FC = () => {
                 const args = ['-y', '-ss', String(clip.trimStart), '-to', String(clip.trimEnd), '-i', inName];
                 if (vf.length) args.push('-vf', vf.join(','));
                 if (af.length) args.push('-af', af.join(','));
+                args.push('-threads', threads);
                 args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
                 await ffmpeg.exec(args);
                 await ffmpeg.deleteFile(inName);

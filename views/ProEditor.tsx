@@ -1,4 +1,4 @@
-﻿/// <reference lib="dom" />
+/// <reference lib="dom" />
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FileUploader } from '../components/FileUploader';
 import { Button } from '../components/ui/Button';
@@ -980,6 +980,12 @@ export const ProEditor: React.FC = () => {
 
             cmdArgs.push('-filter_complex', filters.join(';'));
             cmdArgs.push('-map', vChain.replace('[', '').replace(']', ''), '-map', aChain.replace('[', '').replace(']', ''));
+            
+            const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+                ? Math.min(navigator.hardwareConcurrency, 4).toString()
+                : '2';
+            cmdArgs.push('-threads', threads);
+            
             cmdArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '128k', outputName);
 
             await ffmpeg.exec(cmdArgs);
