@@ -46,14 +46,14 @@
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; 
-             script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://pagead2.googlesyndication.com https://www.googletagmanager.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://*.adtrafficquality.google https://static.cloudflareinsights.com;
+             script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://pagead2.googlesyndication.com https://www.googletagmanager.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com https://*.adtrafficquality.google https://static.cloudflareinsights.com https://www.clarity.ms https://*.clarity.ms;
              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
              font-src 'self' data: https://fonts.gstatic.com; 
-             img-src 'self' data: blob: https://*.google-analytics.com https://stats.g.doubleclick.net https://www.google.com https://www.gstatic.com https://image.thum.io https://*.microlink.io https://api.microlink.io https://pbs.twimg.com https://ui-avatars.com;
+             img-src 'self' data: blob: https://*.google-analytics.com https://stats.g.doubleclick.net https://www.google.com https://www.gstatic.com https://image.thum.io https://*.microlink.io https://api.microlink.io https://pbs.twimg.com https://ui-avatars.com https://*.clarity.ms https://c.clarity.ms https://c.bing.com;
              worker-src 'self' blob:;
              media-src 'self' blob: data:;
              frame-src 'self' https://googleads.g.doubleclick.net https://*.adtrafficquality.google https://www.google.com;
-             connect-src 'self' blob: https://*.google-analytics.com https://region1.google-analytics.com https://www.google-analytics.com https://script.google.com https://script.googleusercontent.com https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.adtrafficquality.google https://csi.gstatic.com https://pagead2.googlesyndication.com https://image.thum.io https://api.microlink.io https://*.microlink.io;">
+             connect-src 'self' blob: https://*.google-analytics.com https://region1.google-analytics.com https://www.google-analytics.com https://script.google.com https://script.googleusercontent.com https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://*.adtrafficquality.google https://csi.gstatic.com https://pagead2.googlesyndication.com https://image.thum.io https://api.microlink.io https://*.microlink.io https://*.clarity.ms https://c.clarity.ms https://c.bing.com;">
 
   <title>AdopeCanva | The All-in-One Productivity Tool Suite</title>
 
@@ -101,8 +101,16 @@
     }
   </style>
 
-
   <!-- Libraries loaded locally via npm for privacy - no external CDN calls for core functionality -->
+
+  <!-- Microsoft Clarity Tracking Code -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "xrisezod9f");
+  </script>
 
 </head>
 
