@@ -903,9 +903,10 @@ RULES:
                     {showAI && (
                         <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
                             <ApiKeyInput
-                                value={apiKey}
-                                onChange={setApiKey}
-                                label="Gemini API Key"
+                                serviceName="Gemini"
+                                localStorageKey="gemini_api_key"
+                                onKeyChange={setApiKey}
+                                compact={true}
                             />
                             <textarea
                                 value={prompt}

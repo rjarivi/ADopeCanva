@@ -256,7 +256,7 @@ export const AudioTrimmer: React.FC = () => {
 
     if (!file || !audioUrl) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
                     <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">

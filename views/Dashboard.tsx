@@ -5,7 +5,7 @@ import {
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
     Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
-    GitCompare, Palette, FileDown
+    GitCompare, Palette, FileDown, SplitSquareHorizontal
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -57,6 +57,7 @@ import { TextCompareTool } from './tools/TextCompareTool';
 import { GradientCreator } from './tools/GradientCreator';
 import { FileToMarkdown } from './tools/FileToMarkdown';
 import { FontPreviewer } from './tools/FontPreviewer';
+import { ImageSplitter } from './tools/ImageSplitter';
 
 export const TOOLS: ToolItem[] = [
     {
@@ -1326,6 +1327,30 @@ export const TOOLS: ToolItem[] = [
             { label: 'Export', value: 'CSS @import + font-family snippet' },
         ],
         privacyNotes: 'Font requests are made to fonts.googleapis.com. No user data is collected or transmitted.'
+    },
+    {
+        id: 'image-splitter',
+        title: 'Image Splitter',
+        description: 'Split wide or tall images into equal slices for seamless Instagram carousels & stories.',
+        category: ToolCategory.IMAGE,
+        icon: SplitSquareHorizontal,
+        component: <ImageSplitter />,
+        popular: true,
+        guideTitle: 'How to split images for Instagram carousel seamless effect',
+        guideContent: 'Upload a wide or tall image, choose your split preset (1080×1350 for portrait carousels, 1080×1080 for square), and hit Split. The tool slices the image into perfectly-sized panels and lets you download them all in a ZIP. For a seamless panoramic carousel on Instagram, use a single wide image and let this tool divide it — upload slides right-to-left so they appear left-to-right in the carousel.',
+        faqs: [
+            { question: 'What is the Instagram carousel dimension?', answer: 'For portrait carousels the recommended size per slide is 1080×1350 px (4:5 ratio). For square carousels it is 1080×1080 px. This tool creates slices at exactly those dimensions.' },
+            { question: 'How do I get the seamless panoramic effect?', answer: 'Create one single wide image (e.g. 5400×1350 px for 5 slides), upload it here, choose the IG Carousel preset, and split. Upload the resulting slices to Instagram in right-to-left order — Instagram will display them left to right, creating the illusion of one continuous image.' },
+            { question: 'Does this upload my image anywhere?', answer: 'No — all splitting is done locally in your browser using the Canvas API. Nothing is ever sent to a server.' },
+            { question: 'Can I split vertically for stories?', answer: 'Yes — choose the IG Story preset or Custom and select Vertical split direction to divide a tall image into story-sized panels.' },
+        ],
+        specs: [
+            { label: 'Presets', value: 'IG Carousel (1080×1350), Square (1080×1080), Story (1080×1920)' },
+            { label: 'Custom', value: 'Any pixel width/height + horizontal or vertical split' },
+            { label: 'Export', value: 'Individual PNG or bulk ZIP download' },
+            { label: 'Engine', value: 'Canvas API — fully client-side' },
+        ],
+        privacyNotes: 'All image processing is performed locally in your browser using the Canvas API. No images or data are uploaded to any server.'
     },
 ];
 

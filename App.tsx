@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FocusedModeCtx } from './contexts/FocusedMode';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
@@ -15,6 +15,8 @@ import { AdvertisePanel } from './components/AdvertisePanel';
 
 import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
+import { ToolLoader } from './components/ToolLoader';
+import { Guides } from './views/Guides';
 
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
@@ -51,8 +53,8 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     }, [tool, setActiveCategory]);
 
     return (
-        <div className={`animate-fade-in min-h-full ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6 pb-20'}`}>
-            <div className={`min-h-full ${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
+        <div className={`animate-fade-in ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6'}`}>
+            <div className={`${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
                 {/* Breadcrumb / Back navigation */}
                 {!isMobile && (
                     <div className="flex items-center gap-2 mb-4">
@@ -68,18 +70,25 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                     </div>
                 )}
 
-                <div className="mb-12">
+                {/*
+                 * Fixed-height tool container — prevents layout shift when switching tabs/panels.
+                 * Desktop: locked to viewport height minus header (64px) + top-padding (24px) + breadcrumb (40px) = 128px.
+                 * Mobile: natural content flow.
+                 */}
+                <div className={isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
                     {tool.component}
                 </div>
 
-                {/* SEO & Guide Sections */}
-                <SEOSections
-                    guideTitle={tool.guideTitle}
-                    guideContent={tool.guideContent}
-                    faqs={tool.faqs}
-                    specs={tool.specs}
-                    privacyNotes={tool.privacyNotes}
-                />
+                {/* SEO & Guide Sections — below the fold, accessible by scrolling */}
+                <div className="mt-8 pb-20">
+                    <SEOSections
+                        guideTitle={tool.guideTitle}
+                        guideContent={tool.guideContent}
+                        faqs={tool.faqs}
+                        specs={tool.specs}
+                        privacyNotes={tool.privacyNotes}
+                    />
+                </div>
             </div>
 
             {/* Swap Tool Button — floating pill, only shown when a swap partner exists */}
@@ -108,6 +117,28 @@ const App = () => {
     const [activeCategory, setActiveCategory] = useState<string>('All');
     const [showBanner, setShowBanner] = useState(true);
     const [toolFocused, setToolFocused] = useState(false);
+    const [toolLoading, setToolLoading] = useState(false);
+    const mainRef = useRef<HTMLElement>(null);
+    const [prevPath, setPrevPath] = useState(location.pathname);
+
+    // Sync loading state during render phase to prevent single-frame content flash
+    if (location.pathname !== prevPath) {
+        setPrevPath(location.pathname);
+        const isTool = location.pathname !== '/' && !location.pathname.startsWith('/vs') && location.pathname !== '/studio' && location.pathname !== '/guides';
+        if (isTool) {
+            setToolLoading(true);
+        } else {
+            setToolLoading(false);
+        }
+    }
+
+    // Auto-dismiss loader after 350ms
+    useEffect(() => {
+        if (toolLoading) {
+            const timer = setTimeout(() => setToolLoading(false), 350);
+            return () => clearTimeout(timer);
+        }
+    }, [toolLoading]);
 
     const categories = ['All', ...Object.values(ToolCategory)];
 
@@ -157,8 +188,12 @@ const App = () => {
 
     // Sync Pro Mode with URL; reset focused mode on navigation
     React.useLayoutEffect(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        // Fix: scroll the <main> element, not window (main has overflow-y-auto)
+        if (mainRef.current) {
+            mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
+        }
         setToolFocused(false);
+
         if (location.pathname === '/studio') {
             if (isMobile) {
                 navigate('/', { replace: true });
@@ -253,6 +288,11 @@ const App = () => {
                         {!isMobile && (
                             <footer className="mt-12 text-center text-zinc-600 text-sm py-8 border-t border-zinc-900">
                                 <p>© 2026 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
+                                <div className="mt-2 flex items-center justify-center gap-4 text-xs text-zinc-500">
+                                    <button onClick={() => navigate('/guides')} className="hover:text-zinc-300 hover:underline">How-to Guides</button>
+                                    <span>•</span>
+                                    <button onClick={() => navigate('/studio')} className="hover:text-zinc-300 hover:underline">Studio</button>
+                                </div>
                                 <div className="mt-6 flex flex-col items-center gap-4">
                                     <img src="/ADC-Footer.png" alt="AdopeCanva Logo" className="h-8 opacity-100 hover:drop-shadow-[0_0_12px_rgba(79,70,229,0.6)] transition-all" />
                                     <a
@@ -272,6 +312,7 @@ const App = () => {
 
                 <Route path="/vs/:competitor" element={<Comparison />} />
                 <Route path="/studio" element={<ComingSoon />} />
+                <Route path="/guides" element={<Guides />} />
 
                 <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
             </Routes>
@@ -363,8 +404,12 @@ const App = () => {
             </header>}
 
             {/* Main Content */}
-            <main className={`flex-1 relative scroll-smooth bg-background dot-grid ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
-                {content}
+            <main ref={mainRef} className={`flex-1 relative bg-background dot-grid ${isProMode ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+                {/* Full-page tool loader — shown briefly on tool navigation to prevent scroll flash */}
+                <ToolLoader isLoading={toolLoading} />
+                <div style={{ visibility: toolLoading ? 'hidden' : 'visible', height: '100%' }}>
+                    {content}
+                </div>
             </main>
 
             {!isProMode && !toolFocused && <Feedback />}

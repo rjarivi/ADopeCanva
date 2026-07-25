@@ -470,7 +470,7 @@ export const AudioWaveformExporter: React.FC = () => {
     // ── Pre-upload landing ────────────────────────────────────────────────────
     if (!waveData.length && !isDecoding) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
                 <div className="flex-none space-y-3 mb-10">
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-4 font-unbounded">
                         <div className="text-indigo-400"><AudioWaveform size={42} /></div>
@@ -519,7 +519,7 @@ export const AudioWaveformExporter: React.FC = () => {
 
     if (isDecoding) {
         return (
-            <div className="h-[85vh] flex flex-col items-center justify-center gap-4 text-zinc-400">
+            <div className="h-full flex flex-col items-center justify-center gap-4 text-zinc-400">
                 <Loader2 size={32} className="animate-spin text-indigo-400" />
                 <p className="text-sm">Decoding audio waveform…</p>
             </div>
@@ -547,7 +547,7 @@ export const AudioWaveformExporter: React.FC = () => {
 
     return (
         <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden selection:bg-indigo-500/30 ${
-            isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'
+            isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]'
         }`}>
 
             {/* ── Sidebar ──────────────────────────────────────────────────────── */}

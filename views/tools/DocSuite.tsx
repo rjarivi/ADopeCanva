@@ -474,7 +474,7 @@ export const PdfSuite: React.FC = () => {
 
     if (files.length === 0) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
                 <div className="flex-none space-y-3 mb-10">
                     <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
                         <div className="text-indigo-400"><FileText size={42} /></div>
@@ -589,7 +589,7 @@ export const PdfSuite: React.FC = () => {
                 </div>
             )}
 
-            <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
+            <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
 
                 {/* ── Sidebar ── */}
                 <aside className={`${isMobile ? 'order-3 h-1/2' : 'order-2 w-72 border-l'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>

@@ -501,7 +501,7 @@ export const QuickVideoEditor: React.FC = () => {
     // ── Upload screen ──
     if (clips.length === 0) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
                 <div className="flex-none space-y-3 mb-10">
                     <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
                         <Video size={32} /> Quick Video Editor
@@ -553,7 +553,7 @@ export const QuickVideoEditor: React.FC = () => {
     //  MAIN EDITOR
     // ══════════════════════════════════════════════════════
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-3xl border border-zinc-800 h-[85vh] shadow-2xl'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-3xl border border-zinc-800 h-full shadow-2xl'}`}>
 
             {/* Hidden file input */}
             <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />

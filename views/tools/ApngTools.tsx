@@ -6,7 +6,7 @@ import { VideoConverter } from './VideoConverter';
 
 // APNG Maker (Images to APNG)
 export const ApngMaker: React.FC = () => {
-    return <GifMaker outputFormat="apng" />;
+    return <GifMaker initialOutputFormat="apng" />;
 };
 
 // Video to APNG

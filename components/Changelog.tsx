@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,18 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.8.0',
+        date: 'Jul 23, 2026',
+        items: [
+            {
+                icon: Scissors,
+                title: 'Image Splitter',
+                description: 'New IMAGE tool: split any wide or tall image into perfectly-sized slices for seamless Instagram carousels and stories. Includes presets for 1080×1350 portrait carousel, 1080×1080 square, and 1080×1920 story. Features a live split-line overlay, individual PNG downloads, and bulk ZIP export — all client-side.',
+                type: 'feature'
+            }
+        ]
+    },
     {
         version: '1.7.0',
         date: 'Apr 12, 2026',

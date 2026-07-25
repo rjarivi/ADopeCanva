@@ -92,7 +92,7 @@ export const ImageConverter: React.FC = () => {
 
     if (files.length === 0) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
 
                 {/* Header */}
                 <div className="flex-none space-y-3 mb-10">
@@ -145,7 +145,7 @@ export const ImageConverter: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-[85vh] shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
+        <div className={`w-full bg-[#0c0c0e] text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-7xl mx-auto rounded-[32px] border border-zinc-900 h-full shadow-[0_0_50px_rgba(0,0,0,0.5)]'}`}>
             {/* Sidebar Controls */}
             <aside className={`${isMobile ? 'order-2 h-1/2' : 'order-1 w-85 border-r'} border-zinc-900 bg-[#0c0c0e] flex flex-col z-20 shrink-0`}>
                 <div className="h-16 px-6 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-[#0c0c0e]/80 backdrop-blur-md">

@@ -500,7 +500,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
 
   if (files.length === 0) {
     return (
-      <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
+      <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
         {/* Header */}
         <div className="flex-none space-y-3 mb-10">
           <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
@@ -548,7 +548,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   }
 
   return (
-    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 h-[85vh] shadow-2xl'}`}>
+    <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 h-full shadow-2xl'}`}>
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 shrink-0`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
           <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2.5 font-unbounded">
