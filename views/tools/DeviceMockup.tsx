@@ -542,6 +542,39 @@ export const DeviceMockup: React.FC = () => {
                     ))}
                 </div>
 
+                <div className="flex-none max-w-4xl mx-auto w-full mt-6 text-center">
+                    <p className="text-xs text-zinc-500 font-jakarta leading-relaxed">
+                        Inspired by{' '}
+                        <a
+                            href="https://ultramock.io"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-400 hover:text-indigo-300 font-semibold inline-flex items-center gap-0.5"
+                        >
+                            Ultramock <ExternalLink size={10} />
+                        </a>
+                        {' '}(vibecoded by{' '}
+                        <a
+                            href="https://x.com/joshmillgate"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-zinc-400 hover:text-indigo-300 underline font-medium"
+                        >
+                            Josh Millgate
+                        </a>
+                        ). For full-fledged device mockup creation, check out{' '}
+                        <a
+                            href="https://ultramock.io"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-indigo-400 hover:underline font-semibold"
+                        >
+                            ultramock.io
+                        </a>
+                        !
+                    </p>
+                </div>
+
             </div>
         )
     }
@@ -938,15 +971,44 @@ export const DeviceMockup: React.FC = () => {
                         {captureError && <p className="text-xs text-red-400 font-jakarta">{captureError}</p>}
                     </div>
 
-                    {/* Credit */}
-                    <a
-                        href="https://ultramock.io"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-zinc-600 hover:text-indigo-400 transition-colors flex items-center gap-1"
-                    >
-                        Inspired by Ultramock <ExternalLink size={10} />
-                    </a>
+                    {/* Credit & Inspiration */}
+                    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/60 text-xs text-zinc-400 space-y-1.5 font-jakarta">
+                        <div className="flex items-center justify-between">
+                            <span className="text-zinc-300 font-medium flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                                Inspired by{' '}
+                                <a
+                                    href="https://ultramock.io"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-indigo-400 hover:text-indigo-300 hover:underline font-semibold inline-flex items-center gap-0.5"
+                                >
+                                    Ultramock <ExternalLink size={10} />
+                                </a>
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">
+                            Vibecoded by{' '}
+                            <a
+                                href="https://x.com/joshmillgate"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-zinc-400 hover:text-indigo-300 underline font-medium"
+                            >
+                                Josh Millgate
+                            </a>
+                            . For full-fledged mockup workflows, make sure to visit{' '}
+                            <a
+                                href="https://ultramock.io"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-indigo-400 hover:underline font-medium inline-flex items-center gap-0.5"
+                            >
+                                ultramock.io <ExternalLink size={9} />
+                            </a>
+                            !
+                        </p>
+                    </div>
                 </div>
 
                 {/* Sticky Export — always visible at bottom */}
