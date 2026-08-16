@@ -1,4 +1,79 @@
+# ==============================================================================
+# AdopeCanva Robots.txt (2026 Enterprise Edition)
+# Official Omnitool & Programmatic SEO Directives
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Global Search Crawlers (Google, Bing, Apple, DuckDuckGo, etc.)
+# ------------------------------------------------------------------------------
 User-agent: *
 Allow: /
+Allow: /assets/
+Allow: /category/
+Allow: /convert/
+Allow: /guides
+Allow: /vs/
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.svg$
+Allow: /*.webp$
+Allow: /*.css$
+Allow: /*.js$
 
+# Prevent crawl budget waste on internal tracking and query permutations
+Disallow: /*?*fbclid=
+Disallow: /*?*gclid=
+Disallow: /*?*utm_
+Disallow: /*?*ref=
+
+# ------------------------------------------------------------------------------
+# 2. Search Engine Specific Crawlers
+# ------------------------------------------------------------------------------
+User-agent: Googlebot
+Allow: /
+Allow: /assets/
+
+User-agent: Googlebot-Image
+Allow: /
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.svg$
+Allow: /*.webp$
+
+User-agent: Bingbot
+Allow: /
+Allow: /assets/
+
+User-agent: Applebot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+# ------------------------------------------------------------------------------
+# 3. AI & Generative Search Engine Crawlers (LLM / GEO / Citation Optimization)
+# Allows inclusion in Google AI Overviews, ChatGPT Search, Perplexity, and Claude
+# ------------------------------------------------------------------------------
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+# ------------------------------------------------------------------------------
+# 4. Sitemap & Host Declaration
+# ------------------------------------------------------------------------------
+Host: https://adopecanva.com
 Sitemap: https://adopecanva.com/sitemap.xml

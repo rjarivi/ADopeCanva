@@ -6,6 +6,7 @@ import { FileData } from '../../types';
 import { Download, RefreshCcw, Maximize2, Lock, Unlock, Image as ImageIcon, Zap, Crop, Monitor } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 const PRESETS = [
     { name: 'Instagram Post', width: 1080, height: 1080, icon: '📸' },
@@ -32,6 +33,13 @@ export const ImageResizer: React.FC = () => {
     const [resultImage, setResultImage] = useState<string | null>(null);
     const [originalImageSrc, setOriginalImageSrc] = useState<string>('');
     const canvasRef = useRef<HTMLCanvasElement>(null);
+
+    const handleFileSelect = async (selectedFile: FileData) => {
+        setIsProcessing(true);
+        const processed = await preprocessImageFileData(selectedFile);
+        setFile(processed);
+        setIsProcessing(false);
+    };
 
     useEffect(() => {
         if (file) {
@@ -157,10 +165,10 @@ export const ImageResizer: React.FC = () => {
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
-                        onFileSelect={setFile}
-                        accept="image/*"
+                        onFileSelect={handleFileSelect}
+                        accept="image/*, .heic, .heif, .avif"
                         label="Upload Image"
-                        description="Supports JPG, PNG, WEBP, GIF"
+                        description="Supports JPG, PNG, WEBP, GIF, AVIF, HEIC"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>

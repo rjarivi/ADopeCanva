@@ -7,16 +7,27 @@ import {
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
 import { ToolCategory } from './types';
-// import { ProEditor } from './views/ProEditor';
 import { ComingSoon } from './views/ComingSoon';
 import { Feedback } from './components/Feedback';
 import { SponsorsPanel } from './components/SponsorsPanel';
 import { AdvertisePanel } from './components/AdvertisePanel';
-
 import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
 import { ToolLoader } from './components/ToolLoader';
 import { Guides } from './views/Guides';
+import { CategoryHub } from './views/CategoryHub';
+import { ProgrammaticToolView } from './views/ProgrammaticToolView';
+import {
+    buildToolSchema,
+    updateHeadTags,
+    getDefaultSteps,
+    getDefaultComparisonTable,
+    SITE_URL,
+    SITE_NAME
+} from './utils/seoHelper';
+import { useIsMobile } from './hooks/useIsMobile';
+import { MobileLayout } from './components/MobileLayout';
+import { trackPageView } from './utils/analytics';
 
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
@@ -30,43 +41,48 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
 
     const swapTool = tool.swapId ? TOOLS.find(t => t.id === tool.swapId) : null;
 
-    // Set document title, meta description, and active category
+    // Set document title, meta tags, and structured data
     useEffect(() => {
-        const originalTitle = document.title;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        const originalDesc = metaDesc?.getAttribute('content') || '';
+        const canonicalUrl = `${SITE_URL}/${tool.id}`;
+        const schemas = buildToolSchema(tool);
 
-        document.title = `${tool.title} | AdopeCanva Office Suite`;
-        if (metaDesc) {
-            metaDesc.setAttribute('content', tool.description);
-        }
+        updateHeadTags({
+            title: `${tool.title} - Free Online In-Browser Tool | A Dope Canva`,
+            description: tool.description,
+            keywords: tool.keywords || [tool.title.toLowerCase(), `${tool.category.toLowerCase()} tool`, 'free in-browser tool', 'no upload converter'],
+            canonicalUrl,
+            schemas
+        });
 
         // Sync active category
         setActiveCategory(tool.category);
-
-        return () => {
-            document.title = originalTitle;
-            if (metaDesc) {
-                metaDesc.setAttribute('content', originalDesc);
-            }
-        };
     }, [tool, setActiveCategory]);
+
+    const steps = getDefaultSteps(tool);
+    const comparisonTable = getDefaultComparisonTable(tool);
 
     return (
         <div className={`animate-fade-in ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6'}`}>
             <div className={`${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
                 {/* Breadcrumb / Back navigation */}
                 {!isMobile && (
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-2 mb-4 text-sm">
                         <button
                             onClick={() => navigate('/')}
-                            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-300 transition-colors group"
+                            className="flex items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors group"
                         >
                             <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
                             <span>All tools</span>
                         </button>
                         <span className="text-zinc-700">/</span>
-                        <span className="text-sm text-zinc-400">{tool.title}</span>
+                        <button
+                            onClick={() => navigate(`/category/${tool.category.toLowerCase()}`)}
+                            className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                        >
+                            {tool.category} Tools
+                        </button>
+                        <span className="text-zinc-700">/</span>
+                        <span className="text-zinc-300 font-medium">{tool.title}</span>
                     </div>
                 )}
 
@@ -82,11 +98,17 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                 {/* SEO & Guide Sections — below the fold, accessible by scrolling */}
                 <div className="mt-8 pb-20">
                     <SEOSections
+                        toolId={tool.id}
+                        category={tool.category}
                         guideTitle={tool.guideTitle}
                         guideContent={tool.guideContent}
+                        steps={steps}
+                        comparisonTable={comparisonTable}
                         faqs={tool.faqs}
                         specs={tool.specs}
                         privacyNotes={tool.privacyNotes}
+                        beforeAfterImage={tool.beforeAfterImage}
+                        relatedToolIds={tool.relatedToolIds}
                     />
                 </div>
             </div>
@@ -106,9 +128,6 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     );
 };
 
-import { useIsMobile } from './hooks/useIsMobile';
-import { MobileLayout } from './components/MobileLayout';
-
 const App = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -121,15 +140,19 @@ const App = () => {
     const mainRef = useRef<HTMLElement>(null);
     const [prevPath, setPrevPath] = useState(location.pathname);
 
+    // Embed Mode detection: ?embed=true
+    const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
+
     // Sync loading state during render phase to prevent single-frame content flash
     if (location.pathname !== prevPath) {
         setPrevPath(location.pathname);
-        const isTool = location.pathname !== '/' && !location.pathname.startsWith('/vs') && location.pathname !== '/studio' && location.pathname !== '/guides';
-        if (isTool) {
-            setToolLoading(true);
-        } else {
-            setToolLoading(false);
-        }
+        const isCategoryHub = /^\/category\/[^\/]+$/.test(location.pathname);
+        const isStaticPage = location.pathname === '/' ||
+            location.pathname.startsWith('/vs') ||
+            isCategoryHub ||
+            location.pathname === '/studio' ||
+            location.pathname === '/guides';
+        setToolLoading(!isStaticPage);
     }
 
     // Auto-dismiss loader after 350ms
@@ -142,53 +165,50 @@ const App = () => {
 
     const categories = ['All', ...Object.values(ToolCategory)];
 
-    // Unified SEO logic: Google Analytics, Page Tracking, and Structured Data
+    // Homepage Head & Structured Data Management
     useEffect(() => {
-        // Track page view
-        if (typeof window.gtag === 'function') {
-            window.gtag('config', 'G-1ZV3C4L9KF', {
-                page_path: location.pathname + location.search,
-                page_title: document.title
+        // Track page view and AI / UTM referrals
+        trackPageView(location.pathname + location.search, document.title);
+
+        if (location.pathname === '/') {
+            updateHeadTags({
+                title: 'AdopeCanva | The All-in-One In-Browser Productivity Tool Suite',
+                description: 'A comprehensive collection of 60+ free in-browser tools for video editing, image processing, audio conversion, and document management. 100% private, zero uploads.',
+                keywords: ['all in one tools', 'in-browser video editor', 'image compressor', 'pdf redactor', 'format converter online', 'free client side tools', 'adopecanva'],
+                canonicalUrl: SITE_URL,
+                schemas: [
+                    {
+                        '@context': 'https://schema.org',
+                        '@type': 'WebSite',
+                        'name': SITE_NAME,
+                        'url': SITE_URL,
+                        'potentialAction': {
+                            '@type': 'SearchAction',
+                            'target': `${SITE_URL}/?q={search_term_string}`,
+                            'query-input': 'required name=search_term_string'
+                        }
+                    },
+                    {
+                        '@context': 'https://schema.org',
+                        '@type': 'SoftwareApplication',
+                        'name': SITE_NAME,
+                        'operatingSystem': 'All',
+                        'applicationCategory': 'MultimediaApplication, ProductivityApplication',
+                        'description': 'A comprehensive all-in-one productivity suite for video editing, image processing, and document management entirely in the browser.',
+                        'offers': {
+                            '@type': 'Offer',
+                            'price': '0',
+                            'priceCurrency': 'USD'
+                        },
+                        'url': SITE_URL
+                    }
+                ]
             });
         }
-
-        // Inject/Update Structured Data (JSON-LD)
-        const schemaId = 'adopecanva-schema';
-        let scriptTag = document.getElementById(schemaId) as HTMLScriptElement;
-
-        if (!scriptTag) {
-            scriptTag = document.createElement('script');
-            scriptTag.id = schemaId;
-            scriptTag.type = 'application/ld+json';
-            document.head.appendChild(scriptTag);
-        }
-
-        const schemaData = {
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            "name": "AdopeCanva",
-            "operatingSystem": "All",
-            "applicationCategory": "MultimediaApplication, ProductivityApplication",
-            "description": "A comprehensive all-in-one productivity suite for video editing, image processing, and document management entirely in the browser.",
-            "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD"
-            },
-            "url": "https://adopecanva.com"
-        };
-
-        scriptTag.text = JSON.stringify(schemaData);
-
-        return () => {
-            // Optional: clean up schema if navigating away from home or to a specific tool
-            // (In this case, keeping the base schema is usually fine)
-        };
-    }, [location]);
+    }, [location.pathname, location.search]);
 
     // Sync Pro Mode with URL; reset focused mode on navigation
     React.useLayoutEffect(() => {
-        // Fix: scroll the <main> element, not window (main has overflow-y-auto)
         if (mainRef.current) {
             mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
         }
@@ -205,17 +225,13 @@ const App = () => {
         }
     }, [location.pathname, isMobile, navigate]);
 
-    const goHome = () => {
-        navigate('/');
-    };
-
     const handleCategoryClick = (cat: string) => {
         setActiveCategory(cat);
-        navigate('/');
-    };
-
-    const handleHeroClick = () => {
-        navigate('/bg-remover');
+        if (cat === 'All') {
+            navigate('/');
+        } else {
+            navigate(`/category/${cat.toLowerCase()}`);
+        }
     };
 
     const getCategoryIcon = (category: string) => {
@@ -291,6 +307,12 @@ const App = () => {
                                 <div className="mt-2 flex items-center justify-center gap-4 text-xs text-zinc-500">
                                     <button onClick={() => navigate('/guides')} className="hover:text-zinc-300 hover:underline">How-to Guides</button>
                                     <span>•</span>
+                                    <button onClick={() => navigate('/category/image')} className="hover:text-zinc-300 hover:underline">Image Tools</button>
+                                    <span>•</span>
+                                    <button onClick={() => navigate('/category/video')} className="hover:text-zinc-300 hover:underline">Video Tools</button>
+                                    <span>•</span>
+                                    <button onClick={() => navigate('/category/docs')} className="hover:text-zinc-300 hover:underline">PDF & Docs</button>
+                                    <span>•</span>
                                     <button onClick={() => navigate('/studio')} className="hover:text-zinc-300 hover:underline">Studio</button>
                                 </div>
                                 <div className="mt-6 flex flex-col items-center gap-4">
@@ -310,14 +332,56 @@ const App = () => {
                     </div>
                 } />
 
+                {/* Category Hubs */}
+                <Route path="/category/:category" element={<CategoryHub />} />
+                <Route path="/category/:category/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                <Route path="/category/:category/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />
+
+                {/* Direct /tools and /tool prefix aliases */}
+                <Route path="/tools/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                <Route path="/tools/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />
+                <Route path="/tool/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                <Route path="/tool/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />
+
+                {/* Programmatic Converter Permutations */}
+                <Route path="/convert/:slug" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />
+
+                {/* Competitor Comparisons */}
                 <Route path="/vs/:competitor" element={<Comparison />} />
                 <Route path="/studio" element={<ComingSoon />} />
                 <Route path="/guides" element={<Guides />} />
 
+                {/* Programmatic Sub-Routes (e.g. /image-converter/png-to-webp) */}
+                <Route path="/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />
+
+                {/* Primary Tool Route */}
                 <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+
+                {/* Catch-all fallback */}
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </div>
     );
+
+    // If loaded as an iframe embed (?embed=true), render tool with zero surrounding chrome
+    if (isEmbed) {
+        return (
+            <div className="w-full min-h-screen bg-zinc-950 text-zinc-100 p-4">
+                <Routes>
+                    <Route path="/category/:category/:toolId/:subRoute" element={<ProgrammaticToolView />} />
+                    <Route path="/category/:category/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                    <Route path="/tools/:toolId/:subRoute" element={<ProgrammaticToolView />} />
+                    <Route path="/tools/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                    <Route path="/tool/:toolId/:subRoute" element={<ProgrammaticToolView />} />
+                    <Route path="/tool/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                    <Route path="/convert/:slug" element={<ProgrammaticToolView />} />
+                    <Route path="/:toolId/:subRoute" element={<ProgrammaticToolView />} />
+                    <Route path="/:toolId" element={<ToolRenderer setActiveCategory={setActiveCategory} />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </div>
+        );
+    }
 
     if (isMobile) {
         return (

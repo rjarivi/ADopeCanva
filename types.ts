@@ -32,6 +32,41 @@ export interface SpecItem {
   value: string;
 }
 
+export interface HowToStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  tip?: string;
+}
+
+export interface ComparisonRow {
+  label: string;
+  values: Record<string, string | boolean>;
+  highlight?: boolean;
+}
+
+export interface ComparisonTableData {
+  title: string;
+  headers: string[];
+  rows: ComparisonRow[];
+}
+
+export interface ProgrammaticSubRoute {
+  slug: string;
+  parentToolId: string;
+  title: string;
+  h1: string;
+  metaDescription: string;
+  sourceFormat?: string;
+  targetFormat?: string;
+  guideTitle?: string;
+  guideContent?: string;
+  steps?: HowToStep[];
+  comparisonTable?: ComparisonTableData;
+  faqs?: FAQItem[];
+  keywords?: string[];
+}
+
 export interface ToolItem {
   id: string;
   title: string;
@@ -47,6 +82,12 @@ export interface ToolItem {
   guideContent?: string;
   faqs?: FAQItem[];
   specs?: SpecItem[];
+  steps?: HowToStep[];
+  comparisonTable?: ComparisonTableData;
+  relatedToolIds?: string[];
+  subRoutes?: ProgrammaticSubRoute[];
+  keywords?: string[];
+  featureList?: string[];
   privacyNotes?: string;
   beforeAfterImage?: {
     before: string;

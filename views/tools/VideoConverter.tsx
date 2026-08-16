@@ -16,8 +16,8 @@ interface VideoConverterProps {
 }
 
 export const VideoConverter: React.FC<VideoConverterProps> = ({
-  accept = "video/*",
-  description = "MP4, MOV, MKV, AVI, WEBM supported",
+  accept = "video/*, .mp4, .mov, .avi, .mkv, .webm, .flv, .wmv, .3gp, .mpeg, .mpg, .m4v, .ts, .asf",
+  description = "MP4, MOV, AVI, MKV, WEBM, FLV, WMV, 3GP, TS supported",
   title = "Video Converter"
 }) => {
   const [file, setFile] = useState<FileData | null>(null);

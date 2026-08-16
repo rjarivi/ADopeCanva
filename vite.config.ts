@@ -23,19 +23,21 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/core', '@ffmpeg/util']
+      exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/core', '@ffmpeg/util'],
+      include: ['util', 'stream-browserify', 'events', 'xml-js']
     },
     plugins: [tailwindcss(), react(), crossOriginIsolation()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+      'global': 'globalThis'
     },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),
         'stream': 'stream-browserify',
         'events': 'events',
-        'util': 'util',
+        'util': 'util/',
       }
     }
   };

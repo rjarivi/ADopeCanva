@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { GifMaker } from './GifMaker';
 import { VideoToGif } from './VideoToGif';
 import { VideoConverter } from './VideoConverter';
-import { ImageCompressor } from './ImageCompressor';
+import { ImageConverter } from './ImageConverter';
 
 // WebP Maker (Images to Animated WebP)
 export const WebpMaker: React.FC = () => {
@@ -21,21 +20,15 @@ export const GifToWebp: React.FC = () => {
 };
 
 export const JpgToWebp: React.FC = () => {
-    // Basic image conversion - can use standard compressor or converter
-    // If output must be static WebP from static image, ImageCompressor logic works well but currently hardcodes output if file isn't PNG.
-    // However, VideoConverter can potentially handle single images? No, it expects video-like streams.
-    // For now, let's use the ImageCompressor as it likely supports drag-drop image and outputting (with format selection potentially).
-    // WAIT, ImageCompressor logic in step 541 forced JPG.
-    // I should create a simple wrapper or use VideoConverter if it handles images (it uses ffmpeg which can).
-    return <VideoConverter title="JPG to WebP" description="Convert JPG to WebP" accept="image/jpeg,image/jpg" />;
+    return <ImageConverter title="JPG to WebP" description="Convert JPG to WebP format instantly." accept="image/jpeg,image/jpg" initialTargetFormat="image/webp" />;
 };
 
 export const PngToWebp: React.FC = () => {
-    return <VideoConverter title="PNG to WebP" description="Convert PNG to WebP" accept="image/png" />;
+    return <ImageConverter title="PNG to WebP" description="Convert PNG to WebP format instantly." accept="image/png" initialTargetFormat="image/webp" />;
 };
 
 export const AvifToWebp: React.FC = () => {
-    return <VideoConverter title="AVIF to WebP" description="Convert AVIF to WebP" accept="image/avif" />;
+    return <ImageConverter title="AVIF to WebP" description="Convert AVIF to WebP format instantly." accept="image/avif,.avif" initialTargetFormat="image/webp" />;
 };
 
 export const WebpToGif: React.FC = () => {
@@ -43,11 +36,11 @@ export const WebpToGif: React.FC = () => {
 };
 
 export const WebpToJpg: React.FC = () => {
-    return <VideoConverter title="WebP to JPG" description="Convert WebP to JPG" accept="image/webp" />;
+    return <ImageConverter title="WebP to JPG" description="Convert WebP to JPG format instantly." accept="image/webp" initialTargetFormat="image/jpeg" />;
 };
 
 export const WebpToPng: React.FC = () => {
-    return <VideoConverter title="WebP to PNG" description="Convert WebP to PNG" accept="image/webp" />;
+    return <ImageConverter title="WebP to PNG" description="Convert WebP to PNG format instantly." accept="image/webp" initialTargetFormat="image/png" />;
 };
 
 export const WebpToMp4: React.FC = () => {

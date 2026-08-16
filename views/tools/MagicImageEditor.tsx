@@ -7,6 +7,7 @@ import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
 import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, Settings, Share2, Trash2 } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
+import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -15,6 +16,14 @@ export const MagicImageEditor: React.FC = () => {
   const [file, setFile] = useState<FileData | null>(null);
   const [prompt, setPrompt] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleFileSelect = async (selectedFile: FileData) => {
+    setIsProcessing(true);
+    const processed = await preprocessImageFileData(selectedFile);
+    setFile(processed);
+    setIsProcessing(false);
+  };
+
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
@@ -141,10 +150,10 @@ export const MagicImageEditor: React.FC = () => {
         <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
           <FileUploader
-            onFileSelect={setFile}
-            accept="image/*"
+            onFileSelect={handleFileSelect}
+            accept="image/*, .heic, .heif, .avif"
             label="Upload Image to Edit"
-            description="JPG, PNG, WEBP supported"
+            description="Supports JPG, PNG, WEBP, AVIF, HEIC"
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />
         </div>

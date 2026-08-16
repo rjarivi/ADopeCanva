@@ -3,12 +3,46 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { TOOLS } from './Dashboard';
 import { Check, X, Zap, Shield, Heart } from 'lucide-react';
 
+import { updateHeadTags, SITE_URL, SITE_NAME } from '../utils/seoHelper';
+
 export const Comparison: React.FC = () => {
     const { competitor } = useParams();
     const navigate = useNavigate();
 
     // Default to comparing with EzGif if none specified
     const compName = competitor || 'EzGif';
+
+    useEffect(() => {
+        const canonicalUrl = `${SITE_URL}/vs/${compName.toLowerCase()}`;
+        const title = `AdopeCanva vs ${compName} - Why In-Browser Tools Win in Speed & Privacy`;
+        const description = `Compare AdopeCanva against ${compName}. Discover the advantages of 100% in-browser client-side processing: zero upload wait times, zero watermarks, and complete privacy.`;
+
+        updateHeadTags({
+            title: `${title} | A Dope Canva`,
+            description,
+            canonicalUrl,
+            keywords: ['adopecanva vs ' + compName.toLowerCase(), 'ezgif alternative', 'free in-browser tools', 'cloudconvert alternative', 'private file converter'],
+            schemas: [
+                {
+                    '@context': 'https://schema.org',
+                    '@type': 'Article',
+                    'headline': title,
+                    'description': description,
+                    'author': { '@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL },
+                    'publisher': { '@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL },
+                    'mainEntityOfPage': canonicalUrl
+                },
+                {
+                    '@context': 'https://schema.org',
+                    '@type': 'BreadcrumbList',
+                    'itemListElement': [
+                        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': SITE_URL },
+                        { '@type': 'ListItem', 'position': 2, 'name': `AdopeCanva vs ${compName}`, 'item': canonicalUrl }
+                    ]
+                }
+            ]
+        });
+    }, [compName]);
 
     // Get a few top tools for the comparison table
     const topTools = TOOLS.filter(t => t.popular).slice(0, 5);

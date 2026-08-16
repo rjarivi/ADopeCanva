@@ -10,6 +10,7 @@ import {
     ZoomIn, ZoomOut, Move, Hand, Settings, Share2, Trash2, RefreshCw, Image
 } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
+import { preprocessImageFileData, preprocessHeic } from '../../utils/imagePreprocess';
 
 interface CropArea {
     x: number; // Percentage 0-100
@@ -26,6 +27,11 @@ export const ImageCropper: React.FC = () => {
     const [rotation, setRotation] = useState(0);
     const [croppedImage, setCroppedImage] = useState<string | null>(null);
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
+
+    const handleFileSelect = async (selectedFile: FileData) => {
+        const processed = await preprocessImageFileData(selectedFile);
+        setFile(processed);
+    };
 
     // Crop state in percentages
     const [crop, setCrop] = useState<CropArea>({ x: 10, y: 10, width: 80, height: 80 });
@@ -401,10 +407,10 @@ export const ImageCropper: React.FC = () => {
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
-                        onFileSelect={setFile}
-                        accept="image/*"
+                        onFileSelect={handleFileSelect}
+                        accept="image/*, .heic, .heif, .avif"
                         label="Upload Image"
-                        description="JPG, PNG, WEBP up to 20MB"
+                        description="Supports JPG, PNG, WEBP, AVIF, HEIC"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
@@ -593,20 +599,17 @@ export const ImageCropper: React.FC = () => {
                     type="file"
                     ref={fileInputRef}
                     className="hidden"
-                    accept="image/*"
-                    onChange={(e) => {
+                    accept="image/*, .heic, .heif, .avif"
+                    onChange={async (e) => {
                         const uploadedFile = e.target.files?.[0];
                         if (uploadedFile) {
-                            const reader = new FileReader();
-                            reader.onload = (re) => {
-                                setFile({
-                                    file: uploadedFile,
-                                    previewUrl: re.target?.result as string,
-                                    size: uploadedFile.size.toString(),
-                                    type: uploadedFile.type
-                                });
-                            };
-                            reader.readAsDataURL(uploadedFile);
+                            const processedFile = await preprocessHeic(uploadedFile);
+                            setFile({
+                                file: processedFile,
+                                previewUrl: URL.createObjectURL(processedFile),
+                                size: (processedFile.size / (1024 * 1024)).toFixed(2) + ' MB',
+                                type: processedFile.type
+                            });
                         }
                     }}
                 />

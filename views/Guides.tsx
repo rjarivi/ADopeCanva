@@ -4,9 +4,42 @@ import { TOOLS } from './Dashboard';
 import { ToolCategory } from '../types';
 import { Search, BookOpen, ArrowRight, ExternalLink } from 'lucide-react';
 
+import { updateHeadTags, SITE_URL, SITE_NAME } from '../utils/seoHelper';
+
 export const Guides: React.FC = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+
+    React.useEffect(() => {
+        const canonicalUrl = `${SITE_URL}/guides`;
+        const title = 'Comprehensive How-To Guides & Tutorials for Online Creative & Developer Tools';
+        const description = 'Explore step-by-step guides on video trimming, background removal, PDF redaction, audio conversion, and format optimization with 100% private in-browser tools.';
+
+        updateHeadTags({
+            title: `${title} | A Dope Canva`,
+            description,
+            canonicalUrl,
+            keywords: ['how to edit video online', 'how to convert png to webp', 'how to redact pdf', 'in-browser tutorials', 'adopecanva guides'],
+            schemas: [
+                {
+                    '@context': 'https://schema.org',
+                    '@type': 'CollectionPage',
+                    'name': title,
+                    'description': description,
+                    'url': canonicalUrl,
+                    'publisher': { '@type': 'Organization', 'name': SITE_NAME, 'url': SITE_URL }
+                },
+                {
+                    '@context': 'https://schema.org',
+                    '@type': 'BreadcrumbList',
+                    'itemListElement': [
+                        { '@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': SITE_URL },
+                        { '@type': 'ListItem', 'position': 2, 'name': 'Guides', 'item': canonicalUrl }
+                    ]
+                }
+            ]
+        });
+    }, []);
 
     // Filter tools that have guide content
     const guidedTools = TOOLS.filter(t => !t.comingSoon && t.guideTitle && t.guideContent);

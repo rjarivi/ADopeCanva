@@ -17,8 +17,8 @@ const STARTER_TEMPLATE = `<!DOCTYPE html>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    width: 800px;
-    height: 450px;
+    width: 660px;
+    height: 700px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -146,8 +146,50 @@ export const HtmlToImage: React.FC = () => {
     const [isCapturing, setIsCapturing] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    const [previewW, setPreviewW] = useState(660);
+    const [previewH, setPreviewH] = useState(700);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
     const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Track preview panel dimensions
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const observer = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                setContainerSize({
+                    width: entry.contentRect.width,
+                    height: entry.contentRect.height
+                });
+            }
+        });
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
+
+    // Parse dimensions from code styles dynamically
+    useEffect(() => {
+        try {
+            const parser = new DOMParser();
+            const parsed = parser.parseFromString(code, 'text/html');
+            const allStyles = Array.from(parsed.querySelectorAll('style'))
+                .map(s => s.textContent || '')
+                .join('\n');
+            const bodyInlineStyle = parsed.body.getAttribute('style') || '';
+
+            const wMatch = bodyInlineStyle.match(/width:\s*(\d+)px/) ||
+                allStyles.match(/body\s*\{[^}]*width:\s*(\d+)px/);
+            const hMatch = bodyInlineStyle.match(/height:\s*(\d+)px/) ||
+                allStyles.match(/body\s*\{[^}]*height:\s*(\d+)px/);
+            
+            if (wMatch) setPreviewW(parseInt(wMatch[1]));
+            if (hMatch) setPreviewH(parseInt(hMatch[1]));
+        } catch (e) {
+            console.error('Error parsing document dimensions:', e);
+        }
+    }, [code]);
 
     // Debounce preview updates → write directly to iframe srcdoc
     useEffect(() => {
@@ -288,19 +330,52 @@ export const HtmlToImage: React.FC = () => {
                 </div>
 
                 {/* Live Preview */}
-                <div className="flex-1 bg-zinc-950 rounded-2xl border border-zinc-800 flex flex-col overflow-hidden shadow-xl relative min-w-0">
-                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
+                <div 
+                    ref={containerRef}
+                    className="flex-1 bg-zinc-950 rounded-2xl border border-zinc-800 flex items-center justify-center overflow-hidden shadow-xl relative min-w-0"
+                >
+                    {/* Darker and sharper dot grid background for design drafting board look */}
+                    <div className="absolute inset-0 opacity-[0.08] pointer-events-none"
                         style={{ backgroundImage: 'radial-gradient(#a5b4fc 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
                     <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 bg-zinc-900/90 backdrop-blur border border-zinc-800 rounded-lg px-2.5 py-1.5 pointer-events-none">
                         <Eye size={11} className="text-indigo-400" />
                         <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest">Live Preview</span>
                     </div>
-                    <iframe
-                        ref={iframeRef}
-                        className="flex-1 w-full border-0"
-                        title="HTML Preview"
-                        sandbox="allow-scripts"
-                    />
+                    
+                    {/* Scaled and Centered Canvas Iframe wrapper */}
+                    {(() => {
+                        const padding = 48; // padding around the document inside the editor board
+                        const availW = Math.max(100, containerSize.width - padding * 2);
+                        const availH = Math.max(100, containerSize.height - padding * 2);
+                        const scaleFactor = Math.min(availW / previewW, availH / previewH);
+
+                        return (
+                            <div 
+                                className="relative flex items-center justify-center"
+                                style={{
+                                    width: containerSize.width,
+                                    height: containerSize.height
+                                }}
+                            >
+                                <div
+                                    className="absolute bg-zinc-900 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7)] border border-zinc-800/80 overflow-hidden rounded-2xl transition-transform duration-100 ease-out"
+                                    style={{
+                                        width: `${previewW}px`,
+                                        height: `${previewH}px`,
+                                        transform: `scale(${scaleFactor})`,
+                                        transformOrigin: 'center center',
+                                    }}
+                                >
+                                    <iframe
+                                        ref={iframeRef}
+                                        className="w-full h-full border-0 pointer-events-none"
+                                        title="HTML Preview"
+                                        sandbox="allow-scripts"
+                                    />
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* Export Settings */}

@@ -8,6 +8,7 @@ import {
     ChevronRight, Package, Shield, ExternalLink, SlidersHorizontal
 } from 'lucide-react';
 import JSZip from 'jszip';
+import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 // --- ICO Generation ---
 
@@ -176,6 +177,12 @@ function PreviewSizes({ imgSrc }: { imgSrc: string }) {
 export const ImageToIco: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
     const [imgSrc, setImgSrc] = useState<string | null>(null);
+
+    const handleFileSelect = async (selectedFile: FileData) => {
+        const processed = await preprocessImageFileData(selectedFile);
+        setFile(processed);
+    };
+
     const [bundleMode, setBundleMode] = useState(true);
 
     // Bundle dimension state
@@ -328,10 +335,10 @@ export const ImageToIco: React.FC = () => {
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
-                        onFileSelect={setFile}
-                        accept="image/*"
+                        onFileSelect={handleFileSelect}
+                        accept="image/*, .heic, .heif, .avif"
                         label="Upload Image"
-                        description="PNG, SVG, JPG, WebP — all supported"
+                        description="Supports JPG, PNG, WEBP, AVIF, HEIC, SVG"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>

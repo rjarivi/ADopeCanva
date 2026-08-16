@@ -8,6 +8,7 @@ import {
     ImageIcon, Settings2, Package, Eye, ArrowRight, X, Check
 } from 'lucide-react';
 import JSZip from 'jszip';
+import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Preset {
@@ -82,6 +83,13 @@ function formatSize(w: number, h: number) {
 export const ImageSplitter: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
     const [imageEl, setImageEl] = useState<HTMLImageElement | null>(null);
+    
+    const handleFileSelect = async (selectedFile: FileData) => {
+        setProcessing(true);
+        const processed = await preprocessImageFileData(selectedFile);
+        setFile(processed);
+        setProcessing(false);
+    };
     const [selectedPreset, setSelectedPreset] = useState<string>('ig-carousel-h');
     const [customW, setCustomW] = useState(1080);
     const [customH, setCustomH] = useState(1080);
@@ -236,10 +244,10 @@ export const ImageSplitter: React.FC = () => {
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-pink-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
-                        onFileSelect={setFile}
-                        accept="image/*"
+                        onFileSelect={handleFileSelect}
+                        accept="image/*, .heic, .heif, .avif"
                         label="Drop your image here"
-                        description="PNG, JPG, WebP — any wide or tall image"
+                        description="Supports JPG, PNG, WEBP, AVIF, HEIC"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-pink-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>

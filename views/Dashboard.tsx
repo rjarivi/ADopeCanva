@@ -5,7 +5,7 @@ import {
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
     Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
-    GitCompare, Palette, FileDown, SplitSquareHorizontal
+    GitCompare, Palette, FileDown, SplitSquareHorizontal, Pipette
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -55,34 +55,137 @@ import { DeviceMockup } from './tools/DeviceMockup';
 import { AudioWaveformExporter } from './tools/AudioWaveformExporter';
 import { TextCompareTool } from './tools/TextCompareTool';
 import { GradientCreator } from './tools/GradientCreator';
+import { ColorTool } from './tools/ColorTool';
 import { FileToMarkdown } from './tools/FileToMarkdown';
 import { FontPreviewer } from './tools/FontPreviewer';
 import { ImageSplitter } from './tools/ImageSplitter';
 
 export const TOOLS: ToolItem[] = [
     {
-        id: 'html-to-image',
-        title: 'HTML to Image',
-        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
-        category: ToolCategory.DEV,
-        icon: MonitorDown,
-        component: <HtmlToImage />,
+        id: 'image-converter',
+        title: 'Image Converter',
+        description: 'Batch convert images between PNG, JPG, and WebP.',
+        category: ToolCategory.IMAGE,
+        icon: RefreshCcw,
+        component: <ImageConverter />,
         popular: true,
-        guideTitle: 'How to convert HTML and CSS to an image',
-        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
+        guideTitle: 'How to batch convert images for web optimization',
+        guideContent: 'Converting images to modern formats like WebP can significantly improve your website loading speed. Our batch converter allows you to transform multiple PNGs or JPGs into optimized WebP files instantly, ensuring high quality with smaller file sizes.',
         faqs: [
-            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
-            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
-            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
-            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
+            { question: 'What formats can I convert?', answer: 'You can convert between PNG, JPG, WebP, and more.' },
+            { question: 'Is there a file size limit?', answer: 'The tool handles large files, but browser memory limits apply (typically up to 100MB per file).' }
         ],
         specs: [
-            { label: 'Input', value: 'HTML + CSS markup' },
-            { label: 'Output', value: 'PNG, JPEG, WebP' },
-            { label: 'Max resolution', value: '3× device pixel ratio' },
-            { label: 'Engine', value: 'html2canvas (client-side)' },
+            { label: 'Input Formats', value: 'PNG, JPG, WebP, AVIF, BMP' },
+            { label: 'Output Formats', value: 'PNG, JPG, WebP' },
+            { label: 'Batch Support', value: 'Yes, multi-file select' }
         ],
-        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
+        privacyNotes: 'Files are processed locally using your browser. No images are uploaded to any server.'
+    },
+    {
+        id: 'quick-video-editor',
+        title: 'Quick Video Editor',
+        description: 'Edit videos with trim, speed, and aspect ratio controls.',
+        category: ToolCategory.VIDEO,
+        icon: Film,
+        component: <QuickVideoEditor />,
+        popular: true,
+        guideTitle: "How to quickly edit videos without complex software",
+        guideContent: "Our Quick Video Editor is designed for rapid tasks like trimming, adjusting speed, or changing aspect ratios. Perfect for social media creators who need to polish a clip in seconds without waiting for cloud uploads.",
+        faqs: [
+            { question: "Can I speed up videos?", answer: "Yes, you can speed up or slow down your clips (0.5x to 2x speed)." },
+            { question: "Does it support cropping?", answer: "Yes, you can crop to social media dimensions like 9:16 or 1:1." }
+        ],
+        specs: [
+            { label: "Tools", value: "Trim, Speed, Crop, Rotate" },
+            { label: "Engine", value: "FFmpeg WASM" },
+            { label: "Resolution", value: "Supports up to 4K" }
+        ],
+        privacyNotes: "Your creative content is processed locally and never uploaded."
+    },
+    {
+        id: 'gif-editor',
+        title: 'GIF Editor',
+        description: 'Trim, crop, and add text to GIFs.',
+        category: ToolCategory.IMAGE,
+        icon: Edit3,
+        component: <GifEditor />,
+        popular: true,
+        guideTitle: 'How to trim and crop animated GIFs',
+        guideContent: 'Perfect your animations by removing unwanted frames or focusing on a specific area. Our GIF Editor lets you trim the start and end of any GIF with frame precision, ensuring your loops are seamless and engaging.',
+        faqs: [
+            { question: 'Can I add text to a GIF?', answer: 'Yes, the editor allows adding customizable text layers to your animations.' },
+            { question: 'Does editing reduce GIF quality?', answer: 'We use high-quality dithering algorithms to maintain visual integrity during re-encoding.' }
+        ],
+        specs: [
+            { label: 'Frame Limit', value: 'Up to 200 frames per GIF' },
+            { label: 'Tools', value: 'Trim, Crop, Resize, Annotate' },
+            { label: 'Dithering', value: 'Floyd-Steinberg enabled' }
+        ],
+        privacyNotes: 'GIF frame extraction and re-assembly are done locally via WebAssembly.'
+    },
+    {
+        id: 'audio-converter',
+        title: 'Audio Converter',
+        description: 'Convert between MP3, WAV, AAC formats.',
+        category: ToolCategory.AUDIO,
+        icon: Music,
+        component: <AudioConverter />,
+        popular: true,
+        guideTitle: 'Convert high-quality audio files instantly',
+        guideContent: 'Convert your music and voice recordings between all major formats. Whether you need a small MP3 for sharing or a lossless WAV for production, our converter handles the processing with high-fidelity sample rates.',
+        faqs: [
+            { question: 'Can I convert multiple files at once?', answer: 'Yes, you can select multiple audio files for batch conversion.' },
+            { question: 'Is the quality preserved?', answer: 'Yes, we provide options for high bitrate (up to 320kbps) to ensure minimal loss during conversion.' }
+        ],
+        specs: [
+            { label: 'Supported Formats', value: 'MP3, WAV, AAC, OGG, FLAC' },
+            { label: 'Bitrate Options', value: '128k, 192k, 256k, 320k' },
+            { label: 'Engine', value: 'FFmpeg.wasm' }
+        ],
+        privacyNotes: 'Your audio files are processed locally. Perfect for sensitive voice memos or unreleased tracks.'
+    },
+    {
+        id: 'universal-doc-converter',
+        title: 'Universal Doc Converter',
+        description: 'Convert Word, Markdown, HTML, and Images to PDF/HTML.',
+        category: ToolCategory.DOCS,
+        icon: ArrowRightLeft,
+        component: <UniversalDocConverter />,
+        popular: true,
+        guideTitle: 'Convert any document to PDF or HTML',
+        guideContent: 'Easily transform Word documents, Markdown files, or plain text into polished PDFs or clean HTML code. Our universal converter maintains formatting and structure, making it ideal for creating resumes, reports, or web content.',
+        faqs: [
+            { question: 'Does it support Markdown?', answer: 'Yes, it perfectly converts Markdown syntax into styled PDF or HTML output.' },
+            { question: 'Can I convert images to PDF?', answer: 'Yes, you can upload images to generate an image-only PDF document.' }
+        ],
+        specs: [
+            { label: 'Engine', value: 'jsPDF & Marked' },
+            { label: 'Output', value: 'PDF, HTML' },
+            { label: 'Styles', value: 'Modern document presets' }
+        ],
+        privacyNotes: 'Document parsing and PDF generation happen 100% client-side.'
+    },
+    {
+        id: 'text-tools',
+        title: 'Fancy Text Generator',
+        description: 'Generate stylish unicode text for social media.',
+        category: ToolCategory.TEXT,
+        icon: Type,
+        component: <TextTools />,
+        popular: true,
+        guideTitle: 'Create stylish text for Instagram and social media',
+        guideContent: 'Stand out on social media with unique fonts and stylish unicode characters. Simply type your text, and our generator will provide dozens of creative variations that you can copy and paste directly into your bio, captions, or tweets.',
+        faqs: [
+            { question: 'Do these fonts work everywhere?', answer: 'Yes, they use standard Unicode characters that are supported by most modern platforms and apps.' },
+            { question: 'Are there any weird symbols?', answer: 'We offer a wide variety, from professional-looking bolds to decorative flourishes.' }
+        ],
+        specs: [
+            { label: 'Styles', value: '50+ Aesthetic font styles' },
+            { label: 'Output', value: 'Unicode-based text' },
+            { label: 'Clipboard', value: 'One-click copy support' }
+        ],
+        privacyNotes: 'Text transformations are performed using client-side JavaScript mappings.'
     },
     {
         id: 'mockup-generator',
@@ -110,24 +213,96 @@ export const TOOLS: ToolItem[] = [
         privacyNotes: 'All mockup rendering is performed locally in your browser using the Canvas API. No screenshots or generated images are sent to any server.',
     },
     {
-        id: 'image-converter',
-        title: 'Image Converter',
-        description: 'Batch convert images between PNG, JPG, and WebP.',
+        id: 'image-editor',
+        title: 'Image Editor',
+        description: 'Edit images with layers, filters, and text.',
         category: ToolCategory.IMAGE,
-        icon: RefreshCcw,
-        component: <ImageConverter />,
-        guideTitle: 'How to batch convert images for web optimization',
-        guideContent: 'Converting images to modern formats like WebP can significantly improve your website loading speed. Our batch converter allows you to transform multiple PNGs or JPGs into optimized WebP files instantly, ensuring high quality with smaller file sizes.',
+        icon: Edit3,
+        component: <ImageEditor />,
+        guideTitle: 'Master layer-based editing in your browser',
+        guideContent: 'Our Image Editor provides a familiar workspace with layers, filters, and granular controls. Whether you are adding text overlays, applying vintage filters, or compositing multiple images, you can do it all without installing heavy software like Photoshop.',
         faqs: [
-            { question: 'What formats can I convert?', answer: 'You can convert between PNG, JPG, WebP, and more.' },
-            { question: 'Is there a file size limit?', answer: 'The tool handles large files, but browser memory limits apply (typically up to 100MB per file).' }
+            { question: 'Does it support layers?', answer: 'Yes, you can manage multiple layers, toggle visibility, and adjust opacity for each.' },
+            { question: 'Are there keyboard shortcuts?', answer: 'Yes, standard shortcuts like Ctrl+Z for undo and Ctrl+S for saving are supported.' }
         ],
         specs: [
-            { label: 'Input Formats', value: 'PNG, JPG, WebP, AVIF, BMP' },
-            { label: 'Output Formats', value: 'PNG, JPG, WebP' },
-            { label: 'Batch Support', value: 'Yes, multi-file select' }
+            { label: 'Max Layers', value: 'Unlimited (Browser dependent)' },
+            { label: 'Filters', value: '15+ Professional presets' },
+            { label: 'Export Quality', value: 'Lossless PNG/JPG' }
         ],
-        privacyNotes: 'Files are processed locally using your browser. No images are uploaded to any server.'
+        privacyNotes: 'We use Canvas API for local processing. No image data is sent to external servers.'
+    },
+    {
+        id: 'bg-remover',
+        title: 'Smart BG Remover',
+        description: 'Instantly remove image backgrounds using AI.',
+        category: ToolCategory.IMAGE,
+        icon: Eraser,
+        component: <BackgroundRemover />,
+        guideTitle: 'How to create transparent product photos for eBay',
+        guideContent: 'Transparent backgrounds are essential for professional eBay listings. Our AI backgrounds remover precisely cuts out your product, allowing you to place it on any background or keep it transparent for a clean look.',
+        faqs: [
+            { question: 'Does this work with complex backgrounds?', answer: 'Yes, our AI is trained to handle complex backgrounds, including hair and fine details.' },
+            { question: 'Can I download as PNG?', answer: 'Yes, all background removals are exported as transparent PNG files.' }
+        ],
+        specs: [
+            { label: 'AI Model', value: 'Self-hosted In-browser AI' },
+            { label: 'Output Format', value: 'Transparent PNG' },
+            { label: 'Speed', value: '< 2 seconds' }
+        ],
+        comingSoon: true,
+        privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
+        beforeAfterImage: {
+            before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
+            after: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000&bg=transparent',
+            alt: 'Background removal example'
+        }
+    },
+    {
+        id: 'video-to-gif',
+        title: 'Video to GIF',
+        description: 'Convert video clips to animated GIFs.',
+        category: ToolCategory.VIDEO,
+        icon: Video,
+        component: <VideoToGif />,
+        popular: true,
+        guideTitle: 'How to make high-quality GIFs for Slack/Microsoft Teams',
+        guideContent: 'GIFs are a great way to communicate in Slack or Microsoft Teams. To create a high-quality GIF, upload your video, select the best frame rate (10-15 fps is usually enough for chat), and ensure the file size stayes under 5MB for best performance in messaging apps.',
+        faqs: [
+            { question: 'Will my video have a watermark?', answer: 'No, AdopeCanva provides watermark-free GIF conversion.' },
+            { question: 'What video formats are supported?', answer: 'We support MP4, MOV, AVI, and WebM for conversion to GIF.' }
+        ],
+        specs: [
+            { label: 'Max Upload', value: '50MB' },
+            { label: 'Output Format', value: 'GIF, MP4' },
+            { label: 'Compatibility', value: 'Chrome, Safari, Edge' }
+        ],
+        privacyNotes: 'Processing happens entirely in your browser. Your video files are never uploaded to our servers.',
+        beforeAfterImage: {
+            before: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=1000',
+            after: 'https://images.unsplash.com/photo-1541562232579-512a21359920?auto=format&fit=crop&q=80&w=1000',
+            alt: 'Video to GIF conversion example'
+        }
+    },
+    {
+        id: 'audio-trimmer',
+        title: 'Audio Trimmer',
+        description: 'Trim and cut audio with waveform visualization.',
+        category: ToolCategory.AUDIO,
+        icon: Scissors,
+        component: <AudioTrimmer />,
+        guideTitle: 'How to create custom ringtones and loops',
+        guideContent: 'Easily cut any audio file to create short clips. Use our visual waveform editor to select the exact start and end points, apply fade-ins or fade-outs, and export your new clip in seconds.',
+        faqs: [
+            { question: 'Can I zoom into the waveform?', answer: 'Yes, the editor supports zooming for precise millisecond-level trimming.' },
+            { question: 'What is the maximum file length?', answer: 'We recommend files under 30 minutes for optimal browser performance.' }
+        ],
+        specs: [
+            { label: 'Waveform View', value: 'High-resolution Audio Canvas' },
+            { label: 'Fade Effects', value: 'Automatic Fade-in/out support' },
+            { label: 'Precision', value: '0.01 seconds' }
+        ],
+        privacyNotes: 'Waveform rendering and cutting happen entirely on your device.'
     },
     {
         id: 'image-upscaler',
@@ -157,7 +332,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.VIDEO,
         icon: PenTool,
         component: <SignatureGenerator />,
-        popular: true,
         guideTitle: 'How to create a professional animated signature',
         guideContent: 'Custom animated signatures add a personal touch to your emails and messages. Draw your signature on the digital canvas, adjust the stroke speed, and export as a smooth GIF or MP4 to use in Outlook, Gmail, or social media.',
         faqs: [
@@ -172,158 +346,27 @@ export const TOOLS: ToolItem[] = [
         privacyNotes: 'Your signature remains private. The drawing process happens entirely on your device canvas.'
     },
     {
-        id: 'image-editor',
-        title: 'Image Editor',
-        description: 'Edit images with layers, filters, and text.',
+        id: 'html-to-image',
+        title: 'HTML to Image',
+        description: 'Write HTML & CSS in a live editor and export it as a PNG, JPEG, or WebP image.',
         category: ToolCategory.IMAGE,
-        icon: Edit3,
-        component: <ImageEditor />,
-        guideTitle: 'Master layer-based editing in your browser',
-        guideContent: 'Our Image Editor provides a familiar workspace with layers, filters, and granular controls. Whether you are adding text overlays, applying vintage filters, or compositing multiple images, you can do it all without installing heavy software like Photoshop.',
+        icon: MonitorDown,
+        component: <HtmlToImage />,
+        guideTitle: 'How to convert HTML and CSS to an image',
+        guideContent: 'Paste or write any HTML markup and CSS styles, preview the result live in the browser, and export it as a high-resolution PNG, JPEG, or WebP image — entirely in your browser with no server uploads. Perfect for generating social cards, banners, and screenshots.',
         faqs: [
-            { question: 'Does it support layers?', answer: 'Yes, you can manage multiple layers, toggle visibility, and adjust opacity for each.' },
-            { question: 'Are there keyboard shortcuts?', answer: 'Yes, standard shortcuts like Ctrl+Z for undo and Ctrl+S for saving are supported.' }
+            { question: 'Can I use custom fonts?', answer: 'Inline styles and system fonts work best. External Google Fonts may not load due to browser sandbox restrictions — embed font-face rules or use system fonts for reliable exports.' },
+            { question: 'What resolution should I use?', answer: '2× is recommended for sharp, retina-quality exports. Use 3× for print-ready output.' },
+            { question: 'Does my HTML get sent to a server?', answer: 'No — everything is processed entirely in your browser using html2canvas. Your code never leaves your device.' },
+            { question: 'Why does my layout look different in the export?', answer: 'Set explicit width and height on the body element to control the output dimensions. html2canvas captures the rendered DOM, so ensure all assets are inline or local.' },
         ],
         specs: [
-            { label: 'Max Layers', value: 'Unlimited (Browser dependent)' },
-            { label: 'Filters', value: '15+ Professional presets' },
-            { label: 'Export Quality', value: 'Lossless PNG/JPG' }
+            { label: 'Input', value: 'HTML + CSS markup' },
+            { label: 'Output', value: 'PNG, JPEG, WebP' },
+            { label: 'Max resolution', value: '3× device pixel ratio' },
+            { label: 'Engine', value: 'html2canvas (client-side)' },
         ],
-        privacyNotes: 'We use Canvas API for local processing. No image data is sent to external servers.'
-    },
-    {
-        id: 'gif-editor',
-        title: 'GIF Editor',
-        description: 'Trim, crop, and add text to GIFs.',
-        category: ToolCategory.IMAGE,
-        icon: Edit3,
-        component: <GifEditor />,
-        guideTitle: 'How to trim and crop animated GIFs',
-        guideContent: 'Perfect your animations by removing unwanted frames or focusing on a specific area. Our GIF Editor lets you trim the start and end of any GIF with frame precision, ensuring your loops are seamless and engaging.',
-        faqs: [
-            { question: 'Can I add text to a GIF?', answer: 'Yes, the editor allows adding customizable text layers to your animations.' },
-            { question: 'Does editing reduce GIF quality?', answer: 'We use high-quality dithering algorithms to maintain visual integrity during re-encoding.' }
-        ],
-        specs: [
-            { label: 'Frame Limit', value: 'Up to 200 frames per GIF' },
-            { label: 'Tools', value: 'Trim, Crop, Resize, Annotate' },
-            { label: 'Dithering', value: 'Floyd-Steinberg enabled' }
-        ],
-        privacyNotes: 'GIF frame extraction and re-assembly are done locally via WebAssembly.'
-    },
-    {
-        id: 'video-to-gif',
-        title: 'Video to GIF',
-        description: 'Convert video clips to animated GIFs.',
-        category: ToolCategory.VIDEO,
-        icon: Video,
-        component: <VideoToGif />,
-        popular: true,
-        guideTitle: 'How to make high-quality GIFs for Slack/Microsoft Teams',
-        guideContent: 'GIFs are a great way to communicate in Slack or Microsoft Teams. To create a high-quality GIF, upload your video, select the best frame rate (10-15 fps is usually enough for chat), and ensure the file size stayes under 5MB for best performance in messaging apps.',
-        faqs: [
-            { question: 'Will my video have a watermark?', answer: 'No, AdopeCanva provides watermark-free GIF conversion.' },
-            { question: 'What video formats are supported?', answer: 'We support MP4, MOV, AVI, and WebM for conversion to GIF.' }
-        ],
-        specs: [
-            { label: 'Max Upload', value: '50MB' },
-            { label: 'Output Format', value: 'GIF, MP4' },
-            { label: 'Compatibility', value: 'Chrome, Safari, Edge' }
-        ],
-        privacyNotes: 'Processing happens entirely in your browser. Your video files are never uploaded to our servers.',
-        beforeAfterImage: {
-            before: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=1000',
-            after: 'https://images.unsplash.com/photo-1541562232579-512a21359920?auto=format&fit=crop&q=80&w=1000',
-            alt: 'Video to GIF conversion example'
-        }
-    },
-    {
-        id: 'audio-converter',
-        title: 'Audio Converter',
-        description: 'Convert between MP3, WAV, AAC formats.',
-        category: ToolCategory.AUDIO,
-        icon: Music,
-        component: <AudioConverter />,
-        popular: true,
-        guideTitle: 'Convert high-quality audio files instantly',
-        guideContent: 'Convert your music and voice recordings between all major formats. Whether you need a small MP3 for sharing or a lossless WAV for production, our converter handles the processing with high-fidelity sample rates.',
-        faqs: [
-            { question: 'Can I convert multiple files at once?', answer: 'Yes, you can select multiple audio files for batch conversion.' },
-            { question: 'Is the quality preserved?', answer: 'Yes, we provide options for high bitrate (up to 320kbps) to ensure minimal loss during conversion.' }
-        ],
-        specs: [
-            { label: 'Supported Formats', value: 'MP3, WAV, AAC, OGG, FLAC' },
-            { label: 'Bitrate Options', value: '128k, 192k, 256k, 320k' },
-            { label: 'Engine', value: 'FFmpeg.wasm' }
-        ],
-        privacyNotes: 'Your audio files are processed locally. Perfect for sensitive voice memos or unreleased tracks.'
-    },
-    {
-        id: 'audio-trimmer',
-        title: 'Audio Trimmer',
-        description: 'Trim and cut audio with waveform visualization.',
-        category: ToolCategory.AUDIO,
-        icon: Scissors,
-        component: <AudioTrimmer />,
-        guideTitle: 'How to create custom ringtones and loops',
-        guideContent: 'Easily cut any audio file to create short clips. Use our visual waveform editor to select the exact start and end points, apply fade-ins or fade-outs, and export your new clip in seconds.',
-        faqs: [
-            { question: 'Can I zoom into the waveform?', answer: 'Yes, the editor supports zooming for precise millisecond-level trimming.' },
-            { question: 'What is the maximum file length?', answer: 'We recommend files under 30 minutes for optimal browser performance.' }
-        ],
-        specs: [
-            { label: 'Waveform View', value: 'High-resolution Audio Canvas' },
-            { label: 'Fade Effects', value: 'Automatic Fade-in/out support' },
-            { label: 'Precision', value: '0.01 seconds' }
-        ],
-        privacyNotes: 'Waveform rendering and cutting happen entirely on your device.'
-    },
-    {
-        id: 'text-tools',
-        title: 'Fancy Text Generator',
-        description: 'Generate stylish unicode text for social media.',
-        category: ToolCategory.TEXT,
-        icon: Type,
-        component: <TextTools />,
-        popular: true,
-        guideTitle: 'Create stylish text for Instagram and social media',
-        guideContent: 'Stand out on social media with unique fonts and stylish unicode characters. Simply type your text, and our generator will provide dozens of creative variations that you can copy and paste directly into your bio, captions, or tweets.',
-        faqs: [
-            { question: 'Do these fonts work everywhere?', answer: 'Yes, they use standard Unicode characters that are supported by most modern platforms and apps.' },
-            { question: 'Are there any weird symbols?', answer: 'We offer a wide variety, from professional-looking bolds to decorative flourishes.' }
-        ],
-        specs: [
-            { label: 'Styles', value: '50+ Aesthetic font styles' },
-            { label: 'Output', value: 'Unicode-based text' },
-            { label: 'Clipboard', value: 'One-click copy support' }
-        ],
-        privacyNotes: 'Text transformations are performed using client-side JavaScript mappings.'
-    },
-    {
-        id: 'bg-remover',
-        title: 'Smart BG Remover',
-        description: 'Instantly remove image backgrounds using AI.',
-        category: ToolCategory.IMAGE,
-        icon: Eraser,
-        component: <BackgroundRemover />,
-        guideTitle: 'How to create transparent product photos for eBay',
-        guideContent: 'Transparent backgrounds are essential for professional eBay listings. Our AI backgrounds remover precisely cuts out your product, allowing you to place it on any background or keep it transparent for a clean look.',
-        faqs: [
-            { question: 'Does this work with complex backgrounds?', answer: 'Yes, our AI is trained to handle complex backgrounds, including hair and fine details.' },
-            { question: 'Can I download as PNG?', answer: 'Yes, all background removals are exported as transparent PNG files.' }
-        ],
-        specs: [
-            { label: 'AI Model', value: 'Self-hosted In-browser AI' },
-            { label: 'Output Format', value: 'Transparent PNG' },
-            { label: 'Speed', value: '< 2 seconds' }
-        ],
-        comingSoon: true,
-        privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
-        beforeAfterImage: {
-            before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
-            after: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000&bg=transparent',
-            alt: 'Background removal example'
-        }
+        privacyNotes: 'All rendering and image capture happens locally in your browser. No HTML, CSS, or generated images are uploaded to any server.'
     },
     {
         id: 'spreadsheet-tools',
@@ -344,26 +387,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Max Rows', value: 'Up to 10,000 recommended' }
         ],
         privacyNotes: 'We prioritize data privacy. Spreadsheets often contain PII; our tool ensures it stays on your machine.'
-    },
-    {
-        id: 'universal-doc-converter',
-        title: 'Universal Doc Converter',
-        description: 'Convert Word, Markdown, HTML, and Images to PDF/HTML.',
-        category: ToolCategory.DOCS,
-        icon: ArrowRightLeft,
-        component: <UniversalDocConverter />,
-        guideTitle: 'Convert any document to PDF or HTML',
-        guideContent: 'Easily transform Word documents, Markdown files, or plain text into polished PDFs or clean HTML code. Our universal converter maintains formatting and structure, making it ideal for creating resumes, reports, or web content.',
-        faqs: [
-            { question: 'Does it support Markdown?', answer: 'Yes, it perfectly converts Markdown syntax into styled PDF or HTML output.' },
-            { question: 'Can I convert images to PDF?', answer: 'Yes, you can upload images to generate an image-only PDF document.' }
-        ],
-        specs: [
-            { label: 'Engine', value: 'jsPDF & Marked' },
-            { label: 'Output', value: 'PDF, HTML' },
-            { label: 'Styles', value: 'Modern document presets' }
-        ],
-        privacyNotes: 'Document parsing and PDF generation happen 100% client-side.'
     },
     {
         id: 'gif-compressor',
@@ -662,7 +685,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.DEV,
         icon: MarkdownCreatorIcon as any,
         component: <MarkdownCreator />,
-        popular: true,
         guideTitle: 'How to design AI-friendly text UI mockups',
         guideContent: 'Describe your UI layouts to AI assistants like Claude or ChatGPT using precise text-based mockups. Our Markdown Creator lets you draw buttons, inputs, and layouts using Unicode box-drawing characters, ensuring the AI understands your design intent perfectly in a code-friendly format.',
         faqs: [
@@ -1043,27 +1065,6 @@ export const TOOLS: ToolItem[] = [
         privacyNotes: 'Code is processed in-memory using Prettier and local scripts.'
     },
     {
-        id: 'quick-video-editor',
-        title: 'Quick Video Editor',
-        description: 'Edit videos with trim, speed, and aspect ratio controls.',
-        category: ToolCategory.VIDEO,
-        icon: Film,
-        component: <QuickVideoEditor />,
-        popular: true,
-        guideTitle: "How to quickly edit videos without complex software",
-        guideContent: "Our Quick Video Editor is designed for rapid tasks like trimming, adjusting speed, or changing aspect ratios. Perfect for social media creators who need to polish a clip in seconds without waiting for cloud uploads.",
-        faqs: [
-            { question: "Can I speed up videos?", answer: "Yes, you can speed up or slow down your clips (0.5x to 2x speed)." },
-            { question: "Does it support cropping?", answer: "Yes, you can crop to social media dimensions like 9:16 or 1:1." }
-        ],
-        specs: [
-            { label: "Tools", value: "Trim, Speed, Crop, Rotate" },
-            { label: "Engine", value: "FFmpeg WASM" },
-            { label: "Resolution", value: "Supports up to 4K" }
-        ],
-        privacyNotes: "Your creative content is processed locally and never uploaded."
-    },
-    {
         id: 'text-cleaner',
         title: 'Text Cleaner',
         description: 'Remove repetitive phrases and clean formatting.',
@@ -1207,7 +1208,7 @@ export const TOOLS: ToolItem[] = [
         title: 'SVG Code to SVG',
         description: 'Paste SVG markup, preview it live, and download as an .svg file.',
         swapId: 'svg-to-code',
-        category: ToolCategory.DEV,
+        category: ToolCategory.IMAGE,
         icon: FileCode2,
         component: <SvgConverter />,
         guideTitle: 'How to convert SVG code into a downloadable SVG file',
@@ -1230,7 +1231,7 @@ export const TOOLS: ToolItem[] = [
         title: 'SVG to Code',
         description: 'Upload an SVG file and extract its raw source markup.',
         swapId: 'svg-converter',
-        category: ToolCategory.DEV,
+        category: ToolCategory.IMAGE,
         icon: FileSearch,
         component: <SvgToCode />,
         guideTitle: 'How to extract SVG source code from an SVG file',
@@ -1286,6 +1287,27 @@ export const TOOLS: ToolItem[] = [
             { label: 'Export', value: 'PNG or JPEG at any resolution' },
         ],
         privacyNotes: 'Gradients are rendered on an HTML Canvas in your browser. No data is uploaded.'
+    },
+    {
+        id: 'color-tool',
+        title: 'Color Tool',
+        description: 'Generate color palettes, verify contrast ratio, scale tints/shades, and convert color formats.',
+        category: ToolCategory.IMAGE,
+        icon: Pipette,
+        component: <ColorTool />,
+        guideTitle: 'How to use the color palette and utility dashboard',
+        guideContent: 'Access a complete design workbench. Generate harmonies like complementary or analogous, run real-time contrast checks against WCAG 2.1 standards for accessibility, construct tints & shades, and convert color values seamlessly across HEX, RGB, HSL, and CMYK formats.',
+        faqs: [
+            { question: 'What harmony rules are supported?', answer: 'We support complementary (2 colors), analogous (3 colors), triadic (3 colors), split-complementary (3 colors), tetradic (4 colors), and monochromatic (5 colors) options.' },
+            { question: 'What contrast standards does the checker follow?', answer: 'We use the WCAG 2.1 formula for relative luminance to verify contrast ratios against the AA threshold (4.5:1 for normal text, 3.0:1 for large text) and the AAA threshold (7.0:1 for normal text, 4.5:1 for large text).' },
+            { question: 'Are colors processed locally?', answer: 'Yes, all calculations, color wheel rotations, dynamic palette rendering, and PNG generation happen entirely inside your browser locally.' }
+        ],
+        specs: [
+            { label: 'Harmonies', value: 'Complementary · Analogous · Triadic · Split-Complementary · Tetradic · Monochromatic' },
+            { label: 'WCAG Metrics', value: 'Normal & Large Text (AA & AAA compliance)' },
+            { label: 'Formats', value: 'HEX · RGB · HSL · CMYK (real-time synchronized)' }
+        ],
+        privacyNotes: 'All color data processing and exports are done locally in the browser.'
     },
     {
         id: 'file-to-markdown',
