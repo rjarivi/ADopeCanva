@@ -336,7 +336,10 @@ export const SEOSections: React.FC<SEOSectionsProps> = ({
                         </div>
                         {category && (
                             <button
-                                onClick={() => navigate(`/category/${category.toLowerCase()}`)}
+                                onClick={() => {
+                                    const slug = category === ToolCategory.DEV || (typeof category === 'string' && category.toLowerCase() === 'developer') ? 'dev' : category.toLowerCase();
+                                    navigate(`/category/${slug}`);
+                                }}
                                 className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold transition-colors"
                             >
                                 View all {category} tools <ArrowRight size={14} />

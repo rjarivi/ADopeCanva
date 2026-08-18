@@ -17,6 +17,29 @@ export interface CategoryMeta {
   faqs: FAQItem[];
 }
 
+export const getCategorySlug = (category: ToolCategory | string): string => {
+  const c = typeof category === 'string' ? category.toLowerCase() : '';
+  if (c === 'developer' || c === 'dev') return 'dev';
+  return c;
+};
+
+const DEV_CATEGORY_META: CategoryMeta = {
+  id: 'dev',
+  name: 'Developer Tools',
+  category: ToolCategory.DEV,
+  title: 'Free In-Browser Developer Utilities, Formatter & SVG Suite',
+  h1: 'Client-Side Web Developer & Code Utility Suite',
+  description: 'Convert HTML to images, inspect & convert SVG markup, beautify/minify JSON & CSS, test Google Fonts, convert formats, and create AI Markdown UI mockups in seconds.',
+  keywords: ['html to image', 'svg to code', 'svg converter', 'json formatter', 'code beautifier', 'font previewer', 'markdown creator', 'universal converter', 'developer tools'],
+  features: ['Instant DOM-to-Canvas Capture', 'Live XML & JSON Linting', '100+ Google Fonts Interactive Preview', 'Client-Side SVG & Code Tools'],
+  faqs: [
+    { question: 'How does HTML to Image work?', answer: 'We render the HTML/CSS DOM directly onto an HTML5 Canvas using client-side rasterization and export it to high-res PNG, JPEG, or WebP.' },
+    { question: 'Are code formatting and conversions secure?', answer: 'Yes! All code transformations, formatting (JSON, HTML, CSS, XML), and Markdown creation happen 100% in-browser. No code or data is ever sent to any server.' },
+    { question: 'What SVG tools are available?', answer: 'You can convert raw SVG markup into downloadable SVG files, or upload SVG files to inspect and extract their clean vector source code.' },
+    { question: 'How does Font Previewer work?', answer: 'Font Previewer lets you preview 100+ Google Fonts live with custom text and font sizes, showing typography mockups and one-click CSS import snippets.' }
+  ]
+};
+
 export const CATEGORY_METAS: Record<string, CategoryMeta> = {
   image: {
     id: 'image',
@@ -90,19 +113,8 @@ export const CATEGORY_METAS: Record<string, CategoryMeta> = {
       { question: 'Can I compare large source files or code?', answer: 'Yes! The text diff tool uses an optimized Longest Common Subsequence (LCS) algorithm to highlight additions and deletions in real-time.' }
     ]
   },
-  dev: {
-    id: 'dev',
-    name: 'Developer Tools',
-    category: ToolCategory.DEV,
-    title: 'Free In-Browser Developer Utilities, Formatter & SVG Suite',
-    h1: 'Client-Side Web Developer & Code Utility Suite',
-    description: 'Convert HTML to images, inspect & convert SVG markup, beautify/minify JSON & CSS, test Google Fonts, and generate device mockups in seconds.',
-    keywords: ['html to image', 'svg to code', 'json formatter', 'code beautifier', 'font previewer', 'device mockup generator'],
-    features: ['Instant DOM-to-Canvas Capture', 'Live XML & JSON Linting', '100+ Google Fonts Interactive Preview', 'Retina 3x Mockup Rendering'],
-    faqs: [
-      { question: 'How does HTML to Image work?', answer: 'We render the HTML/CSS DOM directly onto an HTML5 Canvas using client-side rasterization and export it to high-res PNG, JPEG, or WebP.' }
-    ]
-  },
+  dev: DEV_CATEGORY_META,
+  developer: DEV_CATEGORY_META,
   converters: {
     id: 'converters',
     name: 'All Converters Matrix',
@@ -421,7 +433,7 @@ export const buildToolSchema = (tool: ToolItem, subRoute?: ProgrammaticSubRoute)
   const steps = subRoute?.steps || getDefaultSteps(tool);
   const faqs = subRoute?.faqs || tool.faqs || [];
 
-  const categoryUrl = `${SITE_URL}/category/${tool.category.toLowerCase()}`;
+  const categoryUrl = `${SITE_URL}/category/${getCategorySlug(tool.category)}`;
 
   const schemas: any[] = [
     // 1. WebApplication / SoftwareApplication

@@ -12,8 +12,9 @@ export const CategoryHub: React.FC = () => {
     const isMobile = useIsMobile();
     const [searchQuery, setSearchQuery] = useState('');
 
-    const catKey = category?.toLowerCase() || 'image';
-    const catMeta = CATEGORY_METAS[catKey] || CATEGORY_METAS.image;
+    const rawKey = category?.toLowerCase() || 'image';
+    const catKey = rawKey === 'developer' ? 'dev' : rawKey;
+    const catMeta = CATEGORY_METAS[catKey] || CATEGORY_METAS.dev || CATEGORY_METAS.image;
 
     // Filter tools for this category
     const categoryTools = React.useMemo(() => {
@@ -40,7 +41,7 @@ export const CategoryHub: React.FC = () => {
 
     // Update document head & structured data
     useEffect(() => {
-        const canonicalUrl = `${SITE_URL}/category/${catKey}`;
+        const canonicalUrl = `${SITE_URL}/category/${catMeta.id}`;
         const schemas = buildCategorySchema(catMeta, categoryTools);
 
         updateHeadTags({
@@ -50,9 +51,9 @@ export const CategoryHub: React.FC = () => {
             canonicalUrl,
             schemas
         });
-    }, [catKey, catMeta, categoryTools]);
+    }, [catMeta, categoryTools]);
 
-    const otherCategories = Object.keys(CATEGORY_METAS).filter(k => k !== catKey);
+    const otherCategories = Object.keys(CATEGORY_METAS).filter(k => k !== 'developer' && k !== catMeta.id);
 
     return (
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 animate-fade-in space-y-8 pb-24">

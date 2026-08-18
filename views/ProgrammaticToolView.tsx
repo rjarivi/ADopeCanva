@@ -82,7 +82,10 @@ export const ProgrammaticToolView: React.FC<ProgrammaticToolViewProps> = ({ setA
                         </button>
                         <span className="text-zinc-700">/</span>
                         <button
-                            onClick={() => navigate(`/category/${tool.category.toLowerCase()}`)}
+                            onClick={() => {
+                                const slug = tool.category === ToolCategory.DEV ? 'dev' : tool.category.toLowerCase();
+                                navigate(`/category/${slug}`);
+                            }}
                             className="text-zinc-500 hover:text-zinc-300 transition-colors"
                         >
                             {tool.category}

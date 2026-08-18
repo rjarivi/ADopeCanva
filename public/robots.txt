@@ -1,10 +1,11 @@
 # ==============================================================================
-# AdopeCanva Robots.txt (2026 Enterprise Edition)
-# Official Omnitool & Programmatic SEO Directives
+# AdopeCanva Official Robots.txt (2026 Enterprise & AI-Ready Edition)
+# Website: https://adopecanva.com
+# Privacy-First In-Browser Utility & Creative Suite
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 1. Global Search Crawlers (Google, Bing, Apple, DuckDuckGo, etc.)
+# 1. Global Default Policy (Clean Permutations & Tracking Disallow)
 # ------------------------------------------------------------------------------
 User-agent: *
 Allow: /
@@ -15,19 +16,25 @@ Allow: /guides
 Allow: /vs/
 Allow: /*.png$
 Allow: /*.jpg$
+Allow: /*.jpeg$
 Allow: /*.svg$
 Allow: /*.webp$
+Allow: /*.avif$
+Allow: /*.ico$
 Allow: /*.css$
 Allow: /*.js$
+Allow: /*.json$
 
-# Prevent crawl budget waste on internal tracking and query permutations
+# Disallow tracking query parameters to preserve crawl budget and prevent duplicate indexing
+Disallow: /*?*utm_
 Disallow: /*?*fbclid=
 Disallow: /*?*gclid=
-Disallow: /*?*utm_
+Disallow: /*?*msclkid=
 Disallow: /*?*ref=
+Disallow: /*?*source=
 
 # ------------------------------------------------------------------------------
-# 2. Search Engine Specific Crawlers
+# 2. Major Search Engine Crawlers (Full Crawl Indexation)
 # ------------------------------------------------------------------------------
 User-agent: Googlebot
 Allow: /
@@ -35,10 +42,14 @@ Allow: /assets/
 
 User-agent: Googlebot-Image
 Allow: /
+Allow: /assets/
 Allow: /*.png$
 Allow: /*.jpg$
+Allow: /*.jpeg$
 Allow: /*.svg$
 Allow: /*.webp$
+Allow: /*.avif$
+Allow: /*.ico$
 
 User-agent: Bingbot
 Allow: /
@@ -46,34 +57,114 @@ Allow: /assets/
 
 User-agent: Applebot
 Allow: /
+Allow: /assets/
 
 User-agent: DuckDuckBot
 Allow: /
 
+User-agent: Yandex
+Allow: /
+
+User-agent: Baiduspider
+Allow: /
+
+User-agent: NaverBot
+Allow: /
+
+User-agent: SeznamBot
+Allow: /
+
 # ------------------------------------------------------------------------------
-# 3. AI & Generative Search Engine Crawlers (LLM / GEO / Citation Optimization)
-# Allows inclusion in Google AI Overviews, ChatGPT Search, Perplexity, and Claude
+# 3. Generative AI Search Engines & LLM Answer Bots (GEO / LLMO)
+# Allows immediate citation & recommendations in ChatGPT, Gemini, Perplexity, Claude, Copilot
 # ------------------------------------------------------------------------------
+# OpenAI (ChatGPT Search, Browse with Bing, GPT-4o, Operator)
 User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: ChatGPT-User
 Allow: /
 
+# Perplexity AI (Real-time Citations & Multi-source Synthesis)
 User-agent: PerplexityBot
 Allow: /
 
+# Anthropic Claude (Claude 3.5 Sonnet / Artifacts Live Lookup)
 User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
 Allow: /
 
 User-agent: anthropic-ai
 Allow: /
 
+# Google AI (Gemini, AI Overviews, Vertex AI)
+User-agent: Google-Extended
+Allow: /
+
+# Meta AI (Llama Search & Assistant)
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: FacebookBot
+Allow: /
+
+# Microsoft Copilot & Bing AI
+User-agent: BingPreview
+Allow: /
+
+# Amazon AI & Alexa
+User-agent: Amazonbot
+Allow: /
+
+# Cohere AI
+User-agent: cohere-ai
+Allow: /
+
+# Common Crawl (Open Source LLM Dataset Foundation: Llama, Mistral, Grok, Kimi)
 User-agent: CCBot
 Allow: /
 
+# Diffbot & Web Information Extractors
+User-agent: Diffbot
+Allow: /
+
 # ------------------------------------------------------------------------------
-# 4. Sitemap & Host Declaration
+# 4. Social Media Rich Card Unfurlers (Link Preview Snippets)
+# ------------------------------------------------------------------------------
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: SkypeUriPreview
+Allow: /
+
+# ------------------------------------------------------------------------------
+# 5. Host & XML Sitemap Declarations
 # ------------------------------------------------------------------------------
 Host: https://adopecanva.com
 Sitemap: https://adopecanva.com/sitemap.xml

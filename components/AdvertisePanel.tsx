@@ -4,11 +4,12 @@ import { Megaphone } from 'lucide-react';
 const AD_DIMENSIONS = '160 × 80 px';
 
 const LIVE_ADS = [
+    { src: '/xpurge.pro.png', alt: 'XPurge.pro', href: 'https://xpurge.pro' },
     { src: '/ScreenRecord.ing.png', alt: 'Screenrecord.ing', href: 'https://screenrecord.ing' },
     { src: '/Vibefolios.png', alt: 'Vibefolios.com', href: 'https://vibefolios.com' },
 ];
 
-const PLACEHOLDER_COUNT = 3;
+const PLACEHOLDER_COUNT = 2;
 
 export const AdvertisePanel: React.FC = () => {
     return (

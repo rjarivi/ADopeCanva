@@ -76,7 +76,10 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                         </button>
                         <span className="text-zinc-700">/</span>
                         <button
-                            onClick={() => navigate(`/category/${tool.category.toLowerCase()}`)}
+                            onClick={() => {
+                                const slug = tool.category === ToolCategory.DEV ? 'dev' : tool.category.toLowerCase();
+                                navigate(`/category/${slug}`);
+                            }}
                             className="text-zinc-500 hover:text-zinc-300 transition-colors"
                         >
                             {tool.category} Tools
@@ -207,7 +210,7 @@ const App = () => {
         }
     }, [location.pathname, location.search]);
 
-    // Sync Pro Mode with URL; reset focused mode on navigation
+    // Sync Pro Mode & Active Category with URL; reset focused mode on navigation
     React.useLayoutEffect(() => {
         if (mainRef.current) {
             mainRef.current.scrollTo({ top: 0, behavior: 'instant' });
@@ -223,6 +226,18 @@ const App = () => {
         } else {
             setIsProMode(false);
         }
+
+        if (location.pathname === '/') {
+            setActiveCategory('All');
+        } else if (location.pathname.startsWith('/category/')) {
+            const catPart = location.pathname.split('/')[2]?.toLowerCase();
+            if (catPart === 'dev' || catPart === 'developer') {
+                setActiveCategory(ToolCategory.DEV);
+            } else {
+                const matched = Object.values(ToolCategory).find(c => c.toLowerCase() === catPart);
+                if (matched) setActiveCategory(matched);
+            }
+        }
     }, [location.pathname, isMobile, navigate]);
 
     const handleCategoryClick = (cat: string) => {
@@ -230,7 +245,8 @@ const App = () => {
         if (cat === 'All') {
             navigate('/');
         } else {
-            navigate(`/category/${cat.toLowerCase()}`);
+            const slug = cat === ToolCategory.DEV || cat.toLowerCase() === 'developer' ? 'dev' : cat.toLowerCase();
+            navigate(`/category/${slug}`);
         }
     };
 
