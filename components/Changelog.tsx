@@ -14,6 +14,30 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.9.0',
+        date: 'Aug 22, 2026',
+        items: [
+            {
+                icon: Music,
+                title: 'Audio Trimmer 2.0',
+                description: 'Complete UX overhaul: instant click-to-seek playback from any waveform position, tactile solid purple boundary handles with centered white grip pills, compact side-by-side time boundaries and fade sliders, sticky action footer, and prominent "Change Audio" navigation.',
+                type: 'feature'
+            },
+            {
+                icon: Scissors,
+                title: 'Video Trimmer 2.0',
+                description: 'Upgraded Video Trimmer with tactile solid purple handles, sub-timeline status strip (Start / Duration / End), compact side-by-side In/Out steppers with integrated quick preset chips (15s, 30s, 60s, Last 30s, Full Video), and sticky export action footer.',
+                type: 'feature'
+            },
+            {
+                icon: Sparkles,
+                title: 'Studio Upload Standardization',
+                description: 'Standardized upload landing interfaces across media tools (Audio Trimmer, Video Trimmer, Audio Merger) to strictly follow the golden single-layer glowing dropzone and 4-card feature grid design.',
+                type: 'update'
+            }
+        ]
+    },
+    {
         version: '1.8.0',
         date: 'Jul 23, 2026',
         items: [
