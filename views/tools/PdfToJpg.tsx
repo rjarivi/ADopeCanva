@@ -50,42 +50,48 @@ export const PdfToJpg: React.FC = () => {
         try {
             const arrayBuffer = await file.file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            setPageCount(pdf.numPages);
+            try {
+                setPageCount(pdf.numPages);
 
-            const images: PageImage[] = [];
+                const images: PageImage[] = [];
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-                setProgress(Math.round((i / pdf.numPages) * 100));
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    setProgress(Math.round((i / pdf.numPages) * 100));
 
-                const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: scale });
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: scale });
 
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                const ctx = canvas.getContext('2d');
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
 
-                if (!ctx) {
-                    throw new Error('Could not get canvas context');
+                    if (!ctx) {
+                        throw new Error('Could not get canvas context');
+                    }
+
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport,
+                        canvas: canvas
+                    } as any).promise;
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality / 100);
+
+                    images.push({
+                        pageNum: i,
+                        dataUrl: dataUrl,
+                        width: viewport.width,
+                        height: viewport.height
+                    });
+                    
+                    page.cleanup();
                 }
 
-                await page.render({
-                    canvasContext: ctx,
-                    viewport: viewport,
-                    canvas: canvas
-                } as any).promise;
-
-                const dataUrl = canvas.toDataURL('image/jpeg', quality / 100);
-
-                images.push({
-                    pageNum: i,
-                    dataUrl: dataUrl,
-                    width: viewport.width,
-                    height: viewport.height
-                });
+                setPageImages(images);
+            } finally {
+                await pdf.destroy();
             }
-
-            setPageImages(images);
         } catch (err) {
             console.error('PDF conversion error:', err);
             setError('Failed to convert PDF. The file may be corrupted or password protected.');
@@ -98,7 +104,7 @@ export const PdfToJpg: React.FC = () => {
     const downloadSingle = useCallback((image: PageImage) => {
         const link = document.createElement('a');
         link.href = image.dataUrl;
-        link.download = `${file?.file.name.replace('.pdf', '')}-page-${image.pageNum}.jpg`;
+        link.download = `${file?.file.name.replace(/\.pdf$/i, '')}-page-${image.pageNum}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -126,7 +132,7 @@ export const PdfToJpg: React.FC = () => {
         const url = URL.createObjectURL(content);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `${file?.file.name.replace('.pdf', '')}-images.zip`;
+        link.download = `${file?.file.name.replace(/\.pdf$/i, '')}-images.zip`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -288,6 +294,10 @@ export const PdfToJpg: React.FC = () => {
                                     <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={downloadAll} >
                                         <Archive size={18} className="mr-2" />
                                         {pageImages.length === 1 ? 'Download JPG' : `Download All (${pageImages.length} images)`}
+                                    </Button>
+                                    <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
+                                        <FileImage size={18} className="mr-2" />
+                                        {isProcessing ? 'Converting...' : 'Re-convert with New Settings'}
                                     </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>
                                         <RefreshCcw size={16} className="mr-2" /> Start New

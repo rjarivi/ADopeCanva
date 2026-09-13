@@ -120,19 +120,25 @@ export const PdfRedact: React.FC = () => {
     }, []);
 
     // ── Redraw visible canvas ─────────────────────────────────────────────────
+    const pageImgCache = useRef<HTMLImageElement | null>(null);
+
+    useEffect(() => {
+        const pageData = pages.get(currentPage);
+        if (!pageData?.dataUrl) return;
+        const img = new Image();
+        img.onload = () => { pageImgCache.current = img; redrawCanvas(); };
+        img.src = pageData.dataUrl;
+    }, [pages, currentPage]);
+
     const redrawCanvas = useCallback(() => {
         const canvas   = canvasRef.current;
         const pageData = pages.get(currentPage);
-        if (!canvas || !pageData) return;
+        if (!canvas || !pageData || !pageImgCache.current) return;
         canvas.width = pageData.width; canvas.height = pageData.height;
         const ctx = canvas.getContext('2d')!;
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0);
-            ctx.fillStyle = '#000';
-            for (const r of redactions.get(currentPage) ?? []) ctx.fillRect(r.x, r.y, r.w, r.h);
-        };
-        img.src = pageData.dataUrl;
+        ctx.drawImage(pageImgCache.current, 0, 0);
+        ctx.fillStyle = '#000';
+        for (const r of redactions.get(currentPage) ?? []) ctx.fillRect(r.x, r.y, r.w, r.h);
     }, [pages, currentPage, redactions]);
 
     useEffect(() => { redrawCanvas(); }, [redrawCanvas]);
@@ -401,20 +407,23 @@ export const PdfRedact: React.FC = () => {
         const blob  = new Blob([bytes as unknown as BlobPart], { type: 'application/pdf' });
         const url   = URL.createObjectURL(blob);
         const a     = document.createElement('a');
-        a.href = url; a.download = `redacted-${file?.file.name ?? 'document.pdf'}`; a.click();
-        URL.revokeObjectURL(url);
+        a.href = url; a.download = `redacted-${file?.file.name ?? 'document.pdf'}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     const exportTrue = async () => {
         const first = pages.get(1)!;
-        const pdf   = new jsPDF({ orientation: first.width >= first.height ? 'landscape' : 'portrait', unit: 'px', format: [first.width, first.height] });
+        const pdf   = new jsPDF({ orientation: first.width >= first.height ? 'landscape' : 'portrait', unit: 'px', format: [first.width / RENDER_SCALE, first.height / RENDER_SCALE] });
         for (let i = 1; i <= pageCount; i++) {
-            if (i > 1) { const pd = pages.get(i)!; pdf.addPage([pd.width, pd.height], pd.width >= pd.height ? 'landscape' : 'portrait'); }
+            if (i > 1) { const pd = pages.get(i)!; pdf.addPage([pd.width / RENDER_SCALE, pd.height / RENDER_SCALE], pd.width >= pd.height ? 'landscape' : 'portrait'); }
             const pd = pages.get(i)!; const rects = redactions.get(i) ?? [];
             const off = document.createElement('canvas'); off.width = pd.width; off.height = pd.height;
             const ctx = off.getContext('2d')!;
-            await new Promise<void>(resolve => { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0); ctx.fillStyle = '#000'; rects.forEach(r => ctx.fillRect(r.x, r.y, r.w, r.h)); resolve(); }; img.src = pd.dataUrl; });
-            pdf.addImage(off.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pd.width, pd.height);
+            await new Promise<void>((resolve, reject) => { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0); ctx.fillStyle = '#000'; rects.forEach(r => ctx.fillRect(r.x, r.y, r.w, r.h)); resolve(); }; img.onerror = () => reject(new Error('Failed to load page image for PDF export')); img.src = pd.dataUrl; });
+            pdf.addImage(off.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pd.width / RENDER_SCALE, pd.height / RENDER_SCALE);
         }
         pdf.save(`true-redacted-${file?.file.name ?? 'document.pdf'}`);
     };

@@ -120,7 +120,9 @@ export const ImageCropper: React.FC = () => {
         // Clamp
         if (crop.y + newHeight > 100) {
             newHeight = 100 - crop.y;
-            const newWidth = (newHeight * targetRatio) / imgAspect;
+            let newWidth = (newHeight * targetRatio) / imgAspect;
+            newWidth = Math.min(newWidth, 100 - crop.x);
+            newHeight = Math.min(newHeight, 100 - crop.y);
             setCrop(c => ({ ...c, width: newWidth, height: newHeight }));
         } else {
             setCrop(c => ({ ...c, height: newHeight }));
@@ -687,6 +689,7 @@ export const ImageCropper: React.FC = () => {
                                         pointerEvents: isHand ? 'none' : 'auto', borderWidth: `${borderW}px`, borderColor: 'white', borderStyle: 'solid',
                                     }}
                                     onMouseDown={(e) => !isHand && handleMouseDown(e, 'move')}
+                                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); !isHand && handleMouseDown(e as any, 'move'); }}
                                 >
                                     {/* Grids */}
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-30">
@@ -696,10 +699,10 @@ export const ImageCropper: React.FC = () => {
                                     </div>
                                     {!isHand && (
                                         <>
-                                            <div className="cursor-nw-resize shadow-lg" style={handleStyle({ top: '0%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'nw')} />
-                                            <div className="cursor-ne-resize shadow-lg" style={handleStyle({ top: '0%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'ne')} />
-                                            <div className="cursor-sw-resize shadow-lg" style={handleStyle({ top: '100%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'sw')} />
-                                            <div className="cursor-se-resize shadow-lg" style={handleStyle({ top: '100%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'se')} />
+                                            <div className="cursor-nw-resize shadow-lg" style={handleStyle({ top: '0%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'nw')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'nw'); }} />
+                                            <div className="cursor-ne-resize shadow-lg" style={handleStyle({ top: '0%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'ne')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'ne'); }} />
+                                            <div className="cursor-sw-resize shadow-lg" style={handleStyle({ top: '100%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'sw')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'sw'); }} />
+                                            <div className="cursor-se-resize shadow-lg" style={handleStyle({ top: '100%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'se')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'se'); }} />
                                         </>
                                     )}
                                 </div>

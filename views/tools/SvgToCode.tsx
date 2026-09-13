@@ -12,6 +12,16 @@ export const SvgToCode: React.FC = () => {
     const [fileName, setFileName] = useState('');
     const [copied, setCopied] = useState(false);
     const [previewVisible, setPreviewVisible] = useState(true);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        if (code) {
+            const blob = new Blob([code], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl(url);
+            return () => URL.revokeObjectURL(url);
+        }
+    }, [code]);
 
     const handleFile = useCallback((fileData: FileData) => {
         const reader = new FileReader();
@@ -31,11 +41,11 @@ export const SvgToCode: React.FC = () => {
 
     const handleDownload = () => {
         if (!code) return;
-        const blob = new Blob([code], { type: 'text/plain' });
+        const blob = new Blob([code], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${fileName || 'output'}.svg.txt`;
+        a.download = `${fileName || 'output'}.svg`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -161,10 +171,7 @@ export const SvgToCode: React.FC = () => {
                             <span className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Preview</span>
                         </div>
                         <div className="flex-1 flex items-center justify-center p-6 bg-zinc-950">
-                            <div
-                                className="max-w-full max-h-full overflow-auto"
-                                dangerouslySetInnerHTML={{ __html: code }}
-                            />
+                            <img src={previewUrl || ''} className="max-w-full max-h-full object-contain" alt="SVG Preview" />
                         </div>
                     </div>
                 )}

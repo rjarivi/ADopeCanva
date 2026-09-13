@@ -51,6 +51,7 @@ export const VideoCompressor: React.FC = () => {
         const inputExt = file.file.name.split('.').pop() || 'mp4';
         const inputName = `input.${inputExt}`;
         const outputName = 'compressed.mp4';
+        if (resultUrl) URL.revokeObjectURL(resultUrl);
         setResultUrl(null);
 
         // Progress Handler
@@ -72,6 +73,7 @@ export const VideoCompressor: React.FC = () => {
                 '-y',
                 '-i', inputName,
                 '-c:v', 'libx264',
+                '-pix_fmt', 'yuv420p',
                 '-crf', crf.toString(),
                 '-preset', preset,
                 '-threads', threads,
@@ -80,7 +82,7 @@ export const VideoCompressor: React.FC = () => {
             ];
 
             if (resizeScale < 100) {
-                args.push('-vf', `scale=iw*${resizeScale / 100}:-1`);
+                args.push('-vf', `scale=trunc(iw*${resizeScale / 100}/2)*2:-2`);
             }
 
             args.push(outputName);
@@ -90,6 +92,7 @@ export const VideoCompressor: React.FC = () => {
             const data = await ffmpeg.readFile(outputName);
             const blob = new Blob([data as any], { type: 'video/mp4' });
 
+            if (resultUrl) URL.revokeObjectURL(resultUrl);
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');
@@ -196,7 +199,7 @@ export const VideoCompressor: React.FC = () => {
                     <h2 className="font-black text-[10px] text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-2 font-unbounded">
                         <Zap size={18} /> Configuration
                     </h2>
-                    <Button variant="ghost" size="sm" onClick={() => { setFile(null); setResultUrl(null); }} className="hover:bg-zinc-900 text-zinc-500">
+                    <Button variant="ghost" size="sm" onClick={() => { setFile(null); if (resultUrl) URL.revokeObjectURL(resultUrl); setResultUrl(null); }} className="hover:bg-zinc-900 text-zinc-500">
                         <RefreshCcw size={14} />
                     </Button>
                 </div>
@@ -317,8 +320,10 @@ export const VideoCompressor: React.FC = () => {
                                 onClick={() => {
                                     const a = document.createElement('a');
                                     a.href = resultUrl!;
-                                    a.download = `compressed_${file.file.name.split('.')[0]}.mp4`;
+                                    a.download = `compressed_${file.file.name.replace(/\.[^/.]+$/, '')}.mp4`;
+                                    document.body.appendChild(a);
                                     a.click();
+                                    document.body.removeChild(a);
                                 }}
                                 className="w-full h-14 bg-indigo-600 text-white hover:bg-indigo-500 border-none font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-indigo-900/30"
                             >
@@ -328,6 +333,7 @@ export const VideoCompressor: React.FC = () => {
                                 variant="secondary"
                                 onClick={() => {
                                     setFile(null);
+                                    if (resultUrl) URL.revokeObjectURL(resultUrl);
                                     setResultUrl(null);
                                     setResultSize(null);
                                 }}

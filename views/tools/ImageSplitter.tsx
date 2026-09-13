@@ -118,7 +118,7 @@ export const ImageSplitter: React.FC = () => {
         }
         const img = new Image();
         img.onload = () => setImageEl(img);
-        img.src = file.previewUrl ?? URL.createObjectURL(file.file);
+        img.src = file.previewUrl;
     }, [file]);
 
     // Reset slices when options change
@@ -148,17 +148,16 @@ export const ImageSplitter: React.FC = () => {
 
         if (direction === 'horizontal') {
             // Split wide image into left-to-right slices of sliceW×sliceH
-            const totalCols = Math.ceil(imageEl.naturalWidth / sliceW);
+            const scale = sliceH / imageEl.naturalHeight;
+            const srcW = sliceW / scale;
+            const totalCols = Math.ceil(imageEl.naturalWidth / srcW);
             for (let i = 0; i < totalCols; i++) {
-                const sx = i * sliceW;
-                const sw = Math.min(sliceW, imageEl.naturalWidth - sx);
-                // Scale to exact sliceH, maintaining proportional source height
-                const srcH = Math.min(sliceH, imageEl.naturalHeight);
+                const srcX = i * srcW;
                 canvas.width = sliceW;
                 canvas.height = sliceH;
                 const ctx = canvas.getContext('2d')!;
                 ctx.clearRect(0, 0, sliceW, sliceH);
-                ctx.drawImage(imageEl, sx, 0, sw, srcH, 0, 0, sw, srcH);
+                ctx.drawImage(imageEl, srcX, 0, srcW, imageEl.naturalHeight, 0, 0, sliceW, sliceH);
                 results.push({
                     index: i,
                     dataUrl: canvas.toDataURL('image/png'),
@@ -169,16 +168,16 @@ export const ImageSplitter: React.FC = () => {
             }
         } else {
             // Split tall image into top-to-bottom slices of sliceW×sliceH
-            const totalRows = Math.ceil(imageEl.naturalHeight / sliceH);
+            const scale = sliceW / imageEl.naturalWidth;
+            const srcH = sliceH / scale;
+            const totalRows = Math.ceil(imageEl.naturalHeight / srcH);
             for (let i = 0; i < totalRows; i++) {
-                const sy = i * sliceH;
-                const sh = Math.min(sliceH, imageEl.naturalHeight - sy);
-                const srcW = Math.min(sliceW, imageEl.naturalWidth);
+                const srcY = i * srcH;
                 canvas.width = sliceW;
                 canvas.height = sliceH;
                 const ctx = canvas.getContext('2d')!;
                 ctx.clearRect(0, 0, sliceW, sliceH);
-                ctx.drawImage(imageEl, 0, sy, srcW, sh, 0, 0, srcW, sh);
+                ctx.drawImage(imageEl, 0, srcY, imageEl.naturalWidth, srcH, 0, 0, sliceW, sliceH);
                 results.push({
                     index: i,
                     dataUrl: canvas.toDataURL('image/png'),
@@ -488,7 +487,7 @@ export const ImageSplitter: React.FC = () => {
                             </h3>
                             <div className="relative w-full rounded-xl overflow-hidden bg-zinc-950 flex items-center justify-center" style={{ minHeight: 200, maxHeight: 400 }}>
                                 <img
-                                    src={file.previewUrl ?? URL.createObjectURL(file.file)}
+                                    src={file.previewUrl}
                                     alt="Source"
                                     className="max-w-full max-h-[380px] object-contain rounded-lg"
                                 />
@@ -578,7 +577,7 @@ export const ImageSplitter: React.FC = () => {
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-pink-500/5 border border-pink-500/15">
                                 <Instagram size={16} className="text-pink-400 shrink-0" />
                                 <p className="text-xs text-zinc-400 leading-relaxed">
-                                    <span className="text-zinc-200 font-semibold">Instagram tip:</span> Upload slides from <strong className="text-pink-300">right to left</strong> so they display in the correct left-to-right order in your carousel.
+                                    <span className="text-zinc-200 font-semibold">Instagram tip:</span> Upload slides <strong className="text-pink-300">left to right</strong> (slide 1 first) so they display in the correct order in your carousel.
                                 </p>
                             </div>
                         </div>

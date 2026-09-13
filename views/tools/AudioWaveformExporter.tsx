@@ -224,16 +224,19 @@ export const AudioWaveformExporter: React.FC = () => {
 
     const decodeAudio = useCallback(async (fileData: FileData, sampleCount = samplesRef.current) => {
         setIsDecoding(true); setError(''); setWaveData([]); setRawAudioData(null);
+        let ctx: AudioContext | null = null;
         try {
-            const ctx = new AudioContext();
+            ctx = new AudioContext();
             const buf = await fileData.file.arrayBuffer();
             const audio = await ctx.decodeAudioData(buf);
             const ch = audio.getChannelData(0);
             setRawAudioData(ch);
             computeWaveData(ch, sampleCount);
-            if (ctx.state !== 'closed') await ctx.close();
         } catch { setError('Could not decode audio. Try MP3, WAV, OGG, or FLAC.'); }
-        finally { setIsDecoding(false); }
+        finally { 
+            if (ctx && ctx.state !== 'closed') await ctx.close();
+            setIsDecoding(false); 
+        }
     }, [computeWaveData]);
 
     React.useEffect(() => {
@@ -399,7 +402,7 @@ export const AudioWaveformExporter: React.FC = () => {
             if (mirror) {
                 const inner: [number, number][] = data.map((v, i) => {
                     const a = (i / n) * 2 * Math.PI - Math.PI / 2;
-                    const r = baseR * 0.55 + v * maxSpike * 0.55;
+                    const r = Math.max(10, baseR * 0.55 - v * maxSpike * 0.45);
                     return [cx2 + Math.cos(a) * r, cy2 + Math.sin(a) * r];
                 });
                 clipPath = `<path d="${circularPath(outer)} ${circularPath(inner)}" fill-rule="evenodd"/>`;
@@ -450,8 +453,12 @@ export const AudioWaveformExporter: React.FC = () => {
         const blob = new Blob([svgString], { type: 'image/svg+xml' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href = url; a.download = `waveform-${waveStyle}.svg`; a.click();
-        URL.revokeObjectURL(url);
+        a.href = url;
+        a.download = `waveform-${waveStyle}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, [svgString, waveStyle]);
 
     const handleCopy = useCallback(async () => {

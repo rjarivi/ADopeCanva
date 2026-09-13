@@ -106,14 +106,30 @@ export const PdfSuite: React.FC = () => {
         setThumbnailsLoading(true);
         const thumbs: string[] = new Array(count).fill('');
         setThumbnails([...thumbs]);
-        for (let i = 0; i < count; i++) {
-            try {
-                const url = await renderPageToDataUrl(file, i, 0.35);
-                thumbs[i] = url;
-                setThumbnails([...thumbs]);
-            } catch {
-                // keep empty string on failure
+        
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        try {
+            for (let i = 0; i < count; i++) {
+                try {
+                    const page = await pdf.getPage(i + 1);
+                    const viewport = page.getViewport({ scale: 0.35 });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        await page.render({ canvasContext: ctx, viewport } as any).promise;
+                        thumbs[i] = canvas.toDataURL('image/jpeg', 0.75);
+                        setThumbnails([...thumbs]);
+                    }
+                    page.cleanup();
+                } catch {
+                    // keep empty string on failure
+                }
             }
+        } finally {
+            await pdf.destroy();
         }
         setThumbnailsLoading(false);
     }, []);
@@ -155,13 +171,11 @@ export const PdfSuite: React.FC = () => {
     };
 
     const handleFileSelect = async (newFiles: FileData | FileData[]) => {
-        if (Array.isArray(newFiles)) {
-            setFiles(prev => [...prev, ...newFiles]);
-        } else {
-            setFiles([newFiles]);
-            if (mode !== 'merge') {
-                await loadPdfInfo(newFiles.file);
-            }
+        const fileArray = Array.isArray(newFiles) ? newFiles : [newFiles];
+        setFiles(prev => mode === 'merge' ? [...prev, ...fileArray] : fileArray);
+        if (mode !== 'merge') {
+            const firstFile = fileArray[0];
+            if (firstFile) await loadPdfInfo(firstFile.file);
         }
     };
 
@@ -300,7 +314,7 @@ export const PdfSuite: React.FC = () => {
                 const arrayBuffer = await srcFile.arrayBuffer();
                 const srcDoc = await PDFDocument.load(arrayBuffer);
                 const indicesToExtract = selectedPages.length > 0
-                    ? selectedPages.sort((a, b) => a - b)
+                    ? [...selectedPages].sort((a, b) => a - b)
                     : srcDoc.getPageIndices();
                 const copiedPages = await resultDoc.copyPages(srcDoc, indicesToExtract);
                 copiedPages.forEach((page) => resultDoc.addPage(page));
@@ -419,8 +433,9 @@ export const PdfSuite: React.FC = () => {
                         const base64 = dataUrl.split(',')[1];
                         const jpegBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
                         const jpegImage = await outDoc.embedJpg(jpegBytes);
-                        const pdfPage = outDoc.addPage([canvas.width, canvas.height]);
-                        pdfPage.drawImage(jpegImage, { x: 0, y: 0, width: canvas.width, height: canvas.height });
+                        const origVp = page.getViewport({ scale: 1.0 });
+                        const pdfPage = outDoc.addPage([origVp.width, origVp.height]);
+                        pdfPage.drawImage(jpegImage, { x: 0, y: 0, width: pdfPage.getWidth(), height: pdfPage.getHeight() });
                         setCompressionProgress({ current: i, total: totalPages });
                     }
                     const compressed = await outDoc.save();
@@ -766,17 +781,9 @@ export const PdfSuite: React.FC = () => {
                                 <>
                                     <SectionLabel>Document Permissions</SectionLabel>
                                     <div className="bg-[#121214] border border-zinc-800/50 p-4 rounded-2xl space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black text-zinc-500 uppercase tracking-widest font-unbounded">Owner Password</label>
-                                            <input
-                                                type="password"
-                                                placeholder="••••••••"
-                                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none text-zinc-300"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                            />
+                                        <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4 text-amber-400 text-sm">
+                                            ⚠️ Client-side PDF encryption is not supported in this version. Password protection requires a server-side component. This feature will apply metadata changes only.
                                         </div>
-                                        <p className="text-[9px] text-zinc-600 italic">Security features processed in your browser. Your password never leaves your device.</p>
                                     </div>
                                 </>
                             )}

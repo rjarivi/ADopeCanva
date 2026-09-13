@@ -84,6 +84,7 @@ export const UniversalConverter: React.FC = () => {
     const [inputFormat, setInputFormat] = useState<Format>('json');
     const [outputFormat, setOutputFormat] = useState<Format>('csv');
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
 
     // Auto-convert when input or formats change
     useEffect(() => {
@@ -124,16 +125,31 @@ export const UniversalConverter: React.FC = () => {
         }
     };
 
+    const flattenObj = (obj: any, prefix = ''): Record<string, any> => {
+        return Object.keys(obj).reduce((acc, key) => {
+            const val = obj[key];
+            const newKey = prefix ? `${prefix}.${key}` : key;
+            if (val && typeof val === 'object' && !Array.isArray(val) && val._text === undefined) {
+                Object.assign(acc, flattenObj(val, newKey));
+            } else {
+                acc[newKey] = val?._text ?? val;
+            }
+            return acc;
+        }, {} as Record<string, any>);
+    };
+
     const stringifyOutput = (data: any, format: Format): string => {
         try {
             switch (format) {
                 case 'json':
                     return JSON.stringify(data, null, 2);
                 case 'xml':
-                    return js2xml(data, { compact: true, spaces: 2 });
+                    const xmlData = Array.isArray(data) ? { root: { item: data } } : data;
+                    return js2xml(xmlData, { compact: true, spaces: 2 });
                 case 'csv':
                     // Fix: Papa.unparse expects an array. If data is an object, wrap it.
-                    const csvInput = Array.isArray(data) ? data : [data];
+                    let csvInput = Array.isArray(data) ? data : [data];
+                    csvInput = csvInput.map(row => flattenObj(row));
                     return Papa.unparse(csvInput);
                 case 'yaml':
                     return yaml.dump(data);
@@ -166,6 +182,8 @@ export const UniversalConverter: React.FC = () => {
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(output);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
     const downloadOutput = () => {
@@ -174,7 +192,10 @@ export const UniversalConverter: React.FC = () => {
         const a = document.createElement('a');
         a.href = url;
         a.download = `converted.${outputFormat}`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     return (
@@ -232,7 +253,7 @@ export const UniversalConverter: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="secondary" size="sm" onClick={copyToClipboard} disabled={!output}>
-                                <Copy size={16} className="mr-2" /> Copy
+                                {copied ? <><Check size={16} className="mr-2" /> Copied</> : <><Copy size={16} className="mr-2" /> Copy</>}
                             </Button>
                             <Button size="sm" onClick={downloadOutput} disabled={!output}>
                                 <Download size={16} className="mr-2" /> Download

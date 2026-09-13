@@ -28,14 +28,21 @@ export const QrGenerator: React.FC = () => {
         }
     }, []);
 
+    const [error, setError] = useState('');
+
     useEffect(() => {
         if (qrInstance) {
-            qrInstance.set({
-                value: text || 'https://adopecanva.com',
-                size: size,
-                background: background,
-                foreground: foreground
-            });
+            try {
+                qrInstance.set({
+                    value: text || 'https://adopecanva.com',
+                    size: size,
+                    background: background,
+                    foreground: foreground
+                });
+                setError('');
+            } catch (err) {
+                setError('Text is too long for the selected error correction level. Try reducing text or using a lower error correction level.');
+            }
         }
     }, [text, size, background, foreground, qrInstance]);
 
@@ -117,6 +124,7 @@ export const QrGenerator: React.FC = () => {
                             placeholder="Enter URL, text, email, or WiFi credentials..."
                             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white text-sm outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 h-24 resize-none placeholder:text-zinc-600 transition-all font-mono custom-scrollbar"
                         />
+                        {error && <p className="text-xs text-red-400 mt-2">{error}</p>}
                     </section>
 
                     {/* Colors */}

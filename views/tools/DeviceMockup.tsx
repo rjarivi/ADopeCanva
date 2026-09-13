@@ -263,7 +263,10 @@ export const DeviceMockup: React.FC = () => {
 
     const handleFile = useCallback((fd: FileData) => {
         setFileData(fd)
-        setImageUrl(fd.previewUrl ?? URL.createObjectURL(fd.file))
+        setImageUrl(prev => {
+            if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+            return fd.previewUrl ?? URL.createObjectURL(fd.file);
+        })
         setIsExternalImage(false)
     }, [])
 
@@ -370,8 +373,8 @@ export const DeviceMockup: React.FC = () => {
         if (!el) return
         const onWheel = (e: WheelEvent) => {
             e.preventDefault()
-            const factor = e.deltaY < 0 ? 1.06 : 0.95
-            setSettings(prev => ({ ...prev, zoom: Math.max(0.3, Math.min(5, prev.zoom * factor)) }))
+            const factor = Math.exp(-e.deltaY * 0.002);
+            setSettings(prev => ({ ...prev, zoom: Math.min(3, Math.max(0.25, prev.zoom * factor)) }))
             setActivePreset(null)
         }
         el.addEventListener('wheel', onWheel, { passive: false })
@@ -383,9 +386,17 @@ export const DeviceMockup: React.FC = () => {
 
     // ── Export ────────────────────────────────────────────────────────────────
 
+    const [exportError, setExportError] = useState('')
+
     const handleExport = useCallback(async () => {
         if (!imageUrl || !previewRef.current) return
         setExporting(true)
+        setExportError('')
+
+        const has3DEffect = settings.tiltX !== 0 || settings.tiltY !== 0 || settings.roll !== 0;
+        if (has3DEffect) {
+            setExportError('Note: 3D tilt effects may not render in exports. The exported image shows the flat layout.');
+        }
 
         // Temporarily disable cross-origin stylesheets so html-to-image
         // doesn't hit SecurityError reading cssRules from Google Fonts etc.
@@ -421,6 +432,7 @@ export const DeviceMockup: React.FC = () => {
             document.body.removeChild(a)
         } catch (err) {
             console.error('Export failed:', err)
+            setExportError('Export failed. This may be due to cross-origin images or 3D effects. Try disabling tilt and using local images.');
         } finally {
             // Re-enable stylesheets regardless of success or failure
             for (const sheet of disabledSheets) sheet.disabled = false
@@ -1013,6 +1025,11 @@ export const DeviceMockup: React.FC = () => {
 
                 {/* Sticky Export — always visible at bottom */}
                 <div className="pt-2 border-t border-zinc-800 shrink-0">
+                    {exportError && (
+                        <div className="mb-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] leading-tight">
+                            {exportError}
+                        </div>
+                    )}
                     <Button
                         onClick={handleExport}
                         disabled={exporting}

@@ -58,6 +58,7 @@ export const AudioTrimmer: React.FC = () => {
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const currentTimeRef = useRef(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSelectionOnly, setPlaySelectionOnly] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
@@ -115,8 +116,9 @@ export const AudioTrimmer: React.FC = () => {
     // Decode Audio Buffer for Real Waveform Peaks
     const decodeAudioPeaks = useCallback(async (fileBlob: File) => {
         setIsDecodingAudio(true);
+        let ctx: AudioContext | null = null;
         try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const arrayBuffer = await fileBlob.arrayBuffer();
             const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
@@ -150,13 +152,12 @@ export const AudioTrimmer: React.FC = () => {
             setDuration(audioBuffer.duration);
             setStartTime(0);
             setEndTime(audioBuffer.duration);
-
-            if (ctx.state !== 'closed') {
-                await ctx.close();
-            }
         } catch (err) {
             console.error('Error decoding audio buffer:', err);
         } finally {
+            if (ctx && ctx.state !== 'closed') {
+                await ctx.close();
+            }
             setIsDecodingAudio(false);
         }
     }, []);
@@ -164,6 +165,7 @@ export const AudioTrimmer: React.FC = () => {
     // Handle File Selection
     useEffect(() => {
         if (file) {
+            setPeaks(null);
             const url = URL.createObjectURL(file.file);
             setAudioUrl(url);
             setTrimmedUrl(null);
@@ -407,16 +409,19 @@ export const AudioTrimmer: React.FC = () => {
         if (!audioRef.current) return;
         const current = audioRef.current.currentTime;
         setCurrentTime(current);
+        currentTimeRef.current = current;
 
         if (playSelectionOnly || isLooping) {
             if (current >= endTime || current < startTime - 0.05) {
                 if (isLooping) {
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                 } else {
                     audioRef.current.pause();
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                     setIsPlaying(false);
                 }
             }
@@ -433,35 +438,37 @@ export const AudioTrimmer: React.FC = () => {
         } else {
             if (mode === 'selection') {
                 setPlaySelectionOnly(true);
-                if (currentTime < startTime || currentTime >= endTime) {
+                if (currentTimeRef.current < startTime || currentTimeRef.current >= endTime) {
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                 }
             } else {
                 setPlaySelectionOnly(false);
             }
             audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
         }
-    }, [isPlaying, duration, currentTime, startTime, endTime]);
+    }, [isPlaying, duration, startTime, endTime]);
 
     const nudgeCurrentTime = useCallback((delta: number) => {
         if (!audioRef.current || !duration) return;
         const newTime = Math.max(0, Math.min(duration, audioRef.current.currentTime + delta));
         audioRef.current.currentTime = newTime;
         setCurrentTime(newTime);
+        currentTimeRef.current = newTime;
     }, [duration]);
 
     const markInPoint = useCallback(() => {
-        const newStart = Math.min(currentTime, endTime - 0.1);
+        const newStart = Math.min(currentTimeRef.current, endTime - 0.1);
         setStartTime(newStart);
         setTrimmedUrl(null);
-    }, [currentTime, endTime]);
+    }, [endTime]);
 
     const markOutPoint = useCallback(() => {
-        const newEnd = Math.max(currentTime, startTime + 0.1);
+        const newEnd = Math.max(currentTimeRef.current, startTime + 0.1);
         setEndTime(newEnd);
         setTrimmedUrl(null);
-    }, [currentTime, startTime]);
+    }, [startTime]);
 
     // Keyboard Shortcuts
     useEffect(() => {
@@ -724,6 +731,7 @@ export const AudioTrimmer: React.FC = () => {
                     break;
             }
 
+            args.push('-vn');
             args.push(outputName);
 
             const ret = await ffmpeg.exec(args);
@@ -780,8 +788,7 @@ export const AudioTrimmer: React.FC = () => {
         if (selected) {
             setFile({
                 file: selected,
-                preview: URL.createObjectURL(selected),
-                name: selected.name,
+                previewUrl: URL.createObjectURL(selected),
                 size: (selected.size / (1024 * 1024)).toFixed(2) + ' MB',
                 type: selected.type
             });

@@ -4,8 +4,8 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
-    GitCompare, Palette, FileDown, SplitSquareHorizontal, Pipette
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
+    GitCompare, Palette, FileDown, SplitSquareHorizontal, Pipette, FileAudio, Stamp
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
 import { ImageCompressor } from './tools/ImageCompressor';
@@ -15,11 +15,11 @@ import { AudioReplacer } from './tools/AudioReplacer';
 import { VideoToGif } from './tools/VideoToGif';
 import { AudioMerger } from './tools/AudioMerger';
 import { AudioConverter } from './tools/AudioConverter';
+import { AudioExtractor } from './tools/AudioExtractor';
 import { AudioTrimmer } from './tools/AudioTrimmer';
 import { ImageCropper } from './tools/ImageCropper';
 import { PdfSuite } from './tools/DocSuite';
 import { CodeFormatter } from './tools/CodeFormatter';
-import { MagicImageEditor } from './tools/MagicImageEditor';
 import { GifSuite } from './tools/GifSuite';
 import { GifMaker } from './tools/GifMaker';
 import { GifEditor } from './tools/GifEditor';
@@ -46,7 +46,6 @@ import { Tooltip } from '../components/ui/Tooltip';
 import { MarkdownCreatorIcon } from '../components/icons/MarkdownCreatorIcon';
 import { MarkdownCreator } from './tools/MarkdownCreator';
 import { ImageConverter } from './tools/ImageConverter';
-import { UpscaleImage } from './tools/UpscaleImage';
 import { ImageToIco } from './tools/ImageToIco';
 import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
@@ -59,8 +58,78 @@ import { ColorTool } from './tools/ColorTool';
 import { FileToMarkdown } from './tools/FileToMarkdown';
 import { FontPreviewer } from './tools/FontPreviewer';
 import { ImageSplitter } from './tools/ImageSplitter';
+import { SocialMockupChecker } from './tools/SocialMockupChecker';
+import { PaletteExtractor } from './tools/PaletteExtractor';
+import { ExifStripper } from './tools/ExifStripper';
+import { PdfWatermark } from './tools/PdfWatermark';
 
 export const TOOLS: ToolItem[] = [
+    {
+        id: 'social-mockup-checker',
+        title: 'Social Mockup Checker',
+        description: 'Preview Instagram Stories, Reels, Feed Posts, Carousels & Ads inside a 3D phone mockup with official Meta safe zone guides.',
+        category: ToolCategory.IMAGE,
+        icon: Smartphone,
+        component: <SocialMockupChecker />,
+        popular: true,
+        guideTitle: 'How to preview social media graphics & check safe zones',
+        guideContent: 'Upload your design images or multi-slide carousel images, select your target Instagram/Meta format (Story 9:16, Story Ad 9:16, Feed 4:5, Feed 1:1, Carousel, or Feed Ad), and preview them live inside an interactive 3D mobile phone mockup. Toggle official Meta safe zone guides to ensure top headers, bottom CTA buttons, message reply bars, and profile grid cropping will not obscure your text or logos.',
+        faqs: [
+            { question: 'What are Meta / Instagram safe zones?', answer: 'Safe zones are the recommended areas inside a story or reel graphic where text and key elements will not be covered by top account headers, status bars, or bottom message reply pills and swipe-up buttons.' },
+            { question: 'What is the 1:1 profile grid crop for 4:5 posts?', answer: 'When you post a 4:5 portrait post (1080×1350), Instagram crops the top and bottom ~135px when displaying it in your 1:1 profile grid. The safe zone guide highlights this crop boundary so your grid looks perfect.' },
+            { question: 'Can I preview multi-slide carousels?', answer: 'Yes — upload multiple images at once to switch between slides with realistic swipe arrow buttons, pagination dots, and slide counters inside the 3D phone screen.' },
+            { question: 'Are my designs uploaded to a server?', answer: 'No — all rendering, 3D transformations, and high-res PNG exports occur entirely client-side in your browser for 100% privacy.' },
+        ],
+        specs: [
+            { label: 'Supported Formats', value: 'Stories (9:16), Reels, Feed 4:5, Feed 1:1, Carousels, Story Ads, Feed Ads' },
+            { label: 'Export Options', value: '1×, 2×, 3× Retina PNG (With/Without UI Chrome)' },
+            { label: '3D Phone Stage', value: 'Interactive Tilt X/Y/Z, Device Finishes, Studio Backdrops' },
+            { label: 'Engine', value: 'HTML Canvas & CSS 3D (100% Client-Side)' },
+        ],
+        privacyNotes: 'All mockup rendering and safe zone checks are processed locally inside your web browser. No graphics or data are sent to external servers.'
+    },
+    {
+        id: 'palette-extractor',
+        title: 'Palette Extractor',
+        description: 'Extract dominant color palettes, moods, and CSS variables from images.',
+        category: ToolCategory.IMAGE,
+        icon: Palette,
+        component: <PaletteExtractor />,
+        popular: true,
+        guideTitle: 'How to extract dominant color palettes from any photo',
+        guideContent: 'Drop any image to extract dominant color swatches using Canvas color quantization. Explore different moods (Vibrant, Muted, Light, Dark, Pastel), sample custom points with the interactive eyedropper, and copy CSS variables or Tailwind snippets.',
+        faqs: [
+            { question: 'What formats can I export?', answer: 'You can copy individual HEX/RGB/HSL values, CSS Variables, Tailwind config, JSON data, or download a high-res PNG swatch card.' },
+            { question: 'Can I pick custom colors from the image?', answer: 'Yes! Simply click anywhere on the image preview to sample custom color points.' },
+        ],
+        specs: [
+            { label: 'Supported Inputs', value: 'PNG, JPG, WebP, AVIF, SVG, GIF' },
+            { label: 'Export Options', value: 'HEX, CSS Variables, Tailwind, JSON, PNG Card' },
+            { label: 'Color Quantization', value: 'Spatial 3D RGB Clustering (100% Local)' }
+        ],
+        privacyNotes: 'Color extraction happens entirely in-browser. No images are uploaded to any server.'
+    },
+    {
+        id: 'exif-stripper',
+        title: 'EXIF Metadata Stripper',
+        description: 'Inspect camera info, remove GPS geo-tags, and sanitize photos before sharing.',
+        category: ToolCategory.IMAGE,
+        icon: EyeOff,
+        component: <ExifStripper />,
+        popular: true,
+        guideTitle: 'How to remove GPS and personal metadata from photos',
+        guideContent: 'Digital photos often contain sensitive metadata including GPS coordinates, camera serial numbers, and exact timestamps. Our EXIF stripper audits these hidden tags and losslessly sanitizes the file without touching pixel quality.',
+        faqs: [
+            { question: 'Does stripping metadata reduce image quality?', answer: 'No! For JPEG files, our tool performs a lossless binary segment strip that leaves 100% of your pixel data untouched.' },
+            { question: 'What metadata is removed?', answer: 'GPS latitude/longitude, camera model, lens specs, shutter speed, ISO, timestamps, and editing software tags.' }
+        ],
+        specs: [
+            { label: 'Supported Formats', value: 'JPEG, PNG, WebP, TIFF' },
+            { label: 'Stripping Engine', value: 'Lossless Binary Slice & Canvas Sanitizer' },
+            { label: 'Audit Details', value: 'GPS Coordinates, Camera Specs, Timestamps' }
+        ],
+        privacyNotes: 'Your photos are processed entirely on your device. Metadata is stripped locally in memory.'
+    },
     {
         id: 'image-converter',
         title: 'Image Converter',
@@ -144,6 +213,29 @@ export const TOOLS: ToolItem[] = [
             { label: 'Engine', value: 'FFmpeg.wasm' }
         ],
         privacyNotes: 'Your audio files are processed locally. Perfect for sensitive voice memos or unreleased tracks.'
+    },
+    {
+        id: 'audio-extractor',
+        title: 'Audio Extractor',
+        description: 'Extract crystal-clear audio, music, and voice from any video file.',
+        category: ToolCategory.AUDIO,
+        icon: FileAudio,
+        component: <AudioExtractor />,
+        popular: true,
+        guideTitle: 'How to extract audio tracks from any video file',
+        guideContent: 'Quickly strip audio streams from video files like MP4, MOV, MKV, or WebM and export directly to MP3, WAV, AAC, or FLAC. Perfect for saving podcasts, extracting background tracks, or creating sound bites completely offline.',
+        faqs: [
+            { question: 'Does it upload my video to a server?', answer: 'No. The extraction happens entirely inside your browser using WebAssembly. Your files remain 100% private.' },
+            { question: 'Can I extract only a specific section of the video?', answer: 'Yes, toggle "Extract Segment" to set custom start and end timestamps.' },
+            { question: 'What audio formats are supported?', answer: 'You can extract to MP3, WAV, AAC, M4A, FLAC, and OGG.' }
+        ],
+        specs: [
+            { label: 'Input Formats', value: 'MP4, MOV, MKV, WebM, AVI, FLV, WMV' },
+            { label: 'Output Formats', value: 'MP3, WAV, AAC, M4A, FLAC, OGG' },
+            { label: 'Audio Quality', value: 'Up to 320kbps MP3 / Lossless WAV' },
+            { label: 'Engine', value: 'FFmpeg WASM (Local)' }
+        ],
+        privacyNotes: 'Your video never leaves your browser. All audio demuxing and encoding happens locally on-device.'
     },
     {
         id: 'universal-doc-converter',
@@ -235,23 +327,24 @@ export const TOOLS: ToolItem[] = [
     {
         id: 'bg-remover',
         title: 'Smart BG Remover',
-        description: 'Instantly remove image backgrounds using AI.',
+        description: 'Instantly remove image backgrounds locally in your browser with zero server uploads.',
         category: ToolCategory.IMAGE,
         icon: Eraser,
         component: <BackgroundRemover />,
-        guideTitle: 'How to create transparent product photos for eBay',
-        guideContent: 'Transparent backgrounds are essential for professional eBay listings. Our AI backgrounds remover precisely cuts out your product, allowing you to place it on any background or keep it transparent for a clean look.',
+        guideTitle: 'How to remove image backgrounds privately in your browser',
+        guideContent: 'Transparent backgrounds are essential for professional product photos, portraits, and graphics. Our neural background remover runs 100% in your browser using Transformers.js and ONNX WebAssembly, precisely isolating subjects with zero server uploads or API keys required.',
         faqs: [
-            { question: 'Does this work with complex backgrounds?', answer: 'Yes, our AI is trained to handle complex backgrounds, including hair and fine details.' },
-            { question: 'Can I download as PNG?', answer: 'Yes, all background removals are exported as transparent PNG files.' }
+            { question: 'Does this work with complex backgrounds?', answer: 'Yes, our on-device neural model is trained to handle portraits, clothing, and fine details.' },
+            { question: 'Can I download as PNG?', answer: 'Yes, all background removals are exported as high-resolution transparent PNG files.' },
+            { question: 'Are my images uploaded to any server?', answer: 'No — all neural processing occurs directly on your computer hardware in your web browser. 100% private.' }
         ],
         specs: [
-            { label: 'AI Model', value: 'Self-hosted In-browser AI' },
+            { label: 'AI Model', value: 'Xenova/modnet (Apache-2.0)' },
+            { label: 'Runtime', value: 'ONNX WebAssembly / WebGPU' },
             { label: 'Output Format', value: 'Transparent PNG' },
-            { label: 'Speed', value: '< 2 seconds' }
+            { label: 'Privacy', value: '100% Client-Side (No API Key)' }
         ],
-        comingSoon: true,
-        privacyNotes: 'Your images are processed locally using your graphics card. No data leaves your device.',
+        privacyNotes: 'Your images are processed locally using your device resources. No data leaves your machine.',
         beforeAfterImage: {
             before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
             after: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000&bg=transparent',
@@ -303,27 +396,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Precision', value: '0.01 seconds' }
         ],
         privacyNotes: 'Waveform rendering and cutting happen entirely on your device.'
-    },
-    {
-        id: 'image-upscaler',
-        title: 'AI Image Upscaler',
-        description: 'Enhance and upscale images using Gemini AI.',
-        category: ToolCategory.IMAGE,
-        icon: Maximize2,
-        component: <UpscaleImage />,
-        guideTitle: 'How to upscale and enhance your images with AI',
-        guideContent: 'Our AI Image Upscaler uses advanced Gemini models to increase the resolution of your images while recovering lost details and removing noise. Perfect for low-resolution photos, artwork, and web graphics.',
-        faqs: [
-            { question: 'What AI models are supported?', answer: 'We support the latest Gemini Flash and Pro models for optimal speed and quality.' },
-            { question: 'Is my API key safe?', answer: 'Yes, your API key is stored locally in your browser and never sent to our servers.' }
-        ],
-        specs: [
-            { label: 'Models', value: 'Gemini 2.5 Flash/Pro, Gemini 2.0' },
-            { label: 'Options', value: '2x, 4x, Denoise, Enhance' },
-            { label: 'Privacy', value: 'Requires API Key' }
-        ],
-        comingSoon: true,
-        privacyNotes: 'Processing is done via the Google Gemini API using your personal key.'
     },
     {
         id: 'signature-generator',
@@ -407,27 +479,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Max Intensity', value: '9/10 compression ratio' }
         ],
         privacyNotes: 'GIF re-encoding is performed locally using your device resources.'
-    },
-    {
-        id: 'magic-editor',
-        title: 'Magic Image Editor',
-        description: 'Edit images with text prompts using Gemini AI.',
-        category: ToolCategory.IMAGE,
-        icon: Wand2,
-        component: <MagicImageEditor />,
-        guideTitle: 'Edit images with AI text prompts',
-        guideContent: 'Harness the power of generative AI to modify your photos with simple text instructions. Whether you want to "add a sunset", "change city to forest", or "remove the person", our magic editor interprets your requests to create stunning visual transformations.',
-        faqs: [
-            { question: 'What AI model is used?', answer: 'We use Google Gemini Pro Vision for interpreting prompts and generating modifications.' },
-            { question: 'Is it free to use?', answer: 'Yes, but it requires your own Gemini API key for processing.' }
-        ],
-        specs: [
-            { label: 'Model', value: 'Gemini Pro Vision' },
-            { label: 'Capabilities', value: 'Inpainting, Style Transfer, Object Removal' },
-            { label: 'Privacy', value: 'Requires API Key' }
-        ],
-        comingSoon: true,
-        privacyNotes: 'AI requests are sent to Google Gemini API. Your API keys are stored only in your browser.'
     },
     {
         id: 'video-trimmer',
@@ -657,6 +708,27 @@ export const TOOLS: ToolItem[] = [
             { label: 'Password Support', value: 'Coming soon' }
         ],
         privacyNotes: 'Documents are processed 100% locally. Ideal for sensitive legal or financial files.'
+    },
+    {
+        id: 'pdf-watermark',
+        title: 'PDF Watermark & Numberer',
+        description: 'Add confidential watermarks, text stamps, and page numbers to PDFs.',
+        category: ToolCategory.DOCS,
+        icon: Stamp,
+        component: <PdfWatermark />,
+        popular: true,
+        guideTitle: 'How to add watermarks and page numbers to PDF documents',
+        guideContent: 'Stamp diagonal confidential watermarks (CONFIDENTIAL, DRAFT, SAMPLE) or custom text onto your PDF pages with adjustable opacity and rotation. Also adds headers and footers with flexible page numbering templates.',
+        faqs: [
+            { question: 'Can I choose which pages get watermarked?', answer: 'Yes, apply to all pages, first page only, odd pages, even pages, or specific ranges.' },
+            { question: 'Is my PDF uploaded to a cloud server?', answer: 'No. All stamping and page rendering occurs locally inside your browser using pdf-lib and PDF.js.' }
+        ],
+        specs: [
+            { label: 'Watermark Styles', value: 'Diagonal (45°), Horizontal (0°), Custom Angles' },
+            { label: 'Page Numbering', value: 'Page {n} of {total}, {n}/{total}, Top/Bottom Alignment' },
+            { label: 'Engine', value: 'pdf-lib & PDF.js (100% Client-Side)' }
+        ],
+        privacyNotes: 'No document leaves your browser. All vector stamping happens locally on-device.'
     },
     {
         id: 'universal-converter',

@@ -1,20 +1,25 @@
-/// <reference lib="dom" />
-import React, { useState } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import React, { useState, useRef } from 'react';
+import { pipeline, env } from '@huggingface/transformers';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
-import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
-import { Eraser, Download, RefreshCcw, Sliders, AlertCircle, Layers, Settings, Share2, Trash2, Sparkles } from 'lucide-react';
+import { Eraser, Download, RefreshCcw, Sliders, AlertCircle, Layers, Sparkles, Cpu, ShieldCheck } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { preprocessImageFileData } from '../../utils/imagePreprocess';
-
 import { useIsMobile } from '../../hooks/useIsMobile';
+
+// Optimize browser environments: allow local cached models via browser Cache API
+env.allowLocalModels = false;
 
 export const BackgroundRemover: React.FC = () => {
   const isMobile = useIsMobile();
   const [file, setFile] = useState<FileData | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [modelStatus, setModelStatus] = useState<string | null>(null);
+  const [modelProgress, setModelProgress] = useState<number | null>(null);
+
+  // Cached transformer pipeline
+  const pipelineRef = useRef<any>(null);
 
   const handleFileSelect = async (selectedFile: FileData) => {
     setIsProcessing(true);
@@ -26,28 +31,17 @@ export const BackgroundRemover: React.FC = () => {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
-  const [apiKey, setApiKey] = useState('');
 
   const handleReset = () => {
+    if (resultImage && resultImage.startsWith('blob:')) {
+      URL.revokeObjectURL(resultImage);
+    }
     setFile(null);
     setResultImage(null);
     setError(null);
     setIsProcessing(false);
-  };
-
-  const getBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result.split(',')[1]);
-        } else {
-          reject(new Error("Failed to read file"));
-        }
-      };
-      reader.onerror = reject;
-    });
+    setModelStatus(null);
+    setModelProgress(null);
   };
 
   const handleRemoveBackground = async () => {
@@ -55,81 +49,53 @@ export const BackgroundRemover: React.FC = () => {
 
     setIsProcessing(true);
     setError(null);
+    setModelStatus('Initializing local neural model...');
+    setModelProgress(null);
 
     try {
-      if (!apiKey) throw new Error("Please enter your Gemini API Key first");
-
-      const base64Data = await getBase64(file.file);
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: { apiVersion: 'v1alpha' }
-      });
-
-      // We use a specific prompt to instruct the model to isolate the subject
-      const prompt = "Remove the background from this image. Ensure the main subject is isolated clearly.";
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: file.file.type,
-              },
-            },
-            {
-              text: prompt,
-            },
-          ],
-        },
-        config: {
-          responseModalities: ["IMAGE"],
-        },
-      });
-
-      let foundImage = false;
-      if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-        for (const part of response.candidates[0].content.parts) {
-          if (part.inlineData) {
-            const base64EncodeString = part.inlineData.data;
-            const imageUrl = `data:image/png;base64,${base64EncodeString}`;
-            setResultImage(imageUrl);
-            foundImage = true;
-            break;
-          }
-        }
-      }
-
-      if (!foundImage) {
-        throw new Error("The AI could not process the image background.");
-      }
-
-    } catch (err) {
-      console.error(err);
-      let message = (err as Error).message || "An error occurred while processing the image.";
-
-      // Parse detailed AI errors
-      if (message.includes('429') || message.toLowerCase().includes('quota')) {
-        message = "Usage limit exceeded. Please try again later or check your API quota.";
-      } else if (message.includes('401') || message.toLowerCase().includes('key')) {
-        message = "Invalid API Key. Please verify your credentials.";
-      } else if (message.includes('{')) {
-        try {
-          // Attempt to extract friendly message from JSON blob
-          const jsonMatch = message.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const errorObj = JSON.parse(jsonMatch[0]);
-            if (errorObj.error && errorObj.error.message) {
-              message = errorObj.error.message;
+      if (!pipelineRef.current) {
+        pipelineRef.current = await pipeline('background-removal', 'Xenova/modnet', {
+          progress_callback: (p: any) => {
+            if (p.status === 'progress' && typeof p.progress === 'number') {
+              setModelStatus(`Downloading model: ${Math.round(p.progress)}%`);
+              setModelProgress(Math.round(p.progress));
+            } else if (p.status === 'done') {
+              setModelStatus('Model ready. Running neural matting...');
+              setModelProgress(null);
+            } else if (p.status === 'initiate') {
+              setModelStatus(`Loading: ${p.file || 'model components'}...`);
             }
           }
-        } catch (e) { /* use original message */ }
+        });
       }
 
-      setError(message);
+      setModelStatus('Segmenting foreground subject...');
+      const segmenter = pipelineRef.current;
+
+      const imageUrl = file.previewUrl || URL.createObjectURL(file.file);
+      const output = await segmenter(imageUrl);
+
+      const rawImage = Array.isArray(output) ? output[0] : output;
+
+      let blob: Blob;
+      if (typeof rawImage.toBlob === 'function') {
+        blob = await rawImage.toBlob();
+      } else {
+        const canvas = rawImage.toCanvas();
+        blob = await new Promise<Blob>((res, rej) => {
+          canvas.toBlob((b: Blob | null) => b ? res(b) : rej(new Error('Canvas export failed')), 'image/png');
+        });
+      }
+
+      const cleanUrl = URL.createObjectURL(blob);
+      setResultImage(cleanUrl);
+    } catch (err) {
+      console.error(err);
+      setError((err as Error).message || "An error occurred while processing the image.");
     } finally {
       setIsProcessing(false);
+      setModelStatus(null);
+      setModelProgress(null);
     }
   };
 
@@ -142,7 +108,7 @@ export const BackgroundRemover: React.FC = () => {
             <Eraser size={32} /> Smart Background Remover
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Isolate subjects instantly using Gemini Vision AI.
+            Isolate subjects instantly with 100% private on-device neural AI. Zero uploads, zero API keys.
           </p>
         </div>
 
@@ -161,9 +127,9 @@ export const BackgroundRemover: React.FC = () => {
         {/* Feature Highlights */}
         <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
           {[
-            { icon: Eraser, label: 'Instant Clear', desc: 'Remove bg in seconds' },
-            { icon: Sparkles, label: 'AI Powered', desc: 'Gemini Vision Tech' },
-            { icon: Layers, label: 'Transparent', desc: 'Perfect edge detection' },
+            { icon: ShieldCheck, label: '100% Private', desc: 'Runs locally in browser' },
+            { icon: Cpu, label: 'No API Key', desc: 'Free on-device model' },
+            { icon: Layers, label: 'Transparent', desc: 'Clean alpha matting' },
             { icon: Download, label: 'HD Export', desc: 'Full resolution PNG' }
           ].map((feat, i) => (
             <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
@@ -184,9 +150,7 @@ export const BackgroundRemover: React.FC = () => {
   return (
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-      {/* Navigation removed for unified UX */}
-
-      {/* 2. Settings Panel (Middle) */}
+      {/* Settings Panel */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
           <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
@@ -198,34 +162,67 @@ export const BackgroundRemover: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-          <div className="space-y-8 animate-in fade-in duration-300">
-            <div className="space-y-4">
-              <ApiKeyInput
-                serviceName="Gemini"
-                localStorageKey="gemini_api_key"
-                onKeyChange={setApiKey}
-                description="Required for Smart BG removal"
-              />
+          <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="p-3 bg-zinc-900/60 border border-zinc-800 rounded-xl space-y-1">
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
+                <Cpu size={14} />
+                <span>On-Device Neural AI</span>
+              </div>
+              <p className="text-[10px] text-zinc-400 leading-relaxed">
+                🔒 100% Private. Runs directly in your browser with zero server uploads or API keys required.
+              </p>
+            </div>
 
+            <div className="space-y-4">
               {!resultImage ? (
-                <Button className="w-full h-12 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all" onClick={handleRemoveBackground} isLoading={isProcessing} disabled={isProcessing || !apiKey} >
+                <Button
+                  className="w-full h-12 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all"
+                  onClick={handleRemoveBackground}
+                  isLoading={isProcessing}
+                  disabled={isProcessing}
+                >
                   <Eraser size={18} className="mr-2" />
-                  {isProcessing ? 'Removing...' : 'Remove Background'}
+                  {isProcessing ? (modelStatus || 'Processing...') : 'Remove Background'}
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={() => {
+                  <Button
+                    className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg"
+                    onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
-                      link.download = `no-bg-${file.file.name.split('.')[0]}.png`;
+                      link.download = `no-bg-${file.file.name.replace(/\.[^/.]+$/, '')}.png`;
+                      document.body.appendChild(link);
                       link.click();
+                      document.body.removeChild(link);
                     }}
                   >
                     <Download size={18} className="mr-2" /> Download PNG
                   </Button>
-                  <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={handleReset}>
+                  <Button
+                    variant="secondary"
+                    className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest"
+                    onClick={handleReset}
+                  >
                     <RefreshCcw size={16} className="mr-2" /> New Image
                   </Button>
+                </div>
+              )}
+
+              {modelStatus && isProcessing && (
+                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-[11px] text-indigo-400 font-medium">
+                    <span>{modelStatus}</span>
+                    {modelProgress !== null && <span>{modelProgress}%</span>}
+                  </div>
+                  {modelProgress !== null && (
+                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 transition-all duration-300"
+                        style={{ width: `${modelProgress}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 

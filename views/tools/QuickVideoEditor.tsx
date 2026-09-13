@@ -205,6 +205,9 @@ export const QuickVideoEditor: React.FC = () => {
     }, []);
 
     const deleteClip = (id: string) => {
+        const clipToDelete = clips.find(c => c.id === id);
+        if (clipToDelete?.url) URL.revokeObjectURL(clipToDelete.url);
+        
         setClips(prev => {
             const next = prev.filter(c => c.id !== id);
             if (selectedId === id) setSelectedId(next.length ? next[0].id : null);
@@ -303,9 +306,9 @@ export const QuickVideoEditor: React.FC = () => {
                 vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
                 vf.push(`crop=${tw}:${th}`);
             }
-        } else if (zoom !== 1) {
-            // No aspect ratio change — scale up and crop center back to original dimensions
-            vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
+        } else if (zoom > 1) {
+            // only allow zoom-in (crop), not zoom-out which would crop outside bounds
+            vf.push(`scale=trunc(iw*${zoom.toFixed(4)}/2)*2:trunc(ih*${zoom.toFixed(4)}/2)*2`);
             vf.push(`crop=iw/${zoom.toFixed(4)}:ih/${zoom.toFixed(4)}`);
         }
 
@@ -336,19 +339,23 @@ export const QuickVideoEditor: React.FC = () => {
         try {
             const { vf, af } = buildFilters();
 
-            const buildClipArgs = (inName: string, outName: string, trimStart: number, trimEnd: number): string[] => {
+            const buildClipArgs = (inName: string, outName: string, trimStart: number, trimEnd: number, muted: boolean): string[] => {
                 const args = ['-y', '-ss', String(trimStart), '-to', String(trimEnd), '-i', inName];
                 if (vf.length) args.push('-vf', vf.join(','));
-                if (af.length) args.push('-af', af.join(','));
+                if (af.length && !muted) args.push('-af', af.join(','));
                 args.push('-threads', threads);
-                args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
+                if (muted) {
+                    args.push('-an', '-c:v', 'libx264', '-preset', 'ultrafast', outName);
+                } else {
+                    args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
+                }
                 return args;
             };
 
             if (clips.length === 1) {
                 const clip = clips[0];
                 await writeFileToFFmpeg(ffmpeg, 'inp.mp4', clip.file);
-                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd));
+                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd, clip.muted));
                 await ffmpeg.deleteFile('inp.mp4');
             } else {
                 const trimmed: string[] = [];
@@ -357,7 +364,7 @@ export const QuickVideoEditor: React.FC = () => {
                     const inName = `inp_${i}.mp4`;
                     const outName = `tri_${i}.mp4`;
                     await writeFileToFFmpeg(ffmpeg, inName, clip.file);
-                    await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd));
+                    await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd, clip.muted));
                     await ffmpeg.deleteFile(inName);
                     trimmed.push(outName);
                 }

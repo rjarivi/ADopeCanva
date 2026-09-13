@@ -19,7 +19,7 @@
 | Styling | TailwindCSS 4 (dark mode only) |
 | Routing | React Router DOM 7 |
 | Media processing | FFmpeg.wasm (`@ffmpeg/ffmpeg` 0.12) |
-| AI integration | Google Gemini (`@google/genai`) |
+| Local Neural Models | Transformers.js (`@huggingface/transformers` 4.x, Apache-2.0) |
 | PDF | jsPDF + pdf-lib + pdfjs-dist |
 | Documents | docx, mammoth, exceljs |
 | Data formats | papaparse (CSV), js-yaml, xml-js |
@@ -230,11 +230,11 @@ const data = await ffmpeg.readFile('output.mp4')
 - Always revoke object URLs with `URL.revokeObjectURL()` when done
 - Support common formats; show clear error messages for unsupported ones
 
-### AI Features (Gemini)
-- Use `@google/genai` SDK
-- API key comes from `VITE_GEMINI_API_KEY` or the `ApiKeyInput` component
-- Features must degrade gracefully when no key is provided
-- Currently used by: BackgroundRemover, MagicImageEditor, UpscaleImage
+### Local Neural Models (Transformers.js)
+- Use `@huggingface/transformers` (Apache-2.0 permissive license)
+- 100% on-device inference via WebGPU / ONNX WASM — no external API keys or server costs
+- Models cached client-side in browser Cache Storage
+- Used by: BackgroundRemover (`Xenova/modnet`)
 
 ---
 

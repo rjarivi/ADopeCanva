@@ -22,7 +22,7 @@ export const TextUtilities: React.FC = () => {
         if (mode === 'analyze') analyzeText();
         else if (mode === 'convert') convertCase('sentence');
         else if (mode === 'encode') encodeBase64(true); // Default encode
-    }, [input]);
+    }, [input, mode]);
 
     const extractSentences = (text: string): string[] => {
         if (!text.trim()) return [];
@@ -127,7 +127,7 @@ export const TextUtilities: React.FC = () => {
     // --- Encoders ---
     const encodeBase64 = (encode: boolean) => {
         try {
-            setOutput(encode ? btoa(input) : atob(input));
+            setOutput(encode ? btoa(unescape(encodeURIComponent(input))) : decodeURIComponent(escape(atob(input.trim()))));
         } catch {
             setOutput('Invalid Input');
         }
@@ -145,7 +145,6 @@ export const TextUtilities: React.FC = () => {
     const generateUUID = () => {
         const uuid = crypto.randomUUID();
         setOutput(uuid);
-        setInput(uuid); // Show in input too for consistency? Or just output.
     };
 
     const generateHash = async (algo: 'SHA-256' | 'SHA-1' | 'MD5') => {
@@ -159,6 +158,10 @@ export const TextUtilities: React.FC = () => {
             setOutput("MD5 requires external lib, using SHA-256 instead...");
         }
 
+        if (!window.crypto?.subtle) {
+            setOutput('Hash functions require a secure context (HTTPS).');
+            return;
+        }
         const hashBuffer = await crypto.subtle.digest(algo === 'MD5' ? 'SHA-256' : algo, msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');

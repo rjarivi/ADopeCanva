@@ -36,25 +36,22 @@ export const SpreadsheetTools: React.FC = () => {
             let mainWorksheet: ExcelJS.Worksheet;
 
             // Check if input is CSV or Excel
-            if (file.file.name.endsWith('.csv') || file.file.type === 'text/csv' || file.file.type === 'application/vnd.ms-excel') {
-                // Try reading as CSV first if extension matches
-                if (file.file.name.endsWith('.xlsx')) {
-                    const arrayBuffer = await file.file.arrayBuffer();
-                    await workbook.xlsx.load(arrayBuffer);
-                    mainWorksheet = workbook.worksheets[0];
-                } else {
-                    // Parse CSV using PapaParse
-                    const text = await file.file.text();
-                    const parseResult = Papa.parse(text, { header: false }); // Read as arrays
+            if (file.file.name.toLowerCase().endsWith('.csv')) {
+                // Parse CSV using PapaParse
+                const text = await file.file.text();
+                const parseResult = Papa.parse(text, { header: false, skipEmptyLines: true }); // Read as arrays
 
-                    if (parseResult.errors.length > 0) {
-                        console.warn('CSV Parse Warnings:', parseResult.errors);
-                    }
-
-                    // Add to new worksheet
-                    mainWorksheet = workbook.addWorksheet('Sheet1');
-                    mainWorksheet.addRows(parseResult.data as any[][]);
+                if (parseResult.errors.length > 0) {
+                    console.warn('CSV Parse Warnings:', parseResult.errors);
                 }
+
+                // Add to new worksheet
+                mainWorksheet = workbook.addWorksheet('Sheet1');
+                mainWorksheet.addRows(parseResult.data as any[][]);
+            } else if (file.file.name.toLowerCase().endsWith('.xlsx') || file.file.name.toLowerCase().endsWith('.xls')) {
+                const arrayBuffer = await file.file.arrayBuffer();
+                await workbook.xlsx.load(arrayBuffer);
+                mainWorksheet = workbook.worksheets[0];
             } else {
                 // Default to XLSX load
                 const arrayBuffer = await file.file.arrayBuffer();
@@ -161,8 +158,8 @@ export const SpreadsheetTools: React.FC = () => {
                 }
             } else if (file.file.type.includes('csv') || file.file.name.endsWith('.csv')) {
                 // Manually parse CSV to rows since we have the text
-                const rows = text.split('\n').map(row => row.split(','));
-                worksheet.addRows(rows);
+                const parsed = Papa.parse(text, { skipEmptyLines: true });
+                worksheet.addRows(parsed.data as string[][]);
             } else {
                 throw new Error("Unsupported file type for this mode");
             }
@@ -219,6 +216,39 @@ export const SpreadsheetTools: React.FC = () => {
                     className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                 />
             </div>
+            
+            {/* Convert Area */}
+            {file && !result && (
+                <div className="flex flex-col items-center gap-4 mt-6">
+                    {mode === 'excel-to-other' && (
+                        <div className="flex items-center gap-3">
+                            <label className="text-zinc-400 text-sm">Output Format:</label>
+                            <select 
+                                value={targetFormat} 
+                                onChange={e => setTargetFormat(e.target.value as any)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm"
+                            >
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="html">HTML Table</option>
+                                <option value="txt">Plain Text</option>
+                            </select>
+                        </div>
+                    )}
+                    <Button
+                        onClick={() => {
+                            const isExcel = file.file.name.toLowerCase().match(/\.xlsx?$/);
+                            if (isExcel) processFile();
+                            else processOtherToExcel();
+                        }}
+                        isLoading={isProcessing}
+                        disabled={isProcessing}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg"
+                    >
+                        Convert File
+                    </Button>
+                </div>
+            )}
 
             {/* Feature Highlights (Only show when no result) */}
             {!result && (
@@ -264,7 +294,7 @@ export const SpreadsheetTools: React.FC = () => {
                             {downloadUrl && (
                                 <a
                                     href={downloadUrl}
-                                    download={`converted_${file?.file.name.split('.')[0]}.${mode === 'excel-to-other' ? targetFormat : 'xlsx'}`}
+                                    download={`converted_${file?.file.name.replace(/\.[^/.]+$/, '')}.${mode === 'excel-to-other' ? targetFormat : 'xlsx'}`}
                                     className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm transition-colors"
                                 >
                                     <Download size={16} className="mr-2" />

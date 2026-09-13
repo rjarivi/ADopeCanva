@@ -38,21 +38,35 @@ export const PdfToText: React.FC = () => {
         try {
             const arrayBuffer = await file.file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            setPageCount(pdf.numPages);
+            try {
+                setPageCount(pdf.numPages);
 
-            let fullText = '';
+                let fullText = '';
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
-                    .join(' ');
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items
+                        .filter((item: any) => 'str' in item && typeof item.str === 'string')
+                        .map((item: any) => {
+                            const text = item.str;
+                            return item.hasEOL ? text + '\n' : text + ' ';
+                        })
+                        .join('');
 
-                fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                    fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                }
+
+                if (fullText.trim().length === 0) {
+                    setExtractedText('');
+                    setError('No selectable text found. This document may be scanned or image-based. Try using an OCR tool instead.');
+                    return;
+                }
+                
+                setExtractedText(fullText.trim());
+            } finally {
+                await pdf.destroy();
             }
-
-            setExtractedText(fullText.trim());
         } catch (err) {
             console.error('PDF extraction error:', err);
             setError('Failed to extract text. The PDF may be scanned or image-based.');
@@ -72,7 +86,7 @@ export const PdfToText: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${file?.file.name.replace('.pdf', '')}-text.txt`;
+        a.download = `${file?.file.name.replace(/\.pdf$/i, '')}-text.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

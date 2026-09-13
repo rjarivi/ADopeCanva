@@ -29,11 +29,15 @@ async function fileToMarkdown(file: File): Promise<string> {
         const buf = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
         let md = `# ${file.name.replace('.pdf', '')}\n\n`;
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const content = await page.getTextContent();
-            const text = content.items.map((it: any) => it.str).join(' ').trim();
-            if (text) md += `## Page ${i}\n\n${text}\n\n`;
+        try {
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const text = content.items.map((it: any) => it.str).join(' ').trim();
+                if (text) md += `## Page ${i}\n\n${text}\n\n`;
+            }
+        } finally {
+            await pdf.destroy();
         }
         return md.trim();
     }
@@ -85,7 +89,16 @@ async function fileToMarkdown(file: File): Promise<string> {
 }
 
 function htmlToMarkdown(html: string): string {
-    return html
+    let result = html;
+    // Convert tables to markdown
+    result = result.replace(/<tr[^>]*>/gi, '\n');
+    result = result.replace(/<th[^>]*>(.*?)<\/th>/gi, '| **$1** ');
+    result = result.replace(/<td[^>]*>(.*?)<\/td>/gi, '| $1 ');
+    result = result.replace(/<\/tr>/gi, '|');
+    result = result.replace(/<table[^>]*>/gi, '');
+    result = result.replace(/<\/table>/gi, '');
+
+    return result
         .replace(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, '# $1\n\n')
         .replace(/<h2[^>]*>([\s\S]*?)<\/h2>/gi, '## $1\n\n')
         .replace(/<h3[^>]*>([\s\S]*?)<\/h3>/gi, '### $1\n\n')

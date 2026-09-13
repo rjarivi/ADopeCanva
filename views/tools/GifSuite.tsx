@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Layers, Edit3, Minimize2, Image as ImageIcon, Video, Scissors, Film, RefreshCcw, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Edit3, Minimize2, Image as ImageIcon, Video, LayoutGrid, ChevronRight } from 'lucide-react';
 import { VideoToGif } from './VideoToGif';
 import { GifMaker } from './GifMaker';
 import { GifEditor } from './GifEditor';
@@ -11,13 +11,14 @@ export const GifSuite: React.FC = () => {
     const [activeMode, setActiveMode] = useState<SuiteMode>('video-to-gif');
 
     const renderContent = () => {
-        switch (activeMode) {
-            case 'video-to-gif': return <VideoToGif />;
-            case 'images-to-gif': return <GifMaker />;
-            case 'editor': return <GifEditor />;
-            case 'compressor': return <GifCompressor />;
-            default: return <VideoToGif />;
-        }
+        return (
+            <>
+                <div className={activeMode === 'video-to-gif' ? '' : 'hidden'}><VideoToGif /></div>
+                <div className={activeMode === 'images-to-gif' ? '' : 'hidden'}><GifMaker /></div>
+                <div className={activeMode === 'editor' ? '' : 'hidden'}><GifEditor /></div>
+                <div className={activeMode === 'compressor' ? '' : 'hidden'}><GifCompressor /></div>
+            </>
+        );
     };
 
     const navItems = [

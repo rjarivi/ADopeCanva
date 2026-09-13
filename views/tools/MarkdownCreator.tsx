@@ -9,8 +9,6 @@ import {
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { Button } from '../../components/ui/Button';
-import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
-import { GoogleGenAI } from "@google/genai";
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { MarkdownCreatorIcon } from '../../components/icons/MarkdownCreatorIcon';
 
@@ -51,10 +49,6 @@ const MarkdownCreator: React.FC = () => {
     const [pencilChar, setPencilChar] = useState('█');
     const [viewMode, setViewMode] = useState<ViewMode>('canvas');
     const [zoom, setZoom] = useState(1);
-    const [apiKey, setApiKey] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [prompt, setPrompt] = useState('');
-    const [showAI, setShowAI] = useState(false);
     const [history, setHistory] = useState<Cell[][][]>([]);
     const [historyIndex, setHistoryIndex] = useState(-1);
 
@@ -416,40 +410,6 @@ const MarkdownCreator: React.FC = () => {
         }
     };
 
-    const handleAIGenerate = async () => {
-        if (!prompt || !apiKey) return;
-        setIsProcessing(true);
-        try {
-            const ai = new GoogleGenAI({ apiKey });
-            const fullPrompt = `Generate a high-fidelity text-based UI wireframe using ASCII and Unicode box-drawing characters based on: "${prompt}".
-
-RULES:
-- Use Unicode box chars: ┌ ┐ └ ┘ ─ │ ├ ┤ ┬ ┴ ┼
-- Use ██ for filled areas/selections
-- Use [ ] for inputs, ( ) for radio, [X] for checked, [ ] for unchecked
-- Use ┌───┐ / │   │ / └───┘ for buttons
-- Layout MUST fit within 80 columns × 40 rows
-- Return ONLY the raw ASCII art. No backticks, no explanation.`;
-
-            const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: { parts: [{ text: fullPrompt }] }
-            });
-
-            const text = response.candidates[0].content.parts[0].text;
-            const lines = text.split('\n');
-            const newGrid = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => ({ char: EMPTY_CHAR })));
-            lines.forEach((line, r) => {
-                if (r < ROWS) line.split('').forEach((char, c) => { if (c < COLS) newGrid[r][c] = { char }; });
-            });
-            setGrid(newGrid);
-            saveHistory(newGrid);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setIsProcessing(false);
-        }
-    };
 
     // Component presets
     const prepareComponent = (type: string) => {
@@ -888,46 +848,6 @@ RULES:
                     </div>
                 )}
 
-                {/* AI Generator */}
-                <div className="border-t border-zinc-900 pt-4">
-                    <button
-                        onClick={() => setShowAI(v => !v)}
-                        className="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-indigo-400 transition-colors group"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Sparkles size={12} className="text-indigo-500 group-hover:scale-110 transition-transform" />
-                            AI Generate
-                        </div>
-                        {showAI ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    </button>
-                    {showAI && (
-                        <div className="mt-3 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <ApiKeyInput
-                                serviceName="Gemini"
-                                localStorageKey="gemini_api_key"
-                                onKeyChange={setApiKey}
-                                compact={true}
-                            />
-                            <textarea
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                placeholder="Describe your UI… e.g. 'A login page with email, password fields and a sign in button'"
-                                className="w-full h-20 bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-xs text-zinc-200 placeholder-zinc-600 focus:ring-1 focus:ring-indigo-500 outline-none resize-none"
-                            />
-                            <Button
-                                onClick={handleAIGenerate}
-                                disabled={!prompt || !apiKey || isProcessing}
-                                className="w-full h-9 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-[11px] uppercase tracking-widest border-none"
-                            >
-                                {isProcessing ? (
-                                    <><span className="animate-spin mr-2 inline-block w-3 h-3 border border-white/30 border-t-white rounded-full" />Generating...</>
-                                ) : (
-                                    <><Sparkles size={13} className="mr-2" />Generate Wireframe</>
-                                )}
-                            </Button>
-                        </div>
-                    )}
-                </div>
             </aside>
 
             {/* Main Canvas Area */}

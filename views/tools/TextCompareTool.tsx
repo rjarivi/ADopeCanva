@@ -14,8 +14,12 @@ interface DiffLine {
 
 // Simple line-by-line LCS diff
 function computeDiff(left: string, right: string): DiffLine[] {
-    const leftLines = left.split('\n');
-    const rightLines = right.split('\n');
+    const MAX_LINES = 2000;
+    if (left.length > MAX_LINES || right.length > MAX_LINES) {
+        return [{ type: 'equal', leftLine: `[Files too large to diff — showing first ${MAX_LINES} lines]`, rightLine: `[Files too large to diff — showing first ${MAX_LINES} lines]`, leftNum: 1, rightNum: 1 }];
+    }
+    const leftLines = left ? left.split('\n') : [];
+    const rightLines = right ? right.split('\n') : [];
     const m = leftLines.length;
     const n = rightLines.length;
 
@@ -143,7 +147,7 @@ export const TextCompareTool: React.FC = () => {
                             spellCheck={false}
                         />
                         <div className="px-4 py-1.5 border-t border-zinc-800 text-[10px] font-mono text-zinc-600">
-                            {leftText.split('\n').length} lines · {leftText.length} chars
+                            {leftText ? leftText.split('\n').length : 0} lines · {leftText.length} chars
                         </div>
                     </div>
 
@@ -166,7 +170,7 @@ export const TextCompareTool: React.FC = () => {
                             spellCheck={false}
                         />
                         <div className="px-4 py-1.5 border-t border-zinc-800 text-[10px] font-mono text-zinc-600">
-                            {rightText.split('\n').length} lines · {rightText.length} chars
+                            {rightText ? rightText.split('\n').length : 0} lines · {rightText.length} chars
                         </div>
                     </div>
                 </div>
@@ -183,7 +187,7 @@ export const TextCompareTool: React.FC = () => {
 
                     {/* Diff rows */}
                     <div className="col-span-2 overflow-y-auto custom-scrollbar">
-                        {diff.length === 0 ? (
+                        {stats.added === 0 && stats.removed === 0 && (leftText.length > 0 || rightText.length > 0) ? (
                             <div className="flex items-center justify-center h-32 text-zinc-600 text-sm">
                                 No differences — texts are identical.
                             </div>

@@ -90,7 +90,7 @@ const STYLES: TextStyle[] = [
     { name: 'Circled Negative', category: 'enclosed', map: '🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩🅐🅑🅒🅓🅔🅕🅖🅗🅘🅙🅚🅛🅜🅝🅞🅟🅠🅡🅢🅣🅤🅥🅦🅧🅨🅩⓿❶❷❸❹❺❻❼❽❾' },
     { name: 'Squared', category: 'enclosed', map: '🄰🄱🄲🄳🄴🄵🄶🄷🄸🄹🄺🄻🄼🄽🄾🄿🅀🅁🅂🅃🅄🅅🅆🅇🅈🅉🄰🄱🄲🄳🄴🄵🄶🄷🄸🄹🄺🄻🄼🄽🄾🄿🅀🅁🅂🅃🅄🅅🅆🅇🅈🅉0123456789' },
     { name: 'Squared Negative', category: 'enclosed', map: '🅰🅱🅲🅳🅴🅵🅶🅷🅸🅹🅺🅻🅼🅽🅾🅿🆀🆁🆂🆃🆄🆅🆆🆇🆈🆉🅰🅱🅲🅳🅴🅵🅶🅷🅸🅹🅺🅻🅼🅽🅾🅿🆀🆁🆂🆃🆄🆅🆆🆇🆈🆉0123456789' },
-    { name: 'Parenthesized', category: 'enclosed', map: '⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵⑴⑵⑶⑷⑸⑹⑺⑻⑼' },
+    { name: 'Parenthesized', category: 'enclosed', map: '⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵⒜⒝⒞⒟⒠⒡⒢⒣⒤⒥⒦⒧⒨⒩⒪⒫⒬⒭⒮⒯⒰⒱⒲⒳⒴⒵⓪⑴⑵⑶⑷⑸⑹⑺⑻⑼' },
 
     // --- Small / Tiny ---
     { name: 'Small Caps', category: 'small', map: 'ᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢᴀʙᴄᴅᴇғɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ0123456789' },
@@ -134,7 +134,7 @@ const STYLES: TextStyle[] = [
         }).join('')
     },
     { name: 'Reverse', category: 'weird', generator: (t) => t.split('').reverse().join('') },
-    { name: 'Mirrored', category: 'weird', map: 'AdↃbƎꟻGHIJK⅃MᴎOꟼQЯƧTUVWXYZadɔbɘᎸgʜiႱʞlmnoqpɿꙅƚuvwxyƹ01క్షƐ4მda8e' },
+    { name: 'Mirrored', category: 'weird', map: 'AdↃbƎꟻGHIJK⅃MᴎOꟼQЯƧTUVWXYZadɔbɘᎸgʜiႱʞlmnoqpɿꙅƚuvwxyƹ01εƐ4მda8e' },
     { name: 'Wingdings', category: 'weird', map: 'b︎c︎d︎e︎f︎g︎h︎i︎j︎k︎l︎m︎n︎o︎p︎q︎r︎s︎t︎u︎v︎w︎x︎y︎z︎' }, // Pseudo
     { name: 'Palmistry', category: 'weird', map: '♄♭☾ᕲ€ϜᎶ♄♗♪ϰ↳ᗰℵ⊙ρᵠ☈∫†☋✓ω⌘⚧☡ꍏ♭☾ᕲ€ϜᎶ♄♗♪ϰ↳ᗰℵ⊙ρᵠ☈∫†☋✓ω⌘⚧☡0123456789' },
     { name: 'Manga', category: 'weird', map: '卂乃匚ᗪ乇千Ꮆ卄丨ﾌҜㄥ爪几ㄖ卩Ɋ尺丂ㄒㄩᐯ山乂ㄚ乙卂乃匚ᗪ乇千Ꮆ卄丨ﾌҜㄥ爪几ㄖ卩Ɋ尺丂ㄒㄩᐯ山乂ㄚ乙0123456789' },
@@ -153,8 +153,8 @@ const STYLES: TextStyle[] = [
     { name: 'Wide Text', category: 'fancy', generator: (t) => t.split('').join('  ') },
 
     // --- Aesthetic & Blocks ---
-    { name: 'Full Width Aesthetic', category: 'fancy', map: 'ａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ０１２３４５６７８９' },
-    { name: 'Monospace Typewriter', category: 'code', map: '𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉0123456789' },
+    { name: 'Full Width Aesthetic', category: 'fancy', map: 'ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ０１２３４５６７８９' },
+    { name: 'Monospace Typewriter', category: 'code', map: '𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣0123456789' },
     {
         name: 'Visual Blocks', category: 'weird', generator: (t) => t.toUpperCase().split('').map(c => {
             const blocks: { [key: string]: string } = {
@@ -208,7 +208,7 @@ const STYLES: TextStyle[] = [
 
     // --- Social specific ---
     { name: 'Instagram', category: 'instagram', map: '𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣01𝟸345678𝟿' },
-    { name: 'Twitter Bold', category: 'twitter', map: '𝗕𝗼𝗹𝗱 𝗳𝗼𝗿 𝗧𝘄𝗶𝘁𝘁𝗲𝗿 𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇' },
+    { name: 'Twitter Bold', category: 'twitter', map: '𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇' },
     { name: 'Discord Block', category: 'discord', generator: (t) => t.split('').map(c => c === ' ' ? '   ' : /[a-zA-Z]/.test(c) ? `:regional_indicator_${c.toLowerCase()}: ` : c).join('') },
 ].sort((a, b) => a.name.localeCompare(b.name));
 

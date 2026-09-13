@@ -55,14 +55,12 @@ export const AudioConverter: React.FC = () => {
     const outputName = `output.${format.toLowerCase()}`;
     setConvertedUrl(null);
 
-    try {
-      ffmpeg.on('progress', ({ progress }) => {
-        setProgress(Math.round(progress * 100));
-      });
+    const onProgress = ({ progress }: { progress: number }) => setProgress(Math.round(progress * 100));
+    const onLog = ({ message }: { message: string }) => setLogs(prev => prev + '\n' + message);
 
-      ffmpeg.on('log', ({ message }) => {
-        setLogs(prev => prev + '\n' + message);
-      });
+    try {
+      ffmpeg.on('progress', onProgress);
+      ffmpeg.on('log', onLog);
 
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
@@ -91,6 +89,7 @@ export const AudioConverter: React.FC = () => {
           break;
       }
 
+      args.push('-vn'); // strip video/image streams (album art, video sources)
       args.push(outputName);
 
       setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')} `);
@@ -122,6 +121,8 @@ export const AudioConverter: React.FC = () => {
       console.error(e);
       setLogs(prev => prev + `\nError: ${(e as Error).message} `);
     } finally {
+      ffmpeg.off('progress', onProgress);
+      ffmpeg.off('log', onLog);
       setIsProcessing(false);
     }
   };
@@ -313,7 +314,7 @@ export const AudioConverter: React.FC = () => {
                   className={`w-2 bg-indigo-500 rounded-full transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''}`}
                   style={{
                     height: `${Math.random() * 60 + 20}% `,
-                    animationDelay: `${i * 0.1} s`
+                    animationDelay: `${i * 0.1}s`
                   }}
                 />
               ))}

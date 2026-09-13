@@ -62,12 +62,17 @@ export const SignatureGenerator: React.FC = () => {
 
     // --- Drawing Logic ---
 
-    const getCoordinates = (e: React.PointerEvent<HTMLCanvasElement>) => {
-        if (!canvasRef.current) return { x: 0, y: 0 };
-        const rect = canvasRef.current.getBoundingClientRect();
+    const getCoordinates = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent | React.PointerEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return { x: 0, y: 0 };
+        const rect = canvas.getBoundingClientRect();
+        const clientX = 'touches' in e ? (e as any).touches[0].clientX : (e as any).clientX;
+        const clientY = 'touches' in e ? (e as any).touches[0].clientY : (e as any).clientY;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
         return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
         };
     };
 
@@ -240,15 +245,18 @@ export const SignatureGenerator: React.FC = () => {
             if (!ctx) throw new Error("Canvas context failed");
 
             // Capture stream - Use VP8 for maximum decoding compatibility in WASM
-            let mimeType = 'video/webm;codecs=vp8';
-            if (!MediaRecorder.isTypeSupported(mimeType)) {
-                mimeType = 'video/webm'; 
-            }
+            const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8') 
+                ? 'video/webm;codecs=vp8' 
+                : MediaRecorder.isTypeSupported('video/mp4') 
+                    ? 'video/mp4' 
+                    : '';
 
             const stream = offscreen.captureStream(30);
-            const mediaRecorder = new MediaRecorder(stream, {
+            const mediaRecorder = new MediaRecorder(stream, mimeType ? {
                 mimeType,
                 videoBitsPerSecond: 1500000 // Slightly lower for stability
+            } : {
+                videoBitsPerSecond: 1500000
             });
 
             const chunks: Blob[] = [];
@@ -306,7 +314,7 @@ export const SignatureGenerator: React.FC = () => {
             if (!ffmpeg) throw new Error("Failed to load engine. Please check your internet connection.");
 
             // Hook logger
-            ffmpeg.on('log', ({ message }) => {
+            const logHandler = ({ message }: { message: string }) => {
                 console.log('FFmpeg:', message);
                 // Detection for "Aborted()" - only show if we are still processing and NO file has been created yet.
                 // We'll also check a local 'isDone' flag to be extra sure.
@@ -319,31 +327,36 @@ export const SignatureGenerator: React.FC = () => {
                         }
                     }, 500);
                 }
-            });
+            };
+            ffmpeg.on('log', logHandler);
 
-            await writeFileToFFmpeg(ffmpeg, 'input.webm', webmBlob);
+            try {
+                await writeFileToFFmpeg(ffmpeg, 'input.webm', webmBlob);
 
-            // 4. GENERATE GIF (Priority)
-            setIsEncodingGIF(true);
-            setStatus('Creating GIF...');
+                // 4. GENERATE GIF (Priority)
+                setIsEncodingGIF(true);
+                setStatus('Creating GIF...');
 
-            await ffmpeg.exec([
-                '-threads', '1',
-                '-i', 'input.webm',
-                '-vf', 'fps=12,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=reserve_transparent=1[p];[s1][p]paletteuse=alpha_threshold=128',
-                '-loop', '0',
-                'output.gif'
-            ]);
+                await ffmpeg.exec([
+                    '-threads', '1',
+                    '-i', 'input.webm',
+                    '-vf', 'fps=12,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=reserve_transparent=1[p];[s1][p]paletteuse=alpha_threshold=128',
+                    '-loop', '0',
+                    'output.gif'
+                ]);
 
-            const gifData = await readFileFromFFmpeg(ffmpeg, 'output.gif', 'image/gif');
-            setGifUrl(gifData);
-            setError(null); // Explicitly clear any transient "Aborted()" errors
+                const gifData = await readFileFromFFmpeg(ffmpeg, 'output.gif', 'image/gif');
+                setGifUrl(gifData);
+                setError(null); // Explicitly clear any transient "Aborted()" errors
 
-            // Final Cleanup
-            await ffmpeg.deleteFile('input.webm').catch(() => {});
-            await ffmpeg.deleteFile('output.gif').catch(() => {});
+                // Final Cleanup
+                await ffmpeg.deleteFile('input.webm').catch(() => {});
+                await ffmpeg.deleteFile('output.gif').catch(() => {});
 
-            setIsEncodingGIF(false);
+                setIsEncodingGIF(false);
+            } finally {
+                ffmpeg.off('log', logHandler);
+            }
 
         } catch (err: any) {
             console.error(err);

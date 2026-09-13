@@ -49,37 +49,36 @@ export const AudioReplacer: React.FC = () => {
             await writeFileToFFmpeg(ffmpeg, vName, videoFile.file);
             await writeFileToFFmpeg(ffmpeg, aName, audioFile.file);
 
-            // FFmpeg Command:
-            // -i video -i audio 
-            // -c:v copy (Copy video stream directly, super fast)
-            // -c:a aac (Encode audio to AAC for compatibility)
-            // -map 0:v:0 (Take 1st video stream from 1st input)
-            // -map 1:a:0 (Take 1st audio stream from 2nd input)
-            // -shortest (Stop when shorter input ends)
-            await ffmpeg.exec([
+            const audioCodec = outputFormat.toUpperCase() === 'AVI' ? 'libmp3lame' : 'aac';
+
+            const exitCode = await ffmpeg.exec([
                 '-y',
                 '-i', vName,
                 '-i', aName,
                 '-c:v', 'copy',
-                '-c:a', 'aac',
+                '-c:a', audioCodec,
                 '-map', '0:v:0',
                 '-map', '1:a:0',
                 '-shortest',
                 outName
             ]);
+            if (exitCode !== 0) throw new Error(`Audio replacement failed with FFmpeg code ${exitCode}`);
 
             const url = await readFileFromFFmpeg(ffmpeg, outName, `video/${outputFormat.toLowerCase()}`);
             setResultUrl(url);
             setIsDone(true);
 
-            await ffmpeg.deleteFile(vName);
-            await ffmpeg.deleteFile(aName);
-            await ffmpeg.deleteFile(outName);
-
         } catch (e) {
             console.error(e);
             alert('Processing failed. ' + (e as Error).message);
         } finally {
+            try {
+                await ffmpeg.deleteFile(vName);
+                await ffmpeg.deleteFile(aName);
+                await ffmpeg.deleteFile(outName);
+            } catch (err) {
+                // Ignore cleanup errors
+            }
             setIsProcessing(false);
         }
     };

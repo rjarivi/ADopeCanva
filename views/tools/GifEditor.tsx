@@ -213,7 +213,10 @@ export const GifEditor: React.FC = () => {
                     const realW = Math.round(crop.width * scaleX);
                     const realH = Math.round(crop.height * scaleY);
 
-                    filters.push(`crop=${realW}:${realH}:${realX}:${realY}`);
+                    const clampedW = Math.min(realW, natW - realX);
+                    const clampedH = Math.min(realH, natH - realY);
+
+                    filters.push(`crop=${clampedW}:${clampedH}:${realX}:${realY}`);
                 }
             }
 
@@ -234,8 +237,13 @@ export const GifEditor: React.FC = () => {
                 const fontLoaded = await loadFont(ffmpeg);
                 if (fontLoaded) {
                     // Escape colons and single quotes
-                    const sanitizedText = text.replace(/:/g, '\\:').replace(/'/g, '');
-                    const yPos = `h-h*${textY}/100`;
+                    const sanitizedText = text
+                        .replace(/\\/g, '\\\\')
+                        .replace(/'/g, "'\\\\\\''")
+                        .replace(/:/g, '\\\\:')
+                        .replace(/,/g, '\\\\,')
+                        .replace(/%/g, '\\\\%');
+                    const yPos = `h-text_h-h*${textY}/100`;
                     // Simple drawtext without shadow for stability
                     filters.push(`drawtext=fontfile=font.ttf:text='${sanitizedText}':fontcolor=${textColor}:fontsize=${textSize}:x=(w-text_w)/2:y=${yPos}`);
                 }
@@ -304,11 +312,10 @@ export const GifEditor: React.FC = () => {
 
             // Build Args
             const args = ['-y'];
-            if (duration > 0 && (trimRange[0] > 0 || trimRange[1] < duration)) {
-                args.push('-ss', trimRange[0].toString());
-                args.push('-to', trimRange[1].toString());
-            }
             args.push('-i', inputName);
+            if (trimRange[0] > 0 || trimRange[1] < (duration || 999)) {
+                args.push('-ss', trimRange[0].toString(), '-to', trimRange[1].toString());
+            }
 
             // CRITICAL FIX: Force single-threading for Sprite Sheet to prevent WASM heap corruption/deadlocks with 'tile' filter
             if (mode === 'sprite') {
@@ -318,8 +325,16 @@ export const GifEditor: React.FC = () => {
                 args.push('-threads', '4');
             }
 
-            if (filters.length > 0) {
-                args.push('-vf', filterGraph);
+            if (mode === 'gif') {
+                const paletteFilter = filters.length > 0 
+                    ? `${filterGraph},split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`
+                    : 'split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1';
+                args.push('-vf', paletteFilter);
+                args.push('-loop', '0');
+            } else {
+                if (filters.length > 0) args.push('-vf', filterGraph);
+                // add loop flag for all GIF outputs
+                args.push('-loop', '0');
             }
             // Explicit format for safety
             if (mode === 'gif') {
@@ -822,7 +837,7 @@ export const GifEditor: React.FC = () => {
                                 <ArrowLeft size={18} />
                                 Edit More
                             </button>
-                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
+                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = activeTool === 'sprite' ? 'sprite.png' : 'edited.gif'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }}>
                                 <Download size={18} />
                                 Download Final
                             </button>

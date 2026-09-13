@@ -161,6 +161,7 @@ export const VideoTrimmer: React.FC = () => {
     // Load Video File
     useEffect(() => {
         if (file) {
+            setThumbnails([]);
             const url = URL.createObjectURL(file.file);
             setVideoUrl(url);
             setTrimmedUrl(null);
@@ -306,11 +307,13 @@ export const VideoTrimmer: React.FC = () => {
 
         const handleWidth = 16;
 
-        if (x >= startX - 6 && x <= startX + handleWidth + 6) {
+        const startDist = Math.abs(x - startX);
+        const endDist = Math.abs(x - endX);
+        if (startDist <= endDist && x >= startX - 8 && x <= startX + handleWidth + 8) {
             setDragType('start');
-        } else if (x >= endX - handleWidth - 6 && x <= endX + 6) {
+        } else if (x >= endX - handleWidth - 8 && x <= endX + 8) {
             setDragType('end');
-        } else if (x > startX + handleWidth && x < endX - handleWidth) {
+        } else if (x > startX && x < endX) {
             if (e.clientY - rect.top <= 16) {
                 setDragType('body');
                 dragStartPosRef.current = {
@@ -446,14 +449,12 @@ export const VideoTrimmer: React.FC = () => {
                 // Video Export
                 if (removeAudio) {
                     args.push('-an');
-                } else {
-                    args.push('-c:a', 'aac', '-b:a', '192k');
                 }
 
-                if (qualityPreset === 'fast') {
-                    args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26');
+                if (exportFormat === 'webm') {
+                    args.push('-c:v', 'libvpx-vp9', '-c:a', 'libopus', '-b:v', '0', '-crf', '33');
                 } else {
-                    args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20');
+                    args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac');
                 }
             }
 

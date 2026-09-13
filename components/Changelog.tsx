@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -14,9 +14,63 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.10.0',
+        date: 'Sep 14, 2026',
+        items: [
+            {
+                icon: FileAudio,
+                title: 'Audio Extractor (Video to MP3)',
+                description: 'New AUDIO & VIDEO tool: Extract crystal-clear audio tracks, background music, or dialogue from any video file (MP4, MOV, MKV, WebM, AVI, etc.) directly in your browser. Supports MP3 (up to 320kbps studio quality), WAV, AAC, M4A, FLAC, and OGG formats with stereo/mono channel options, custom segment extraction, and zero server uploads.',
+                type: 'feature'
+            },
+            {
+                icon: Palette,
+                title: 'Image Color Palette Extractor',
+                description: 'New IMAGE tool: Drop any image to extract dominant color palettes using spatial 3D color quantization. Generate mood variations (Vibrant, Muted, Pastel, Dark, Light), sample custom points with the interactive eyedropper, copy CSS Variables and Tailwind snippets, or export high-res PNG swatch cards.',
+                type: 'feature'
+            },
+            {
+                icon: EyeOff,
+                title: 'EXIF Metadata Stripper & Inspector',
+                description: 'New IMAGE & PRIVACY tool: Deep audit and eradication of private metadata from photos before sharing. Inspect embedded GPS geo-coordinates with interactive map links, camera specs, and lens models. Features 100% lossless binary segment stripping that leaves original image quality untouched.',
+                type: 'feature'
+            },
+            {
+                icon: Stamp,
+                title: 'PDF Watermark & Page Numberer',
+                description: 'New DOCS tool: Stamp diagonal or horizontal confidential watermarks (CONFIDENTIAL, DRAFT, SAMPLE, custom text) with adjustable opacity, angle, and page ranges. Also add customized headers and footers with flexible page numbering templates and live multi-page PDF canvas previews.',
+                type: 'feature'
+            },
+            {
+                icon: Rocket,
+                title: 'Feature Roadmap & Community Voting',
+                description: 'Seeded community-requested candidate tools into the interactive Roadmap with local persistence for submitting and upvoting features.',
+                type: 'update'
+            },
+            {
+                icon: Lock,
+                title: '100% Free & Private On-Device Suite',
+                description: 'Completed migration of all AI and media tooling to 100% client-side WebAssembly and Transformers.js models. Zero API keys, zero cloud fees, and complete data privacy.',
+                type: 'update'
+            }
+        ]
+    },
+    {
         version: '1.9.0',
         date: 'Aug 22, 2026',
         items: [
+            {
+                icon: Eraser,
+                title: 'Local In-Browser Background Remover',
+                description: 'Private, 100% on-device neural background matting powered by Transformers.js and Xenova/modnet under Apache-2.0. Requires zero API keys and zero server uploads with live model download progress and clean alpha transparency.',
+                type: 'feature'
+            },
+            {
+                icon: Smartphone,
+                title: 'Social Mockup Checker',
+                description: 'New IMAGE tool: preview Instagram & Meta Stories, Reels, Feed Posts (1:1 and 4:5), Carousels, and Ads inside an interactive 3D phone mockup. Features official Meta safe zone guides (top/bottom obstruction zones & 1:1 profile grid crop), Instagram UI overlays, multi-slide carousel support, 3D tilt/finish controls, and high-res PNG export.',
+                type: 'feature'
+            },
             {
                 icon: Music,
                 title: 'Audio Trimmer 2.0',

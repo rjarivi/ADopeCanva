@@ -176,8 +176,8 @@ export const ImageConverter: React.FC<ImageConverterProps> = ({
         return new Promise((resolve, reject) => {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
-            img.onload = () => resolve(img);
-            img.onerror = reject;
+            img.onload = () => { URL.revokeObjectURL(img.src); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(img.src); reject(new Error('Image load failed')); };
         });
     };
 
@@ -466,7 +466,7 @@ export const ImageConverter: React.FC<ImageConverterProps> = ({
                             </div>
                             <Button 
                                 onClick={reset}
-                                variant="outline"
+                                variant="ghost"
                                 className="h-8 px-3 text-xs text-zinc-400 hover:text-red-400 border-zinc-800"
                             >
                                 Clear All

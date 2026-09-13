@@ -13,15 +13,17 @@ interface VideoConverterProps {
   accept?: string;
   description?: string;
   title?: string;
+  initialTargetFormat?: string;
 }
 
 export const VideoConverter: React.FC<VideoConverterProps> = ({
   accept = "video/*, .mp4, .mov, .avi, .mkv, .webm, .flv, .wmv, .3gp, .mpeg, .mpg, .m4v, .ts, .asf",
   description = "MP4, MOV, AVI, MKV, WEBM, FLV, WMV, 3GP, TS supported",
-  title = "Video Converter"
+  title = "Video Converter",
+  initialTargetFormat = "MP4"
 }) => {
   const [file, setFile] = useState<FileData | null>(null);
-  const [targetFormat, setTargetFormat] = useState('MP4');
+  const [targetFormat, setTargetFormat] = useState(initialTargetFormat);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -57,16 +59,12 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
     const inputName = `input.${file.file.name.split('.').pop()}`;
     const outputName = `output.${targetFormat.toLowerCase()}`;
 
-    try {
-      ffmpeg.on('progress', ({ progress }) => {
-        // progress is 0-1, but sometimes ffmpeg gives garbage or >1 if duration logic fails
-        const p = Math.max(0, Math.min(100, Math.round(progress * 100)));
-        setProgress(p);
-      });
+    const onProgress = ({ progress }: { progress: number }) => { setProgress(Math.round(progress * 100)); };
+    const onLog = ({ message }: { message: string }) => { console.log(message); };
 
-      ffmpeg.on('log', ({ message }) => {
-        setLogs(prev => prev + '\n' + message);
-      });
+    try {
+      ffmpeg.on('progress', onProgress);
+      ffmpeg.on('log', onLog);
 
       setLogs(prev => prev + '\nWriting file to memory...');
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
@@ -80,8 +78,10 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
 
       args.push('-threads', threads);
 
-      if (targetFormat === 'MP4' || targetFormat === 'MOV' || targetFormat === 'MKV' || targetFormat === 'AVI') {
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
+      if (targetFormat === 'AVI') {
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'libmp3lame');
+      } else if (targetFormat === 'MP4' || targetFormat === 'MOV' || targetFormat === 'MKV') {
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac');
       } else if (targetFormat === 'WEBM') {
         args.push('-c:v', 'libvpx', '-quality', 'realtime', '-cpu-used', '5', '-b:v', '1M', '-c:a', 'libvorbis');
       } else if (targetFormat === 'APNG') {
@@ -92,9 +92,11 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       } else if (targetFormat === 'WEBP') {
         args.push('-c:v', 'libwebp', '-lossless', '0', '-compression_level', '4', '-q:v', '80', '-loop', '0');
       } else if (targetFormat === 'JPG') {
-        args.push('-update', '1'); // For animated input, keep last frame or just process as static
+        args.splice(args.indexOf('-i'), 0, '-ss', '00:00:01');
+        args.push('-vframes', '1', '-update', '1'); // For animated input, keep last frame or just process as static
       } else if (targetFormat === 'PNG') {
-        args.push('-update', '1');
+        args.splice(args.indexOf('-i'), 0, '-ss', '00:00:01');
+        args.push('-vframes', '1', '-update', '1');
       }
 
       args.push(outputName);
@@ -102,7 +104,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       console.log(`Starting FFmpeg conversion with ${threads} threads...`);
       setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')}`);
       try {
-        await ffmpeg.exec(args);
+        const exitCode = await ffmpeg.exec(args);
+        if (exitCode !== 0) throw new Error(`FFmpeg conversion failed with code ${exitCode}`);
         console.log('FFmpeg exec completed successfully');
       } catch (primaryErr) {
         setLogs(prev => prev + `\nPrimary encode failed: ${(primaryErr as Error).message}`);
@@ -135,7 +138,14 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         }
       }
 
-      const url = await readFileFromFFmpeg(ffmpeg, outputName, `video/${targetFormat.toLowerCase()}`);
+      const mimeMap: Record<string, string> = {
+          'MP4': 'video/mp4', 'MOV': 'video/quicktime', 'MKV': 'video/x-matroska',
+          'AVI': 'video/x-msvideo', 'WEBM': 'video/webm', 'GIF': 'image/gif',
+          'PNG': 'image/png', 'JPG': 'image/jpeg', 'MP3': 'audio/mpeg',
+          'AAC': 'audio/aac', 'WAV': 'audio/wav', 'OGG': 'audio/ogg'
+      };
+      const mime = mimeMap[targetFormat] || `video/${targetFormat.toLowerCase()}`;
+      const url = await readFileFromFFmpeg(ffmpeg, outputName, mime);
       setConvertedUrl(url);
       setIsDone(true);
       setProgress(100);
@@ -147,6 +157,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       console.error(error);
       setLogs(prev => prev + `\nError: ${(error as Error).message}`);
     } finally {
+      ffmpeg.off('progress', onProgress);
+      ffmpeg.off('log', onLog);
       setIsProcessing(false);
     }
   };

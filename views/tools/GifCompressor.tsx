@@ -104,7 +104,7 @@ export const GifCompressor: React.FC = () => {
 
             // Aggressive Filter: stats_mode=full for better quality with fewer colors,
             // dither=bayer:bayer_scale=1 for significantly better compression than floyd_steinberg.
-            const filter = `scale=iw*${scaleFactor}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`;
+            const filter = `scale=trunc(iw*${scaleFactor}/2)*2:-2:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`;
 
             const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
                 ? Math.min(navigator.hardwareConcurrency, 4).toString()
@@ -115,6 +115,7 @@ export const GifCompressor: React.FC = () => {
                 '-i', inputName,
                 '-threads', threads,
                 '-vf', filter,
+                '-loop', '0',
                 outputName
             ]);
 
@@ -128,14 +129,13 @@ export const GifCompressor: React.FC = () => {
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');
 
-            // await ffmpeg.deleteFile(inputName);
-            await ffmpeg.deleteFile(outputName);
-
         } catch (e) {
             console.error(e);
-            alert("Compression failed");
+            setErrorMessage(`Compression failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
         } finally {
             ffmpeg.off('progress', onProgress);
+            try { await ffmpeg.deleteFile(inputName); } catch (e) {}
+            try { await ffmpeg.deleteFile(outputName); } catch (e) {}
             setIsProcessing(false);
             setProgress(0);
         }

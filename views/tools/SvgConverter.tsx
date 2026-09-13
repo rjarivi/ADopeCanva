@@ -23,7 +23,17 @@ export const SvgConverter: React.FC = () => {
     const [copied, setCopied] = useState(false);
     const [showPreview, setShowPreview] = useState(true);
     const [previewBg, setPreviewBg] = useState<'dark' | 'light' | 'transparent'>('dark');
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const previewRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (code) {
+            const blob = new Blob([code], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            setPreviewUrl(url);
+            return () => URL.revokeObjectURL(url);
+        }
+    }, [code]);
 
     // Validate SVG on code change
     useEffect(() => {
@@ -37,6 +47,8 @@ export const SvgConverter: React.FC = () => {
             const parserError = doc.querySelector('parsererror');
             if (parserError) {
                 setError('Invalid SVG: ' + (parserError.textContent?.split('\n')[0] ?? 'Parse error'));
+            } else if (doc.documentElement.tagName.toLowerCase() !== 'svg') {
+                setError('Invalid SVG: root element must be <svg>');
             } else {
                 setError(null);
             }
@@ -213,10 +225,7 @@ export const SvgConverter: React.FC = () => {
                     >
                         {showPreview ? (
                             isValid ? (
-                                <div
-                                    className="max-w-full max-h-full overflow-auto"
-                                    dangerouslySetInnerHTML={{ __html: code }}
-                                />
+                                <img src={previewUrl || ''} className="max-w-full max-h-full object-contain" alt="SVG Preview" />
                             ) : (
                                 <div className="text-center space-y-3">
                                     <FileCode2 size={48} className="text-zinc-700 mx-auto" />

@@ -184,18 +184,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
         setFrameRange(curr => [curr[0], updated.length - 1]);
       }
 
-      // Early preload to FFmpeg for mobile stability
-      if (engineStatus === 'ready' && ffmpegRef.current) {
-        filesToAdd.forEach(async (f, idx) => {
-          const name = `orig_${Date.now()}_${idx}`;
-          try {
-            await writeFileToFFmpeg(ffmpegRef.current!, name, f.file);
-            (f as any).ffName = name; // Attach for later use
-          } catch (e) {
-            console.warn("Pre-write failed, will retry at render", e);
-          }
-        });
-      }
+
 
       return updated;
     });
@@ -333,7 +322,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       };
 
       const blendImages = (blobA: Blob, blobB: Blob, alpha: number, tW: number, tH: number): Promise<Blob> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const imgA = new Image();
           const imgB = new Image();
           const urlA = URL.createObjectURL(blobA);
@@ -357,6 +346,8 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
           };
           imgA.onload = check;
           imgB.onload = check;
+          imgA.onerror = () => reject(new Error('Failed to load frame A for blending'));
+          imgB.onerror = () => reject(new Error('Failed to load frame B for blending'));
           imgA.src = urlA;
           imgB.src = urlB;
         });
@@ -420,25 +411,29 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       await ffmpeg.writeFile('list.txt', concatContent);
       console.log('[GifMaker] list.txt generated with', framesData.length, 'frames');
 
-      const args = [
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', 'list.txt',
-        '-fps_mode', 'vfr'
-      ];
-
+      let args: string[] = [];
       if (outputFormat === 'gif') {
-        // High quality palette generation + force single thread for concat stability
-        args.push('-vf', 'split[a][b];[a]palettegen[p];[b][p]paletteuse');
-        args.push('-loop', '0');
-        args.push('-threads', '1');
-      } else if (outputFormat === 'apng') {
-        args.push('-f', 'apng', '-plays', '0', '-threads', '1');
-      } else if (outputFormat === 'webp') {
-        args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', '0', '-threads', '1');
+        // Step 1: Generate palette
+        const paletteArgs = ['-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt', '-vf', 'palettegen=stats_mode=diff', 'palette.png'];
+        await ffmpeg.exec(paletteArgs);
+        // Step 2: Use palette
+        args = ['-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt', '-i', 'palette.png',
+            '-lavfi', 'paletteuse=dither=bayer:bayer_scale=1',
+            '-loop', '0', outputFilename];
+      } else {
+        args = [
+          '-f', 'concat',
+          '-safe', '0',
+          '-i', 'list.txt',
+          '-fps_mode', 'vfr'
+        ];
+        if (outputFormat === 'apng') {
+          args.push('-f', 'apng', '-plays', '0', '-threads', '1');
+        } else if (outputFormat === 'webp') {
+          args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', '0', '-threads', '1');
+        }
+        args.push('-y', outputFilename);
       }
-
-      args.push('-y', outputFilename);
 
       console.log('[GifMaker] Executing FFmpeg with args:', args.join(' '));
       try {
@@ -815,7 +810,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar-h flex items-center gap-3">
               {files.map((file, i) => (
                 <div
-                  key={file.previewUrl} // Use previewUrl as unique key to prevent render issues during swap
+                  key={`${i}-${file.previewUrl}`} // Use previewUrl + index to handle duplicates
                   className={`group relative h-24 aspect-square shrink-0 bg-zinc-900 rounded-xl overflow-hidden border transition-all 
                     ${draggedIndex === i ? 'opacity-50 scale-95 border-indigo-500 dashed border-2' : 'border-zinc-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5'}
                     cursor-grab active:cursor-grabbing

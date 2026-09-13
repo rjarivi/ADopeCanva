@@ -1,19 +1,22 @@
 
 import React, { useState, useMemo } from 'react';
-import { Copy, Sparkles, RefreshCcw } from 'lucide-react';
+import { Copy, Sparkles, RefreshCcw, Check } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 
 export const TextCleaner: React.FC = () => {
     const [cleanerInput, setCleanerInput] = useState('');
     const [removeString, setRemoveString] = useState('');
     const [removeEmptyLines, setRemoveEmptyLines] = useState(true);
+    const [copied, setCopied] = useState(false);
 
     const cleanedText = useMemo(() => {
         if (!cleanerInput) return '';
         let res = cleanerInput;
 
         if (removeString) {
-            res = res.split(removeString).join('');
+            removeString.split('\n').map(s => s.trim()).filter(Boolean).forEach(phrase => {
+                res = res.split(phrase).join('');
+            });
         }
 
         if (removeEmptyLines) {
@@ -75,10 +78,12 @@ export const TextCleaner: React.FC = () => {
                             <label className="text-sm font-medium text-zinc-400">Cleaned Result</label>
                             <Button size="sm" variant="secondary" onClick={() => {
                                     navigator.clipboard.writeText(cleanedText);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), 2000);
                                 }}
                                 disabled={!cleanedText}
                             >
-                                <Copy size={14} className="mr-2" /> Copy Result
+                                {copied ? <><Check size={14} className="mr-2" /> Copied</> : <><Copy size={14} className="mr-2" /> Copy Result</>}
                             </Button>
                         </div>
                         <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-4 relative group overflow-hidden">

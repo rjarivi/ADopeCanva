@@ -99,7 +99,7 @@ const captureHtml = async (code: string, scale: CanvasScale): Promise<HTMLCanvas
     // Build off-screen container
     const wrap = document.createElement('div');
     wrap.setAttribute('data-hti', '');
-    wrap.style.cssText = `position:fixed;left:-99999px;top:0;width:${capW}px;height:${capH}px;overflow:hidden;`;
+    wrap.style.cssText = `position:fixed;left:0;top:0;width:${capW}px;height:${capH}px;z-index:-9999;opacity:0.01;pointer-events:none;overflow:hidden;`;
 
     // Apply body background / layout props to the container
     const bodyStyle = parsed.body.style;
@@ -113,6 +113,7 @@ const captureHtml = async (code: string, scale: CanvasScale): Promise<HTMLCanvas
 
     // Scoped style: rewrite `body` selector → [data-hti] so it doesn't affect the parent page
     const tempStyle = document.createElement('style');
+    tempStyle.setAttribute('data-hti-temp', '1');
     tempStyle.textContent = allStyles.replace(/\bbody\b/g, '[data-hti]');
     document.head.appendChild(tempStyle);
     document.body.appendChild(wrap);
@@ -231,16 +232,23 @@ export const HtmlToImage: React.FC = () => {
         setIsCapturing(true);
         try {
             const canvas = await captureHtml(code, scale);
-            if (!canvas) return;
+            if (!canvas) {
+                setIsCapturing(false);
+                return;
+            }
             canvas.toBlob(async (blob) => {
-                if (!blob) return;
                 try {
-                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    if (blob) {
+                        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }
                 } catch { /* clipboard write may be blocked */ }
+                finally {
+                    setIsCapturing(false);
+                }
             }, 'image/png');
-        } finally {
+        } catch (err) {
             setIsCapturing(false);
         }
     }, [code, scale]);

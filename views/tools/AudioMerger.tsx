@@ -87,8 +87,9 @@ export const AudioMerger: React.FC = () => {
         let duration = 0;
         let peaks: Float32Array | null = null;
 
+        let ctx: AudioContext | null = null;
         try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const buffer = await fileData.file.arrayBuffer();
             const audioBuffer = await ctx.decodeAudioData(buffer);
             duration = audioBuffer.duration;
@@ -114,10 +115,10 @@ export const AudioMerger: React.FC = () => {
             for (let i = 0; i < sampleCount; i++) {
                 peaks[i] /= max;
             }
-
-            if (ctx.state !== 'closed') await ctx.close();
         } catch {
             duration = 10;
+        } finally {
+            if (ctx && ctx.state !== 'closed') await ctx.close();
         }
 
         return {
@@ -178,7 +179,7 @@ export const AudioMerger: React.FC = () => {
             if (previewAudioRef.current) {
                 previewAudioRef.current.pause();
                 previewAudioRef.current.src = track.audioUrl;
-                previewAudioRef.current.volume = (track.volume / 100) * (masterVolume / 100);
+                previewAudioRef.current.volume = Math.min(1, Math.max(0, (track.volume / 100) * (masterVolume / 100)));
                 previewAudioRef.current.play().then(() => setActivePreviewId(track.id)).catch(console.error);
             }
         }

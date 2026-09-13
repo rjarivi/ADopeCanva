@@ -29,13 +29,12 @@ export const ImageCompressor: React.FC = () => {
 
   useEffect(() => {
     if (file) {
-      setOriginalImageSrc(URL.createObjectURL(file.file));
+      const url = URL.createObjectURL(file.file);
+      setOriginalImageSrc(url);
       setResultImage(null); // Reset on new file
       setCompressedSize(''); // Reset compressed size
+      return () => URL.revokeObjectURL(url);
     }
-    return () => {
-      if (originalImageSrc) URL.revokeObjectURL(originalImageSrc);
-    };
   }, [file]);
 
   // Debounce compression to avoid lag while dragging slider - this useEffect is removed as compression is now manual.
@@ -66,11 +65,16 @@ export const ImageCompressor: React.FC = () => {
             return;
           }
 
+          // Compress: force JPEG for compression visibility or keep original type if supported
+          const type = inputFile.type === 'image/png' ? 'image/jpeg' : inputFile.type;
+
+          if (type === 'image/jpeg') {
+              ctx.fillStyle = '#FFFFFF';
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+
           ctx.drawImage(img, 0, 0);
 
-          // Compress: force JPEG for compression visibility or keep original type if supported
-          // Using jpeg allows for visible artifacts reduction (compression)
-          const type = inputFile.type === 'image/png' ? 'image/jpeg' : inputFile.type;
           const newDataUrl = canvas.toDataURL(type, quality / 100);
 
           setResultImage(newDataUrl);
@@ -234,8 +238,10 @@ export const ImageCompressor: React.FC = () => {
                 <div className="space-y-3 animate-slide-up">
                   <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={() => {
                     const link = document.createElement('a');
-                    link.href = resultImage!; // Changed from compressedImage to resultImage to match existing state
-                    link.download = `optimized-${file!.file.name}`; // Added ! for file and removed split('.')[0]}.jpg to match new format
+                    link.href = resultImage!;
+                    const type = file!.file.type === 'image/png' ? 'image/jpeg' : file!.file.type;
+                    const ext = type === 'image/jpeg' ? 'jpg' : 'png';
+                    link.download = `optimized-${file!.file.name.replace(/\.[^/.]+$/, '')}.${ext}`;
                     link.click();
                   }}
                   >

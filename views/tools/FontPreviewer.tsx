@@ -22,21 +22,10 @@ const GOOGLE_FONTS = [
     'PT Sans', 'PT Mono', 'Oxygen', 'Dosis', 'Muli',
     'Catamaran', 'Asap', 'Hind', 'Nanum Gothic', 'Almarai',
     'Maven Pro', 'Gothic A1', 'Cantarell', 'Signika', 'Yantramanav',
-    'Unbounded', 'Syne', 'Clash Display', 'Cabinet Grotesk',
+    'Unbounded', 'Syne',
 ];
 
 const SIZE_PRESETS = [14, 18, 24, 36, 48, 64, 96];
-
-const loadedFonts = new Set<string>();
-
-function loadFont(name: string) {
-    if (loadedFonts.has(name)) return;
-    loadedFonts.add(name);
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;700&display=swap`;
-    document.head.appendChild(link);
-}
 
 export const FontPreviewer: React.FC = () => {
     const [query, setQuery] = useState('');
@@ -45,6 +34,27 @@ export const FontPreviewer: React.FC = () => {
     const [selectedFont, setSelectedFont] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(40);
+    
+    const loadedLinks = React.useRef<HTMLLinkElement[]>([]);
+    const loadedFonts = React.useRef<Set<string>>(new Set());
+
+    const loadFont = React.useCallback((name: string) => {
+        if (loadedFonts.current.has(name)) return;
+        loadedFonts.current.add(name);
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400&display=swap`;
+        document.head.appendChild(link);
+        loadedLinks.current.push(link);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            loadedLinks.current.forEach(link => {
+                if (document.head.contains(link)) document.head.removeChild(link);
+            });
+        };
+    }, []);
 
     const filteredFonts = GOOGLE_FONTS.filter(f =>
         f.toLowerCase().includes(query.toLowerCase())
@@ -70,7 +80,7 @@ export const FontPreviewer: React.FC = () => {
 
     const handleCopyImport = (name: string) => {
         navigator.clipboard.writeText(
-            `@import url('https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400;700&display=swap');`
+            `@import url('https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400&display=swap');`
         );
         setCopied(name + '_import');
         setTimeout(() => setCopied(null), 2000);
@@ -161,7 +171,7 @@ export const FontPreviewer: React.FC = () => {
                     <div className="border-t border-zinc-800 pt-6">
                         <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-3">CSS Snippet</p>
                         <pre className="bg-zinc-950 rounded-xl p-4 text-xs font-mono text-zinc-300 overflow-x-auto custom-scrollbar border border-zinc-800">
-{`@import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@400;700&display=swap');
+{`@import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@400&display=swap');
 
 body {
   font-family: '${selectedFont}', sans-serif;

@@ -52,20 +52,23 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   const [sourceFileName, setSourceFileName] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     let ffInstance: FFmpeg | null = null;
     const logCallback = ({ message }: { message: string }) => {
       console.log(message);
-      setLogs(prev => [...prev.slice(-5), message]);
+      if (isMounted) setLogs(prev => [...prev.slice(-5), message]);
     };
 
     const load = async () => {
       try {
         const ff = await getFFmpeg();
+        if (!isMounted) return;
         ffInstance = ff;
         ff.on('log', logCallback);
         ffmpegRef.current = ff;
         setEngineStatus('ready');
       } catch (e) {
+        if (!isMounted) return;
         console.error("Failed to load FFmpeg", e);
         setErrorMessage(e instanceof Error ? e.message : 'Unknown error occurred');
         setEngineStatus('error');
@@ -74,6 +77,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     load();
 
     return () => {
+      isMounted = false;
       if (ffInstance) {
         ffInstance.off('log', logCallback);
       }
@@ -139,7 +143,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     setLogs([]);
     const ffmpeg = ffmpegRef.current;
     const inputName = 'input.mp4';
-    const outputName = `output.${outputFormat} `;
+    const outputName = `output.${outputFormat}`;
 
     // Progress Handler
     const onProgress = ({ progress }: { progress: number }) => {
@@ -171,11 +175,11 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       let filters = [];
 
       // Trimming
-      filters.push(`trim = start = ${trimRange[0]}: end = ${trimRange[1]} `);
+      filters.push(`trim=start=${trimRange[0]}:end=${trimRange[1]}`);
       filters.push('setpts=PTS-STARTPTS');
 
       // Scaling
-      filters.push(`fps = ${fps}, scale = ${width}: -1: flags = lanczos`);
+      filters.push(`fps=${fps},scale=${width}:-2:flags=lanczos`);
 
       // Text Overlay
       if (text) {
@@ -252,7 +256,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     const a = document.createElement('a');
     a.href = gifUrl;
     const nameWithoutExt = file?.file.name.substring(0, file.file.name.lastIndexOf('.')) || 'video';
-    a.download = `${nameWithoutExt}.gif`;
+    a.download = `${nameWithoutExt}.${outputFormat}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

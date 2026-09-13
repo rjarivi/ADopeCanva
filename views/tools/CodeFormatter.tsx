@@ -15,19 +15,22 @@ export const CodeFormatter: React.FC = () => {
     const [copied, setCopied] = useState(false);
     const [tabSize, setTabSize] = useState(2);
 
+    const prevInputRef = React.useRef('');
+
     // Auto-detect language
     useEffect(() => {
         const trimmed = input.trim();
-        if (!trimmed) return;
-
-        if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-            setLanguage('JSON');
-        } else if (trimmed.startsWith('<')) {
-            if (trimmed.includes('xml version')) setLanguage('XML');
-            else setLanguage('HTML');
-        } else if (trimmed.includes('{') && trimmed.includes(';') && !trimmed.startsWith('<')) {
-            setLanguage('CSS');
+        if (!prevInputRef.current && trimmed) {
+            if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                setLanguage('JSON');
+            } else if (trimmed.startsWith('<')) {
+                if (trimmed.includes('xml version')) setLanguage('XML');
+                else setLanguage('HTML');
+            } else if (trimmed.includes('{') && trimmed.includes(';') && !trimmed.startsWith('<')) {
+                setLanguage('CSS');
+            }
         }
+        prevInputRef.current = input;
     }, [input]);
 
     const formatJSON = (minify: boolean) => {
@@ -75,30 +78,21 @@ export const CodeFormatter: React.FC = () => {
         }
     };
 
-    const formatHTML = (minify: boolean) => {
-        if (minify) {
-            return input
-                .replace(/>\s+</g, '><')
-                .replace(/\s{2,}/g, ' ')
-                .replace(/<!--[\s\S]*?-->/g, '') // remove comments
-                .trim();
-        } else {
-            // Basic HTML prettifier
-            let formatted = '';
-            let pad = 0;
-            const xml = input.replace(/>\s+</g, '><');
-
-            xml.split(/>\s*</).forEach(node => {
-                if (node.match(/^\/\w/)) pad = Math.max(0, pad - 1);
-
-                formatted += ' '.repeat(pad * tabSize) + '<' + node + '>\n';
-
-                if (node.match(/^<?\w[^>]*[^\/]$/) && !node.startsWith('input') && !node.startsWith('img') && !node.startsWith('br') && !node.startsWith('hr') && !node.startsWith('meta')) {
-                    pad += 1;
-                }
-            });
-
-            return formatted.trim().substring(1, formatted.length - 2); // cleanup generic split artifacts
+    const formatHTML = (html: string): string => {
+        try {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const serialized = new XMLSerializer().serializeToString(doc.documentElement);
+            // Simple indent pass
+            let indent = 0;
+            return serialized.replace(/></g, '>\n<').split('\n').map(line => {
+                if (line.match(/^<\/[^>]+>/)) indent = Math.max(0, indent - 2);
+                const result = ' '.repeat(indent) + line.trim();
+                if (line.match(/^<[^/][^>]*[^/]>$/) && !line.match(/^<(br|hr|img|input|link|meta)/i)) indent += 2;
+                return result;
+            }).join('\n');
+        } catch {
+            return html;
         }
     };
 
@@ -114,7 +108,7 @@ export const CodeFormatter: React.FC = () => {
                 case 'CSS': result = formatCSS(minify); break;
                 // For HTML we use a simplified robust approach or DOMParser if needed, 
                 // but regex approach above is decent for client-side tool without heavy libs
-                case 'HTML': result = formatHTML(minify); break;
+                case 'HTML': result = formatHTML(input); break;
             }
             setInput(result);
         } catch (e: any) {

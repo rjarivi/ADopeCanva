@@ -61,16 +61,18 @@ export const ImageResizer: React.FC = () => {
     }, [file]);
 
     const handleWidthChange = useCallback((value: number) => {
-        setNewWidth(value);
+        const val = Math.max(1, value);
+        setNewWidth(val);
         if (aspectLocked && aspectRatio) {
-            setNewHeight(Math.round(value / aspectRatio));
+            setNewHeight(Math.max(1, Math.round(val / aspectRatio)));
         }
     }, [aspectLocked, aspectRatio]);
 
     const handleHeightChange = useCallback((value: number) => {
-        setNewHeight(value);
+        const val = Math.max(1, value);
+        setNewHeight(val);
         if (aspectLocked && aspectRatio) {
-            setNewWidth(Math.round(value * aspectRatio));
+            setNewWidth(Math.max(1, Math.round(val * aspectRatio)));
         }
     }, [aspectLocked, aspectRatio]);
 
@@ -94,10 +96,11 @@ export const ImageResizer: React.FC = () => {
 
         try {
             const img = new Image();
-            img.src = originalImageSrc;
-
-            await new Promise((resolve) => {
+            await new Promise((resolve, reject) => {
                 img.onload = resolve;
+                img.onerror = reject;
+                img.src = originalImageSrc;
+                if (img.complete && img.naturalWidth > 0) resolve(null);
             });
 
             const canvas = document.createElement('canvas');

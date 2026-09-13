@@ -220,8 +220,11 @@ export const ColorTool: React.FC = () => {
     // Sync formats when HEX changes
     const updateFromHex = (hex: string) => {
         const cleanedHex = hex.trim();
-        if (/^#[0-9A-F]{6}$/i.test(cleanedHex)) {
-            const rgb = hexToRgb(cleanedHex);
+        if (/^#([0-9A-F]{3}|[0-9A-F]{6})$/i.test(cleanedHex)) {
+            const fullHex = cleanedHex.length === 4 
+                ? `#${cleanedHex[1]}${cleanedHex[1]}${cleanedHex[2]}${cleanedHex[2]}${cleanedHex[3]}${cleanedHex[3]}` 
+                : cleanedHex;
+            const rgb = hexToRgb(fullHex);
             if (rgb) {
                 setBaseHex(cleanedHex);
                 setBaseRgb(rgb);
@@ -291,7 +294,9 @@ export const ColorTool: React.FC = () => {
         const link = document.createElement('a');
         link.download = `palette-${harmonyStrategy}-${baseHex}.png`;
         link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 
     // --- Tab 2: Contrast Checker State ---
@@ -335,9 +340,11 @@ export const ColorTool: React.FC = () => {
     const [cmykM, setCmykM] = useState(0);
     const [cmykY, setCmykY] = useState(0);
     const [cmykK, setCmykK] = useState(0);
+    const isEditingCmyk = React.useRef(false);
 
     // Keep CMYK sync with main Base Color HSL/RGB
     useEffect(() => {
+        if (isEditingCmyk.current) return;
         const cmyk = rgbToCmyk(baseRgb.r, baseRgb.g, baseRgb.b);
         setCmykC(cmyk.c);
         setCmykM(cmyk.m);
@@ -346,6 +353,7 @@ export const ColorTool: React.FC = () => {
     }, [baseRgb]);
 
     const handleCmykChange = (channel: 'c' | 'm' | 'y' | 'k', val: number) => {
+        isEditingCmyk.current = true;
         let updatedC = cmykC;
         let updatedM = cmykM;
         let updatedY = cmykY;
@@ -361,6 +369,7 @@ export const ColorTool: React.FC = () => {
         setBaseHex(rgbToHex(rgb.r, rgb.g, rgb.b));
         setBaseRgb(rgb);
         setBaseHsl(rgbToHsl(rgb.r, rgb.g, rgb.b));
+        setTimeout(() => { isEditingCmyk.current = false; }, 0);
     };
 
     return (
@@ -774,7 +783,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={255}
                                                 value={baseRgb.r}
-                                                onChange={(e) => updateFromRgb(parseInt(e.target.value) || 0, baseRgb.g, baseRgb.b)}
+                                                onChange={(e) => updateFromRgb(Math.min(255, Math.max(0, parseInt(e.target.value) || 0)), baseRgb.g, baseRgb.b)}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-red-500">R</span>
@@ -784,7 +793,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={255}
                                                 value={baseRgb.g}
-                                                onChange={(e) => updateFromRgb(baseRgb.r, parseInt(e.target.value) || 0, baseRgb.b)}
+                                                onChange={(e) => updateFromRgb(baseRgb.r, Math.min(255, Math.max(0, parseInt(e.target.value) || 0)), baseRgb.b)}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-green-500">G</span>
@@ -794,7 +803,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={255}
                                                 value={baseRgb.b}
-                                                onChange={(e) => updateFromRgb(baseRgb.r, baseRgb.g, parseInt(e.target.value) || 0)}
+                                                onChange={(e) => updateFromRgb(baseRgb.r, baseRgb.g, Math.min(255, Math.max(0, parseInt(e.target.value) || 0)))}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-blue-500">B</span>
@@ -811,7 +820,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={360}
                                                 value={baseHsl.h}
-                                                onChange={(e) => updateFromHsl(parseInt(e.target.value) || 0, baseHsl.s, baseHsl.l)}
+                                                onChange={(e) => updateFromHsl(Math.min(360, Math.max(0, parseInt(e.target.value) || 0)), baseHsl.s, baseHsl.l)}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-zinc-500">H</span>
@@ -821,7 +830,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={100}
                                                 value={baseHsl.s}
-                                                onChange={(e) => updateFromHsl(baseHsl.h, parseInt(e.target.value) || 0, baseHsl.l)}
+                                                onChange={(e) => updateFromHsl(baseHsl.h, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)), baseHsl.l)}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-zinc-500">S</span>
@@ -831,7 +840,7 @@ export const ColorTool: React.FC = () => {
                                                 type="number" 
                                                 min={0} max={100}
                                                 value={baseHsl.l}
-                                                onChange={(e) => updateFromHsl(baseHsl.h, baseHsl.s, parseInt(e.target.value) || 0)}
+                                                onChange={(e) => updateFromHsl(baseHsl.h, baseHsl.s, Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
                                                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3 py-2.5 text-sm font-mono font-bold text-white focus:border-indigo-500 outline-none transition-colors"
                                             />
                                             <span className="absolute left-3 top-3 text-[10px] font-bold text-zinc-500">L</span>

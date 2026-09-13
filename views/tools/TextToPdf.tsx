@@ -22,6 +22,12 @@ export const TextToPdf: React.FC = () => {
         setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
     }, [text]);
 
+    useEffect(() => {
+        return () => {
+            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+        };
+    }, [pdfPreviewUrl]);
+
     const generatePdf = useCallback(() => {
         if (!text.trim()) return;
 
@@ -43,7 +49,7 @@ export const TextToPdf: React.FC = () => {
             const lines = doc.splitTextToSize(text, maxWidth);
             const lineHeight = fontSize * 0.352778 * lineSpacing; // Convert pt to mm
 
-            let y = marginSize;
+            let y = marginSize + (fontSize * 0.352778); // offset by font cap height in mm
 
             for (const line of lines) {
                 if (y + lineHeight > pageHeight - marginSize) {
@@ -87,7 +93,7 @@ export const TextToPdf: React.FC = () => {
         const lines = doc.splitTextToSize(text, maxWidth);
         const lineHeight = fontSize * 0.352778 * lineSpacing;
 
-        let y = marginSize;
+        let y = marginSize + (fontSize * 0.352778);
 
         for (const line of lines) {
             if (y + lineHeight > pageHeight - marginSize) {

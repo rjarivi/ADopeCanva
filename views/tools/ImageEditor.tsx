@@ -212,7 +212,8 @@ export const ImageEditor: React.FC = () => {
     type ResizeDirection = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
     const [resizeDirection, setResizeDirection] = useState<ResizeDirection | null>(null);
     const [initialResizeState, setInitialResizeState] = useState<{
-        x: number, y: number, w: number, h: number, mx: number, my: number, fontSize?: number
+        x: number, y: number, w: number, h: number, mx: number, my: number, fontSize?: number,
+        cropW?: number, cropH?: number, cropX?: number, cropY?: number
     } | null>(null);
     const [isCropping, setIsCropping] = useState(false);
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
@@ -530,6 +531,9 @@ export const ImageEditor: React.FC = () => {
     // Separate effect for Paste to catch fresh clipboard
     useEffect(() => {
         const handlePaste = (e: KeyboardEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+
             if (e.ctrlKey && e.key === 'v') {
                 // We need to check if we have internal clipboard
                 // Or we could read system clipboard if image? 
@@ -816,36 +820,12 @@ export const ImageEditor: React.FC = () => {
                     }
                 }
 
-            } else if (layer.type === 'text' && layer.text) {
-                ctx.font = `${layer.fontStyle || 'normal'} ${layer.fontWeight || 'normal'} ${layer.fontSize}px ${layer.fontFamily || 'Arial'}`;
-                ctx.fillStyle = layer.color!;
-                ctx.textBaseline = 'middle';
-                ctx.textAlign = (layer.textAlign || 'center') as CanvasTextAlign;
-
-                // Handling decoration manually on canvas
-                const metrics = ctx.measureText(layer.text);
-                ctx.fillText(layer.text, layer.x, layer.y);
-
-                if (layer.textDecoration === 'underline') {
-                    const textWidth = metrics.width;
-                    const y = layer.y + (layer.fontSize! / 1.8); // Offset slightly for underline
-                    let x = layer.x;
-                    if (ctx.textAlign === 'center') x = layer.x - textWidth / 2;
-                    else if (ctx.textAlign === 'right') x = layer.x - textWidth;
-
-                    ctx.beginPath();
-                    ctx.strokeStyle = layer.color!;
-                    ctx.lineWidth = Math.max(1, layer.fontSize! / 15);
-                    ctx.moveTo(x, y);
-                    ctx.lineTo(x + textWidth, y);
-                    ctx.stroke();
-                }
             }
 
             ctx.restore();
         });
 
-    }, [layers, canvasSize, bgColor, bgType, gradientType, gradientAngle, gradientStops, layers.map(l => l.chromaKeyEnabled)]);
+    }, [layers, canvasSize, bgColor, bgType, gradientType, gradientAngle, gradientStops]);
 
     // Actions
     const updateLayer = (id: string, updates: Partial<Layer>) => {
@@ -923,12 +903,15 @@ export const ImageEditor: React.FC = () => {
             const iw = initialResizeState.w;
             const ih = initialResizeState.h;
 
-            if (isCropping && activeLayerId && resizeDirection.length === 1) {
+            if (isCropping && activeLayerId) {
                 // CROP MODE RESIZE (MASKING)
                 const currentLayer = layers.find(l => l.id === activeLayerId);
                 if (currentLayer?.type === 'image') {
-                    const cw = currentLayer.cropWidth || currentLayer.image?.width || 0;
-                    const ch = currentLayer.cropHeight || currentLayer.image?.height || 0;
+                    const cw = initialResizeState.cropW ?? (currentLayer.cropWidth || currentLayer.image?.width || 0);
+                    const ch = initialResizeState.cropH ?? (currentLayer.cropHeight || currentLayer.image?.height || 0);
+                    const initialCropX = initialResizeState.cropX ?? (currentLayer.cropX || 0);
+                    const initialCropY = initialResizeState.cropY ?? (currentLayer.cropY || 0);
+
                     const lw = currentLayer.width || 1;
                     const lh = currentLayer.height || 1;
 
@@ -962,8 +945,8 @@ export const ImageEditor: React.FC = () => {
                         y: newY,
                         width: newW,
                         height: newH,
-                        cropX: currentLayer.cropX || 0,
-                        cropY: currentLayer.cropY || 0,
+                        cropX: initialCropX,
+                        cropY: initialCropY,
                         cropWidth: cw,
                         cropHeight: ch
                     };
@@ -979,13 +962,21 @@ export const ImageEditor: React.FC = () => {
                     // For West/North, we shift the window AND the crop window
                     if (resizeDirection.includes('w')) {
                         const sourceShift = deltaW * dataScaleX;
-                        cropAttrs.cropX = (currentLayer.cropX || 0) - sourceShift;
+                        cropAttrs.cropX = initialCropX - sourceShift;
                         cropAttrs.cropWidth = cw + sourceShift;
                     }
                     if (resizeDirection.includes('n')) {
                         const sourceShift = deltaH * dataScaleY;
-                        cropAttrs.cropY = (currentLayer.cropY || 0) - sourceShift;
+                        cropAttrs.cropY = initialCropY - sourceShift;
                         cropAttrs.cropHeight = ch + sourceShift;
+                    }
+
+                    const img = currentLayer.image;
+                    if (img) {
+                        cropAttrs.cropX = Math.max(0, cropAttrs.cropX ?? 0);
+                        cropAttrs.cropY = Math.max(0, cropAttrs.cropY ?? 0);
+                        cropAttrs.cropWidth = Math.max(20, Math.min((cropAttrs.cropWidth ?? 0), img.naturalWidth - (cropAttrs.cropX ?? 0)));
+                        cropAttrs.cropHeight = Math.max(20, Math.min((cropAttrs.cropHeight ?? 0), img.naturalHeight - (cropAttrs.cropY ?? 0)));
                     }
 
                     updateLayer(activeLayerId, cropAttrs);
@@ -2636,6 +2627,41 @@ export const ImageEditor: React.FC = () => {
                                                 >
                                                     <Crop size={16} />
                                                 </button>
+                                                {isCropping && (
+                                                    <>
+                                                        <button
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-green-50 rounded text-green-600 text-xs font-medium"
+                                                            title="Apply Crop"
+                                                            onClick={() => {
+                                                                const layer = layers.find(l => l.id === activeLayerId);
+                                                                if (!layer?.image || layer.type !== 'image') return;
+                                                                const offscreen = document.createElement('canvas');
+                                                                offscreen.width = layer.width || layer.image.naturalWidth;
+                                                                offscreen.height = layer.height || layer.image.naturalHeight;
+                                                                const ctx = offscreen.getContext('2d')!;
+                                                                ctx.drawImage(layer.image, layer.cropX || 0, layer.cropY || 0, layer.cropWidth || layer.image.naturalWidth, layer.cropHeight || layer.image.naturalHeight, 0, 0, offscreen.width, offscreen.height);
+                                                                const newImg = new Image();
+                                                                newImg.onload = () => {
+                                                                    updateLayer(layer.id, { image: newImg, src: offscreen.toDataURL(), cropX: 0, cropY: 0, cropWidth: newImg.naturalWidth, cropHeight: newImg.naturalHeight });
+                                                                };
+                                                                newImg.src = offscreen.toDataURL();
+                                                                setIsCropping(false);
+                                                            }}
+                                                        >
+                                                            <span>Apply</span>
+                                                        </button>
+                                                        <button
+                                                            className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-red-50 rounded text-red-600 text-xs font-medium"
+                                                            title="Cancel Crop"
+                                                            onClick={() => { 
+                                                                updateLayer(activeLayerId, { cropX: 0, cropY: 0, cropWidth: activeLayer.image?.naturalWidth, cropHeight: activeLayer.image?.naturalHeight }); 
+                                                                setIsCropping(false); 
+                                                            }}
+                                                        >
+                                                            <span>Cancel</span>
+                                                        </button>
+                                                    </>
+                                                )}
                                                 <button
                                                     className="flex items-center gap-1.5 px-2 py-1.5 hover:bg-zinc-100 rounded text-zinc-600 text-xs font-medium"
                                                     title="Replace Image"
@@ -2778,8 +2804,12 @@ export const ImageEditor: React.FC = () => {
                                                             h: activeLayer.height || 0,
                                                             fontSize: activeLayer.fontSize,
                                                             mx: e.clientX,
-                                                            my: e.clientY
-                                                        });
+                                                            my: e.clientY,
+                                                            cropX: activeLayer.cropX || 0,
+                                                            cropY: activeLayer.cropY || 0,
+                                                            cropW: activeLayer.cropWidth || activeLayer.image?.width || 0,
+                                                            cropH: activeLayer.cropHeight || activeLayer.image?.height || 0
+                                                        } as any);
                                                     }}
                                                 />
                                             );

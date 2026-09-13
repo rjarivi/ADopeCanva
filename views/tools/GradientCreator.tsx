@@ -23,7 +23,10 @@ function oklch2hex(l: number, c: number, h: number): string {
 }
 
 function hex2oklch(hex: string): { l: number; c: number; h: number } {
-    const ri = parseInt(hex.slice(1,3),16)/255, gi = parseInt(hex.slice(3,5),16)/255, bi = parseInt(hex.slice(5,7),16)/255;
+    const normalizedHex = hex.length === 4 
+        ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}` 
+        : hex;
+    const ri = parseInt(normalizedHex.slice(1,3),16)/255, gi = parseInt(normalizedHex.slice(3,5),16)/255, bi = parseInt(normalizedHex.slice(5,7),16)/255;
     const lin = (x: number) => x <= 0.04045 ? x / 12.92 : ((x+0.055)/1.055)**2.4;
     const rl = lin(ri), gl = lin(gi), bl = lin(bi);
     const lp = Math.cbrt(0.4122214708*rl + 0.5363325363*gl + 0.0514459929*bl);
@@ -201,14 +204,15 @@ export const GradientCreator: React.FC = () => {
         canvas.width = width; canvas.height = height;
         let grad: CanvasGradient;
         if (type === 'linear') {
-            const rad = (angle * Math.PI) / 180;
+            const rad = ((angle - 90) * Math.PI) / 180;
             const cx = width / 2, cy = height / 2;
             const len = Math.sqrt(width * width + height * height) / 2;
             grad = ctx.createLinearGradient(cx - Math.cos(rad)*len, cy - Math.sin(rad)*len, cx + Math.cos(rad)*len, cy + Math.sin(rad)*len);
         } else if (type === 'radial') {
-            grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
+            grad = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.hypot(width, height)/2);
         } else {
-            grad = ctx.createConicGradient((angle * Math.PI) / 180, width/2, height/2);
+            const conicStartAngle = ((angle - 90) * Math.PI) / 180;
+            grad = ctx.createConicGradient(conicStartAngle, width/2, height/2);
         }
         sortedStops.forEach(s => grad.addColorStop(s.position / 100, s.color));
         ctx.fillStyle = grad;
@@ -296,7 +300,9 @@ export const GradientCreator: React.FC = () => {
         const link = document.createElement('a');
         link.href = canvas.toDataURL(`image/${format}`, 0.95);
         link.download = `gradient.${format}`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     };
 
     const copyCSS = () => {
