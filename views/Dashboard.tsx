@@ -71,7 +71,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Smartphone,
         component: <SocialMockupChecker />,
-        popular: true,
         guideTitle: 'How to preview social media graphics & check safe zones',
         guideContent: 'Upload your design images or multi-slide carousel images, select your target Instagram/Meta format (Story 9:16, Story Ad 9:16, Feed 4:5, Feed 1:1, Carousel, or Feed Ad), and preview them live inside an interactive 3D mobile phone mockup. Toggle official Meta safe zone guides to ensure top headers, bottom CTA buttons, message reply bars, and profile grid cropping will not obscure your text or logos.',
         faqs: [
@@ -95,7 +94,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: Palette,
         component: <PaletteExtractor />,
-        popular: true,
         guideTitle: 'How to extract dominant color palettes from any photo',
         guideContent: 'Drop any image to extract dominant color swatches using Canvas color quantization. Explore different moods (Vibrant, Muted, Light, Dark, Pastel), sample custom points with the interactive eyedropper, and copy CSS variables or Tailwind snippets.',
         faqs: [
@@ -116,7 +114,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: EyeOff,
         component: <ExifStripper />,
-        popular: true,
         guideTitle: 'How to remove GPS and personal metadata from photos',
         guideContent: 'Digital photos often contain sensitive metadata including GPS coordinates, camera serial numbers, and exact timestamps. Our EXIF stripper audits these hidden tags and losslessly sanitizes the file without touching pixel quality.',
         faqs: [
@@ -221,7 +218,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.AUDIO,
         icon: FileAudio,
         component: <AudioExtractor />,
-        popular: true,
         guideTitle: 'How to extract audio tracks from any video file',
         guideContent: 'Quickly strip audio streams from video files like MP4, MOV, MKV, or WebM and export directly to MP3, WAV, AAC, or FLAC. Perfect for saving podcasts, extracting background tracks, or creating sound bites completely offline.',
         faqs: [
@@ -507,6 +503,7 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.VIDEO,
         icon: ArrowRightLeft,
         component: <VideoConverter />,
+        popular: true,
         guideTitle: 'Convert videos between any format instantly',
         guideContent: 'Transform your video files into compatible formats for any device. Convert large MOV files from iPhone to efficient MP4s, or turn videos into WebM for high-performance web use without losing visual quality.',
         faqs: [
@@ -716,7 +713,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.DOCS,
         icon: Stamp,
         component: <PdfWatermark />,
-        popular: true,
         guideTitle: 'How to add watermarks and page numbers to PDF documents',
         guideContent: 'Stamp diagonal confidential watermarks (CONFIDENTIAL, DRAFT, SAMPLE) or custom text onto your PDF pages with adjustable opacity and rotation. Also adds headers and footers with flexible page numbering templates.',
         faqs: [
@@ -1429,7 +1425,6 @@ export const TOOLS: ToolItem[] = [
         category: ToolCategory.IMAGE,
         icon: SplitSquareHorizontal,
         component: <ImageSplitter />,
-        popular: true,
         guideTitle: 'How to split images for Instagram carousel seamless effect',
         guideContent: 'Upload a wide or tall image, choose your split preset (1080×1350 for portrait carousels, 1080×1080 for square), and hit Split. The tool slices the image into perfectly-sized panels and lets you download them all in a ZIP. For a seamless panoramic carousel on Instagram, use a single wide image and let this tool divide it — upload slides right-to-left so they appear left-to-right in the carousel.',
         faqs: [
