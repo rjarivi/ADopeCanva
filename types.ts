@@ -78,6 +78,8 @@ export interface ToolItem {
   comingSoon?: boolean;
   swapId?: string;        // ID of the reverse/paired tool (enables swap button)
   // SEO & Guides fields
+  seoTitle?: string;
+  metaDescription?: string;
   guideTitle?: string;
   guideContent?: string;
   faqs?: FAQItem[];

@@ -17,6 +17,7 @@ import { ToolLoader } from './components/ToolLoader';
 import { Guides } from './views/Guides';
 import { CategoryHub } from './views/CategoryHub';
 import { ProgrammaticToolView } from './views/ProgrammaticToolView';
+import { RemoveBgAlternativeBlog } from './views/RemoveBgAlternativeBlog';
 import {
     buildToolSchema,
     updateHeadTags,
@@ -47,8 +48,8 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
         const schemas = buildToolSchema(tool);
 
         updateHeadTags({
-            title: `${tool.title} - Free Online In-Browser Tool | A Dope Canva`,
-            description: tool.description,
+            title: tool.seoTitle || `${tool.title} - Free Online In-Browser Tool | A Dope Canva`,
+            description: tool.metaDescription || tool.description,
             keywords: tool.keywords || [tool.title.toLowerCase(), `${tool.category.toLowerCase()} tool`, 'free in-browser tool', 'no upload converter'],
             canonicalUrl,
             schemas
@@ -152,6 +153,8 @@ const App = () => {
         const isCategoryHub = /^\/category\/[^\/]+$/.test(location.pathname);
         const isStaticPage = location.pathname === '/' ||
             location.pathname.startsWith('/vs') ||
+            location.pathname.startsWith('/blog') ||
+            location.pathname === '/remove-bg-alternative' ||
             isCategoryHub ||
             location.pathname === '/studio' ||
             location.pathname === '/guides';
@@ -323,6 +326,8 @@ const App = () => {
                                 <div className="mt-2 flex items-center justify-center gap-4 text-xs text-zinc-500">
                                     <button onClick={() => navigate('/guides')} className="hover:text-zinc-300 hover:underline">How-to Guides</button>
                                     <span>•</span>
+                                    <button onClick={() => navigate('/remove-bg-alternative')} className="text-indigo-400 hover:text-indigo-300 hover:underline font-medium">Remove.bg Alternative</button>
+                                    <span>•</span>
                                     <button onClick={() => navigate('/category/image')} className="hover:text-zinc-300 hover:underline">Image Tools</button>
                                     <span>•</span>
                                     <button onClick={() => navigate('/category/video')} className="hover:text-zinc-300 hover:underline">Video Tools</button>
@@ -366,6 +371,10 @@ const App = () => {
                 <Route path="/vs/:competitor" element={<Comparison />} />
                 <Route path="/studio" element={<ComingSoon />} />
                 <Route path="/guides" element={<Guides />} />
+
+                {/* Remove.bg Alternative Blog & Pillar */}
+                <Route path="/blog/remove-bg-alternative" element={<RemoveBgAlternativeBlog />} />
+                <Route path="/remove-bg-alternative" element={<RemoveBgAlternativeBlog />} />
 
                 {/* Programmatic Sub-Routes (e.g. /image-converter/png-to-webp) */}
                 <Route path="/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />

@@ -14,6 +14,30 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.11.0',
+        date: 'Sep 16, 2026',
+        items: [
+            {
+                icon: Eraser,
+                title: 'Remove.bg Alternative & Smart Background Remover 2.0',
+                description: 'Supercharged on-device MODNet AI background removal with full-resolution 4K+ export, 100% private in-browser WebAssembly execution, zero server uploads, and comprehensive FAQ & How-To schemas for zero-bounce SERP dominance.',
+                type: 'feature'
+            },
+            {
+                icon: GitCompare,
+                title: 'Remove.bg Head-to-Head Comparison Matrix',
+                description: 'Launched dedicated /vs/remove-bg comparison hub detailing resolution limits, privacy tradeoffs, per-image credit costs ($0 vs $0.20–$1.99), and offline browser capabilities.',
+                type: 'feature'
+            },
+            {
+                icon: Layers,
+                title: 'Cornerstone Blog Guide with Live Embedded Remover',
+                description: 'Published interactive pillar guide (/remove-bg-alternative) featuring an embedded, instant-run background remover widget, technical architecture breakdown, and copyable embed codes for creators and webmasters.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.10.0',
         date: 'Sep 14, 2026',
         items: [
