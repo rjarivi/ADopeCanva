@@ -322,12 +322,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Pricing', value: '$0 Free Forever (No Subscriptions, No Credits)' }
         ],
         privacyNotes: 'Your photos are processed locally in browser RAM using ONNX WebAssembly. Zero bytes are uploaded to external servers.',
-        relatedToolIds: ['image-editor', 'image-compressor', 'image-cropper', 'mockup-generator'],
-        beforeAfterImage: {
-            before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000',
-            after: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=1000&bg=transparent',
-            alt: 'Remove.bg alternative background removal example'
-        }
+        relatedToolIds: ['image-editor', 'image-compressor', 'image-cropper', 'mockup-generator']
     },
     {
         id: 'video-to-gif',
@@ -348,12 +343,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Output Format', value: 'GIF, MP4' },
             { label: 'Compatibility', value: 'Chrome, Safari, Edge' }
         ],
-        privacyNotes: 'Processing happens entirely in your browser. Your video files are never uploaded to our servers.',
-        beforeAfterImage: {
-            before: 'https://images.unsplash.com/photo-1536240478700-b869070f9279?auto=format&fit=crop&q=80&w=1000',
-            after: 'https://images.unsplash.com/photo-1541562232579-512a21359920?auto=format&fit=crop&q=80&w=1000',
-            alt: 'Video to GIF conversion example'
-        }
+        privacyNotes: 'Processing happens entirely in your browser. Your video files are never uploaded to our servers.'
     },
     {
         id: 'audio-trimmer',
@@ -598,12 +588,7 @@ export const TOOLS: ToolItem[] = [
             { label: 'Supported Formats', value: 'JPG, PNG, WebP' },
             { label: 'Engine', value: 'In-browser WASM' }
         ],
-        privacyNotes: 'Images are optimized locally in your browser. Privacy is 100% guaranteed.',
-        beforeAfterImage: {
-            before: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1000',
-            after: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=1000&q=20',
-            alt: 'Image compression comparison'
-        }
+        privacyNotes: 'Images are optimized locally in your browser. Privacy is 100% guaranteed.'
     },
     {
         id: 'image-cropper',
