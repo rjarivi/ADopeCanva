@@ -65,69 +65,6 @@ import { PdfWatermark } from './tools/PdfWatermark';
 
 export const TOOLS: ToolItem[] = [
     {
-        id: 'social-mockup-checker',
-        title: 'Social Mockup Checker',
-        description: 'Preview Instagram Stories, Reels, Feed Posts, Carousels & Ads inside a 3D phone mockup with official Meta safe zone guides.',
-        category: ToolCategory.IMAGE,
-        icon: Smartphone,
-        component: <SocialMockupChecker />,
-        guideTitle: 'How to preview social media graphics & check safe zones',
-        guideContent: 'Upload your design images or multi-slide carousel images, select your target Instagram/Meta format (Story 9:16, Story Ad 9:16, Feed 4:5, Feed 1:1, Carousel, or Feed Ad), and preview them live inside an interactive 3D mobile phone mockup. Toggle official Meta safe zone guides to ensure top headers, bottom CTA buttons, message reply bars, and profile grid cropping will not obscure your text or logos.',
-        faqs: [
-            { question: 'What are Meta / Instagram safe zones?', answer: 'Safe zones are the recommended areas inside a story or reel graphic where text and key elements will not be covered by top account headers, status bars, or bottom message reply pills and swipe-up buttons.' },
-            { question: 'What is the 1:1 profile grid crop for 4:5 posts?', answer: 'When you post a 4:5 portrait post (1080×1350), Instagram crops the top and bottom ~135px when displaying it in your 1:1 profile grid. The safe zone guide highlights this crop boundary so your grid looks perfect.' },
-            { question: 'Can I preview multi-slide carousels?', answer: 'Yes — upload multiple images at once to switch between slides with realistic swipe arrow buttons, pagination dots, and slide counters inside the 3D phone screen.' },
-            { question: 'Are my designs uploaded to a server?', answer: 'No — all rendering, 3D transformations, and high-res PNG exports occur entirely client-side in your browser for 100% privacy.' },
-        ],
-        specs: [
-            { label: 'Supported Formats', value: 'Stories (9:16), Reels, Feed 4:5, Feed 1:1, Carousels, Story Ads, Feed Ads' },
-            { label: 'Export Options', value: '1×, 2×, 3× Retina PNG (With/Without UI Chrome)' },
-            { label: '3D Phone Stage', value: 'Interactive Tilt X/Y/Z, Device Finishes, Studio Backdrops' },
-            { label: 'Engine', value: 'HTML Canvas & CSS 3D (100% Client-Side)' },
-        ],
-        privacyNotes: 'All mockup rendering and safe zone checks are processed locally inside your web browser. No graphics or data are sent to external servers.'
-    },
-    {
-        id: 'palette-extractor',
-        title: 'Palette Extractor',
-        description: 'Extract dominant color palettes, moods, and CSS variables from images.',
-        category: ToolCategory.IMAGE,
-        icon: Palette,
-        component: <PaletteExtractor />,
-        guideTitle: 'How to extract dominant color palettes from any photo',
-        guideContent: 'Drop any image to extract dominant color swatches using Canvas color quantization. Explore different moods (Vibrant, Muted, Light, Dark, Pastel), sample custom points with the interactive eyedropper, and copy CSS variables or Tailwind snippets.',
-        faqs: [
-            { question: 'What formats can I export?', answer: 'You can copy individual HEX/RGB/HSL values, CSS Variables, Tailwind config, JSON data, or download a high-res PNG swatch card.' },
-            { question: 'Can I pick custom colors from the image?', answer: 'Yes! Simply click anywhere on the image preview to sample custom color points.' },
-        ],
-        specs: [
-            { label: 'Supported Inputs', value: 'PNG, JPG, WebP, AVIF, SVG, GIF' },
-            { label: 'Export Options', value: 'HEX, CSS Variables, Tailwind, JSON, PNG Card' },
-            { label: 'Color Quantization', value: 'Spatial 3D RGB Clustering (100% Local)' }
-        ],
-        privacyNotes: 'Color extraction happens entirely in-browser. No images are uploaded to any server.'
-    },
-    {
-        id: 'exif-stripper',
-        title: 'EXIF Metadata Stripper',
-        description: 'Inspect camera info, remove GPS geo-tags, and sanitize photos before sharing.',
-        category: ToolCategory.IMAGE,
-        icon: EyeOff,
-        component: <ExifStripper />,
-        guideTitle: 'How to remove GPS and personal metadata from photos',
-        guideContent: 'Digital photos often contain sensitive metadata including GPS coordinates, camera serial numbers, and exact timestamps. Our EXIF stripper audits these hidden tags and losslessly sanitizes the file without touching pixel quality.',
-        faqs: [
-            { question: 'Does stripping metadata reduce image quality?', answer: 'No! For JPEG files, our tool performs a lossless binary segment strip that leaves 100% of your pixel data untouched.' },
-            { question: 'What metadata is removed?', answer: 'GPS latitude/longitude, camera model, lens specs, shutter speed, ISO, timestamps, and editing software tags.' }
-        ],
-        specs: [
-            { label: 'Supported Formats', value: 'JPEG, PNG, WebP, TIFF' },
-            { label: 'Stripping Engine', value: 'Lossless Binary Slice & Canvas Sanitizer' },
-            { label: 'Audit Details', value: 'GPS Coordinates, Camera Specs, Timestamps' }
-        ],
-        privacyNotes: 'Your photos are processed entirely on your device. Metadata is stripped locally in memory.'
-    },
-    {
         id: 'image-converter',
         title: 'Image Converter',
         description: 'Batch convert images between PNG, JPG, and WebP.',
@@ -210,28 +147,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Engine', value: 'FFmpeg.wasm' }
         ],
         privacyNotes: 'Your audio files are processed locally. Perfect for sensitive voice memos or unreleased tracks.'
-    },
-    {
-        id: 'audio-extractor',
-        title: 'Audio Extractor',
-        description: 'Extract crystal-clear audio, music, and voice from any video file.',
-        category: ToolCategory.AUDIO,
-        icon: FileAudio,
-        component: <AudioExtractor />,
-        guideTitle: 'How to extract audio tracks from any video file',
-        guideContent: 'Quickly strip audio streams from video files like MP4, MOV, MKV, or WebM and export directly to MP3, WAV, AAC, or FLAC. Perfect for saving podcasts, extracting background tracks, or creating sound bites completely offline.',
-        faqs: [
-            { question: 'Does it upload my video to a server?', answer: 'No. The extraction happens entirely inside your browser using WebAssembly. Your files remain 100% private.' },
-            { question: 'Can I extract only a specific section of the video?', answer: 'Yes, toggle "Extract Segment" to set custom start and end timestamps.' },
-            { question: 'What audio formats are supported?', answer: 'You can extract to MP3, WAV, AAC, M4A, FLAC, and OGG.' }
-        ],
-        specs: [
-            { label: 'Input Formats', value: 'MP4, MOV, MKV, WebM, AVI, FLV, WMV' },
-            { label: 'Output Formats', value: 'MP3, WAV, AAC, M4A, FLAC, OGG' },
-            { label: 'Audio Quality', value: 'Up to 320kbps MP3 / Lossless WAV' },
-            { label: 'Engine', value: 'FFmpeg WASM (Local)' }
-        ],
-        privacyNotes: 'Your video never leaves your browser. All audio demuxing and encoding happens locally on-device.'
     },
     {
         id: 'universal-doc-converter',
@@ -685,6 +600,28 @@ export const TOOLS: ToolItem[] = [
             { label: 'Processing', value: 'Web Audio API — fully client-side' },
         ],
         privacyNotes: 'Audio is decoded in-browser using the Web Audio API. No audio data is ever uploaded.',
+    },
+    {
+        id: 'audio-extractor',
+        title: 'Audio Extractor',
+        description: 'Extract crystal-clear audio, music, and voice from any video file.',
+        category: ToolCategory.AUDIO,
+        icon: FileAudio,
+        component: <AudioExtractor />,
+        guideTitle: 'How to extract audio tracks from any video file',
+        guideContent: 'Quickly strip audio streams from video files like MP4, MOV, MKV, or WebM and export directly to MP3, WAV, AAC, or FLAC. Perfect for saving podcasts, extracting background tracks, or creating sound bites completely offline.',
+        faqs: [
+            { question: 'Does it upload my video to a server?', answer: 'No. The extraction happens entirely inside your browser using WebAssembly. Your files remain 100% private.' },
+            { question: 'Can I extract only a specific section of the video?', answer: 'Yes, toggle "Extract Segment" to set custom start and end timestamps.' },
+            { question: 'What audio formats are supported?', answer: 'You can extract to MP3, WAV, AAC, M4A, FLAC, and OGG.' }
+        ],
+        specs: [
+            { label: 'Input Formats', value: 'MP4, MOV, MKV, WebM, AVI, FLV, WMV' },
+            { label: 'Output Formats', value: 'MP3, WAV, AAC, M4A, FLAC, OGG' },
+            { label: 'Audio Quality', value: 'Up to 320kbps MP3 / Lossless WAV' },
+            { label: 'Engine', value: 'FFmpeg WASM (Local)' }
+        ],
+        privacyNotes: 'Your video never leaves your browser. All audio demuxing and encoding happens locally on-device.'
     },
     {
         id: 'pdf-tools',
@@ -1441,6 +1378,69 @@ export const TOOLS: ToolItem[] = [
         ],
         privacyNotes: 'All image processing is performed locally in your browser using the Canvas API. No images or data are uploaded to any server.'
     },
+    {
+        id: 'social-mockup-checker',
+        title: 'Social Mockup Checker',
+        description: 'Preview Instagram Stories, Reels, Feed Posts, Carousels & Ads inside a 3D phone mockup with official Meta safe zone guides.',
+        category: ToolCategory.IMAGE,
+        icon: Smartphone,
+        component: <SocialMockupChecker />,
+        guideTitle: 'How to preview social media graphics & check safe zones',
+        guideContent: 'Upload your design images or multi-slide carousel images, select your target Instagram/Meta format (Story 9:16, Story Ad 9:16, Feed 4:5, Feed 1:1, Carousel, or Feed Ad), and preview them live inside an interactive 3D mobile phone mockup. Toggle official Meta safe zone guides to ensure top headers, bottom CTA buttons, message reply bars, and profile grid cropping will not obscure your text or logos.',
+        faqs: [
+            { question: 'What are Meta / Instagram safe zones?', answer: 'Safe zones are the recommended areas inside a story or reel graphic where text and key elements will not be covered by top account headers, status bars, or bottom message reply pills and swipe-up buttons.' },
+            { question: 'What is the 1:1 profile grid crop for 4:5 posts?', answer: 'When you post a 4:5 portrait post (1080×1350), Instagram crops the top and bottom ~135px when displaying it in your 1:1 profile grid. The safe zone guide highlights this crop boundary so your grid looks perfect.' },
+            { question: 'Can I preview multi-slide carousels?', answer: 'Yes — upload multiple images at once to switch between slides with realistic swipe arrow buttons, pagination dots, and slide counters inside the 3D phone screen.' },
+            { question: 'Are my designs uploaded to a server?', answer: 'No — all rendering, 3D transformations, and high-res PNG exports occur entirely client-side in your browser for 100% privacy.' },
+        ],
+        specs: [
+            { label: 'Supported Formats', value: 'Stories (9:16), Reels, Feed 4:5, Feed 1:1, Carousels, Story Ads, Feed Ads' },
+            { label: 'Export Options', value: '1×, 2×, 3× Retina PNG (With/Without UI Chrome)' },
+            { label: '3D Phone Stage', value: 'Interactive Tilt X/Y/Z, Device Finishes, Studio Backdrops' },
+            { label: 'Engine', value: 'HTML Canvas & CSS 3D (100% Client-Side)' },
+        ],
+        privacyNotes: 'All mockup rendering and safe zone checks are processed locally inside your web browser. No graphics or data are sent to external servers.'
+    },
+    {
+        id: 'palette-extractor',
+        title: 'Palette Extractor',
+        description: 'Extract dominant color palettes, moods, and CSS variables from images.',
+        category: ToolCategory.IMAGE,
+        icon: Palette,
+        component: <PaletteExtractor />,
+        guideTitle: 'How to extract dominant color palettes from any photo',
+        guideContent: 'Drop any image to extract dominant color swatches using Canvas color quantization. Explore different moods (Vibrant, Muted, Light, Dark, Pastel), sample custom points with the interactive eyedropper, and copy CSS variables or Tailwind snippets.',
+        faqs: [
+            { question: 'What formats can I export?', answer: 'You can copy individual HEX/RGB/HSL values, CSS Variables, Tailwind config, JSON data, or download a high-res PNG swatch card.' },
+            { question: 'Can I pick custom colors from the image?', answer: 'Yes! Simply click anywhere on the image preview to sample custom color points.' },
+        ],
+        specs: [
+            { label: 'Supported Inputs', value: 'PNG, JPG, WebP, AVIF, SVG, GIF' },
+            { label: 'Export Options', value: 'HEX, CSS Variables, Tailwind, JSON, PNG Card' },
+            { label: 'Color Quantization', value: 'Spatial 3D RGB Clustering (100% Local)' }
+        ],
+        privacyNotes: 'Color extraction happens entirely in-browser. No images are uploaded to any server.'
+    },
+    {
+        id: 'exif-stripper',
+        title: 'EXIF Metadata Stripper',
+        description: 'Inspect camera info, remove GPS geo-tags, and sanitize photos before sharing.',
+        category: ToolCategory.IMAGE,
+        icon: EyeOff,
+        component: <ExifStripper />,
+        guideTitle: 'How to remove GPS and personal metadata from photos',
+        guideContent: 'Digital photos often contain sensitive metadata including GPS coordinates, camera serial numbers, and exact timestamps. Our EXIF stripper audits these hidden tags and losslessly sanitizes the file without touching pixel quality.',
+        faqs: [
+            { question: 'Does stripping metadata reduce image quality?', answer: 'No! For JPEG files, our tool performs a lossless binary segment strip that leaves 100% of your pixel data untouched.' },
+            { question: 'What metadata is removed?', answer: 'GPS latitude/longitude, camera model, lens specs, shutter speed, ISO, timestamps, and editing software tags.' }
+        ],
+        specs: [
+            { label: 'Supported Formats', value: 'JPEG, PNG, WebP, TIFF' },
+            { label: 'Stripping Engine', value: 'Lossless Binary Slice & Canvas Sanitizer' },
+            { label: 'Audit Details', value: 'GPS Coordinates, Camera Specs, Timestamps' }
+        ],
+        privacyNotes: 'Your photos are processed entirely on your device. Metadata is stripped locally in memory.'
+    },
 ];
 
 import { useNavigate } from 'react-router-dom';
@@ -1503,7 +1503,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeCategory, setActiveC
             );
         }
 
-        return [...tools].sort((a, b) => (a.comingSoon ? 1 : 0) - (b.comingSoon ? 1 : 0));
+        return [...tools].sort((a, b) => {
+            if (a.comingSoon !== b.comingSoon) return (a.comingSoon ? 1 : 0) - (b.comingSoon ? 1 : 0);
+            if (!searchQuery.trim() && a.popular !== b.popular) {
+                return (b.popular ? 1 : 0) - (a.popular ? 1 : 0);
+            }
+            return 0;
+        });
     }, [activeCategory, searchQuery]);
 
     const handleToolClick = (tool: ToolItem) => {
