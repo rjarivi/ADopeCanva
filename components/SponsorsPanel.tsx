@@ -18,11 +18,20 @@ interface Sponsor {
     twitterUrl?: string;
 }
 
+const getInitialsAvatar = (name: string) => {
+    const initials = (name || 'SP').trim().slice(0, 2).toUpperCase();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+        <rect width="64" height="64" rx="32" fill="#27272a"/>
+        <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" fill="#e4e4e7" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700">${initials}</text>
+    </svg>`;
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+};
+
 const SPONSORS: Sponsor[] = [
     {
         handle: 'rjarivi',
         name: 'RJ',
-        avatar: 'https://pbs.twimg.com/profile_images/2038989459069468672/YTcP3YlU_400x400.jpg',
+        avatar: getInitialsAvatar('RJ'),
     },
 ];
 
@@ -75,12 +84,13 @@ export const SponsorsPanel: React.FC = () => {
                                 className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800/60 hover:border-indigo-500/40 hover:bg-zinc-800/80 transition-all group"
                             >
                                 <img
-                                    src={sponsor.avatar}
+                                    src={sponsor.avatar || getInitialsAvatar(sponsor.name)}
                                     alt={sponsor.name}
                                     className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700 group-hover:ring-indigo-500/50 transition-all shrink-0"
-                                    crossOrigin="anonymous"
                                     onError={e => {
-                                        (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sponsor.name)}&background=3f3f46&color=fff&size=64`;
+                                        const target = e.currentTarget as HTMLImageElement;
+                                        target.onerror = null;
+                                        target.src = getInitialsAvatar(sponsor.name);
                                     }}
                                 />
                                 <span className="text-xs font-semibold text-zinc-300 group-hover:text-white transition-colors truncate flex-1">
@@ -96,12 +106,13 @@ export const SponsorsPanel: React.FC = () => {
                             className="flex items-center gap-3 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800/60 transition-all"
                         >
                             <img
-                                src={sponsor.avatar}
+                                src={sponsor.avatar || getInitialsAvatar(sponsor.name)}
                                 alt={sponsor.name}
                                 className="w-7 h-7 rounded-full object-cover ring-1 ring-zinc-700 transition-all shrink-0"
-                                crossOrigin="anonymous"
                                 onError={e => {
-                                    (e.currentTarget as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sponsor.name)}&background=3f3f46&color=fff&size=64`;
+                                    const target = e.currentTarget as HTMLImageElement;
+                                    target.onerror = null;
+                                    target.src = getInitialsAvatar(sponsor.name);
                                 }}
                             />
                             <span className="text-xs font-semibold text-zinc-300 transition-colors truncate flex-1">
