@@ -10,6 +10,7 @@ import { Button } from '../../components/ui/Button'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { FileData } from '../../types'
 import { useFocusedMode } from '../../contexts/FocusedMode'
+import { logToolFailure } from '../../utils/toolHealth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,10 @@ export const DeviceMockup: React.FC = () => {
     const [capturing, setCapturing]   = useState(false)
     const [captureError, setCaptureError] = useState('')
     const [isExternalImage, setIsExternalImage] = useState(false)
+    // If an external screenshot URL rejects CORS-enabled loading, fall back
+    // to plain (non-CORS) display so the preview still renders. Export will
+    // then surface a clear "use local images" message instead of a blank.
+    const [corsFallback, setCorsFallback] = useState(false)
 
     // Drag state tracked in refs to avoid stale closures
     const dragRef = useRef({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 })
@@ -268,6 +273,7 @@ export const DeviceMockup: React.FC = () => {
             return fd.previewUrl ?? URL.createObjectURL(fd.file);
         })
         setIsExternalImage(false)
+        setCorsFallback(false)
     }, [])
 
     const handleReset = () => {
@@ -431,14 +437,14 @@ export const DeviceMockup: React.FC = () => {
             a.click()
             document.body.removeChild(a)
         } catch (err) {
-            console.error('Export failed:', err)
+            logToolFailure('device-mockup', err, { stage: 'export', corsFallback });
             setExportError('Export failed. This may be due to cross-origin images or 3D effects. Try disabling tilt and using local images.');
         } finally {
             // Re-enable stylesheets regardless of success or failure
             for (const sheet of disabledSheets) sheet.disabled = false
             setExporting(false)
         }
-    }, [imageUrl, isExternalImage, settings])
+    }, [imageUrl, isExternalImage, settings, corsFallback])
 
     const { tiltX, tiltY, roll, zoom, posX, posY, perspective,
             dofType, blur, dofDirection, dofFocalX, dofFocalY, canvasBlur, borderRadius, bgId, shadow, bloom, canvasRatio } = settings
@@ -660,7 +666,8 @@ export const DeviceMockup: React.FC = () => {
                                 src={imageUrl}
                                 alt="mockup"
                                 draggable={false}
-                                crossOrigin={isExternalImage ? 'anonymous' : undefined}
+                                crossOrigin={isExternalImage && !corsFallback ? 'anonymous' : undefined}
+                                onError={() => { if (isExternalImage && !corsFallback) setCorsFallback(true); }}
                                 style={{
                                     display: 'block',
                                     maxWidth: isMobile ? '85vw' : '62vw',
@@ -681,7 +688,8 @@ export const DeviceMockup: React.FC = () => {
                                         alt=""
                                         aria-hidden
                                         draggable={false}
-                                        crossOrigin={isExternalImage ? 'anonymous' : undefined}
+                                        crossOrigin={isExternalImage && !corsFallback ? 'anonymous' : undefined}
+                                        onError={() => { if (isExternalImage && !corsFallback) setCorsFallback(true); }}
                                         style={{
                                             position: 'absolute',
                                             inset: 0,

@@ -14,6 +14,8 @@ import { AdvertisePanel } from './components/AdvertisePanel';
 import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
 import { ToolLoader } from './components/ToolLoader';
+import { ToolErrorBoundary } from './components/ToolErrorBoundary';
+import { ToolHealth } from './views/ToolHealth';
 import { Guides } from './views/Guides';
 import { CategoryHub } from './views/CategoryHub';
 import { ProgrammaticToolView } from './views/ProgrammaticToolView';
@@ -29,6 +31,7 @@ import {
 import { useIsMobile } from './hooks/useIsMobile';
 import { MobileLayout } from './components/MobileLayout';
 import { trackPageView } from './utils/analytics';
+import { installGlobalFailureHook } from './utils/toolHealth';
 
 const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) => void }) => {
     const isMobile = useIsMobile();
@@ -96,7 +99,9 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                  * Mobile: natural content flow.
                  */}
                 <div className={isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
-                    {tool.component}
+                    <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
+                        {tool.component}
+                    </ToolErrorBoundary>
                 </div>
 
                 {/* SEO & Guide Sections — below the fold, accessible by scrolling */}
@@ -143,6 +148,9 @@ const App = () => {
     const [toolLoading, setToolLoading] = useState(false);
     const mainRef = useRef<HTMLElement>(null);
     const [prevPath, setPrevPath] = useState(location.pathname);
+
+    // Global failure safety net: unhandled rejections → tool-health log + GA4.
+    useEffect(() => { installGlobalFailureHook(); }, []);
 
     // Embed Mode detection: ?embed=true
     const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
@@ -375,6 +383,7 @@ const App = () => {
                 {/* Remove.bg Alternative Blog & Pillar */}
                 <Route path="/blog/remove-bg-alternative" element={<RemoveBgAlternativeBlog />} />
                 <Route path="/remove-bg-alternative" element={<RemoveBgAlternativeBlog />} />
+                <Route path="/health" element={<ToolHealth />} />
 
                 {/* Programmatic Sub-Routes (e.g. /image-converter/png-to-webp) */}
                 <Route path="/:toolId/:subRoute" element={<ProgrammaticToolView setActiveCategory={setActiveCategory} />} />

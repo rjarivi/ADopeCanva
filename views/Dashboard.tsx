@@ -310,12 +310,16 @@ export const TOOLS: ToolItem[] = [
                 answer: 'Yes. The underlying MODNet neural matting model is purpose-built for portrait and object boundary refinement, capturing fine strands of hair, clothing silhouettes, and intricate edges cleanly without harsh cutout halos.'
             },
             {
+                question: 'Can I choose between different AI models?',
+                answer: 'Yes! AdopeCanva provides a multi-model selector allowing you to switch between BiRefNet (the ultra-HD bilateral reference network powering bg0.dev) and MODNet (fast portrait specialist ~25MB). Both models are 100% open-source (Apache-2.0) with zero commercial restrictions.'
+            },
+            {
                 question: 'Can I use the transparent PNGs for commercial e-commerce (Shopify, Amazon, Etsy)?',
                 answer: 'Yes. All transparent PNG cutouts produced by AdopeCanva are completely royalty-free with no commercial restrictions. They are ready to drop directly into product listings, social media ads, and marketing graphics.'
             }
         ],
         specs: [
-            { label: 'AI Engine', value: 'ONNX WebAssembly Neural Matting (Xenova/modnet)' },
+            { label: 'AI Engines', value: 'BiRefNet (BG0 Engine, Apache-2.0), MODNet (Apache-2.0)' },
             { label: 'Processing', value: '100% Client-Side Device Hardware (CPU / WebGPU)' },
             { label: 'Privacy Architecture', value: 'Zero-Knowledge / Zero Cloud Transmission' },
             { label: 'Export Format', value: 'Lossless 32-bit Transparent PNG (RGBA)' },

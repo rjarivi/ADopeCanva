@@ -22,9 +22,11 @@ import {
 } from 'lucide-react';
 import { PDFDocument, degrees, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 type ToolMode = 'watermark' | 'numbering';
 type NumberPosition = 'bottom-center' | 'bottom-right' | 'bottom-left' | 'top-center' | 'top-right' | 'top-left';
@@ -62,6 +64,7 @@ export const PdfWatermark: React.FC = () => {
   // Status
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [previewLoading, setPreviewLoading] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [pdfJsDoc, setPdfJsDoc] = useState<any>(null);
 
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -72,24 +75,41 @@ export const PdfWatermark: React.FC = () => {
       setPageCount(0);
       setCurrentPageIndex(0);
       setPdfJsDoc(null);
+      setLoadError(null);
       return;
     }
 
+    let cancelled = false;
     setPreviewLoading(true);
-    file.file.arrayBuffer().then(async (buf) => {
+    setLoadError(null);
+    (async () => {
       try {
-        const loadingTask = pdfjsLib.getDocument({ data: buf });
-        const doc = await loadingTask.promise;
-        setPdfJsDoc(doc);
+        const validationError = await validatePdfFile(file.file);
+        if (validationError) { if (!cancelled) { setLoadError(validationError); } return; }
+        const buf = await file.file.arrayBuffer();
+        if (cancelled) return;
+        const doc = await getPdfDocument(buf, 'pdf-watermark');
+        if (cancelled) { try { await doc.destroy(); } catch { /* ignore */ } return; }
+        // Destroy previous doc to avoid worker leaks
+        setPdfJsDoc((prev: any) => { if (prev) { try { prev.destroy(); } catch { /* ignore */ } } return doc; });
         setPageCount(doc.numPages);
         setCurrentPageIndex(0);
       } catch (err) {
-        console.error('Error loading PDF with PDF.js:', err);
+        if (!cancelled) {
+          logToolFailure('pdf-watermark', err, { stage: 'pdf-preview-load' });
+          setLoadError(classifyPdfError(err));
+        }
       } finally {
-        setPreviewLoading(false);
+        if (!cancelled) setPreviewLoading(false);
       }
-    });
+    })();
+    return () => { cancelled = true; };
   }, [file]);
+
+  // Destroy PDF.js doc on unmount
+  useEffect(() => {
+    return () => { setPdfJsDoc((prev: any) => { if (prev) { try { prev.destroy(); } catch { /* ignore */ } } return null; }); };
+  }, []);
 
   // Render preview canvas with watermark and page numbers
   useEffect(() => {
@@ -202,10 +222,18 @@ export const PdfWatermark: React.FC = () => {
   const handleStampAndDownload = async () => {
     if (!file) return;
     setIsProcessing(true);
+    setLoadError(null);
 
     try {
       const buffer = await file.file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(buffer);
+      let pdfDoc;
+      try {
+        pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: false });
+      } catch (loadErr) {
+        logToolFailure('pdf-watermark', loadErr, { stage: 'pdf-lib-load' });
+        setLoadError(classifyPdfError(loadErr));
+        return;
+      }
       const pages = pdfDoc.getPages();
       const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
       const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -291,7 +319,8 @@ export const PdfWatermark: React.FC = () => {
       document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch (err) {
-      console.error('Error stamping PDF:', err);
+      logToolFailure('pdf-watermark', err, { stage: 'pdf-stamp' });
+      setLoadError('Export failed. If the PDF is password-protected, unlock it first and try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -398,6 +427,13 @@ export const PdfWatermark: React.FC = () => {
               {previewLoading && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-10">
                   <Loader2 size={28} className="animate-spin text-indigo-400" />
+                </div>
+              )}
+              {loadError && !previewLoading && (
+                <div className="absolute inset-0 flex items-center justify-center p-6 z-10">
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 max-w-sm text-center">
+                    <p className="text-xs text-red-400">{loadError}</p>
+                  </div>
                 </div>
               )}
               <canvas

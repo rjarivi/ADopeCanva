@@ -350,7 +350,12 @@ export const RemoveBgAlternativeBlog: React.FC = () => {
                         <ul className="space-y-3 text-sm text-zinc-300">
                             <li className="flex items-start gap-2.5">
                                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong>MODNet Neural Matting:</strong> We utilize MODNet (Matting Objective Decomposition Network), an objective-driven neural architecture that decomposes background removal into trimap estimation, boundary refinement, and semantic portrait segmentation.</span>
+                                <span><strong>Multi-Model Freedom (100% Apache-2.0 Open Source):</strong> Users can choose between multiple client-side models tailored to their content with zero commercial restrictions:
+                                    <span className="block mt-1 pl-2 text-xs text-zinc-400 space-y-1">
+                                        <span>• <strong>BiRefNet (BG0 Engine):</strong> Bilateral Reference Network (the engine behind open-source projects like <a href="https://bg0.dev" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">bg0.dev</a>). Excels at complex transparent fabrics, fine hair, and crisp multi-subject segmentation.</span><br/>
+                                        <span>• <strong>MODNet:</strong> Lightweight (~25MB) portrait specialist designed for fast execution, minimal memory usage, and clean selfies.</span>
+                                    </span>
+                                </span>
                             </li>
                             <li className="flex items-start gap-2.5">
                                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
@@ -358,7 +363,7 @@ export const RemoveBgAlternativeBlog: React.FC = () => {
                             </li>
                             <li className="flex items-start gap-2.5">
                                 <Check size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                                <span><strong>Local Memory Pipeline:</strong> When you drop an image, it is read into the browser’s Canvas buffer. The segmentation mask is generated locally, applied via alpha channel composting, and exported as a 32-bit RGBA PNG. Zero network packets leave your machine.</span>
+                                <span><strong>Local Memory Pipeline:</strong> When you drop an image, it is read into the browser’s Canvas buffer. The segmentation mask is generated locally, applied via alpha channel compositing, and exported as a 32-bit RGBA PNG. Zero network packets leave your machine.</span>
                             </li>
                         </ul>
                     </div>

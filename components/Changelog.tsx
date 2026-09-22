@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -14,13 +14,61 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.11.2',
+        date: 'Sep 22, 2026',
+        items: [
+            {
+                icon: ShieldCheck,
+                title: 'Tool Health Monitoring (Self-Reporting Failures)',
+                description: 'Every tool is now wrapped in a crash boundary that logs failures automatically. A new /health dashboard shows the failure log with per-tool counts, and a global hook captures unhandled errors (also sent to analytics as tool_failure events). Run npm run audit:tools before deploy for the static pre-flight check (PDF worker version match, CORS-loop patterns, null-crash guards).',
+                type: 'feature'
+            },
+            {
+                icon: Bug,
+                title: 'PDF Engine Hardening (All 7 PDF Tools)',
+                description: 'Centralized PDF.js worker setup with local-first + version-pinned CDN fallback, PDF magic-byte validation, password/encrypted/corrupt specific error messages, and worker memory cleanup (destroy/page cleanup) on every tool. Fixed silent export failures in Watermark and Suite, and null-filename crashes in converters.',
+                type: 'fix'
+            },
+            {
+                icon: Zap,
+                title: 'Avatar CORS Loop Eliminated (Production Sync)',
+                description: 'Removed crossOrigin="anonymous" from sponsor avatars and replaced dead external avatar URLs (404ing profile image + ui-avatars fallback returning duplicate ACAO headers) with local data-URI initials. This stops the hundreds-strong CORS error spam seen on adopecanva.com. DeviceMockup external screenshots now fall back to plain display instead of blanking.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
+        version: '1.11.1',
+        date: 'Sep 22, 2026',
+        items: [
+            {
+                icon: Bug,
+                title: 'PDF Redactor "Could not open PDF" Fix',
+                description: 'Resolved a PDF.js worker version mismatch that caused all PDF tools (Redactor, PDF to JPG, PDF to Text, Doc Converter) to fail with "Could not open PDF — make sure it is valid or unencrypted" on any PDF upload. The issue was the bundled pdf.worker.min.mjs was outdated (v3.x) while the app was using pdfjs-dist v5.7.284. Updated the worker file to match.',
+                type: 'fix'
+            },
+            {
+                icon: Cpu,
+                title: 'BiRefNet Model Updated to BG0 Engine (studioludens/birefnet-lite-512)',
+                description: 'Fixed a 404 error where BiRefNet background removal failed with "Could not locate model_quantized.onnx". Root cause: Transformers.js defaulted to quantized dtype in browsers. Updated to the exact model powering bg0.dev (studioludens/birefnet-lite-512) with explicit dtype: fp16 → fp32 fallback chain. Browser memory usage reduced from ~183MB to ~94MB.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
         version: '1.11.0',
         date: 'Sep 16, 2026',
         items: [
             {
                 icon: Eraser,
                 title: 'Remove.bg Alternative & Smart Background Remover 2.0',
-                description: 'Supercharged on-device MODNet AI background removal with full-resolution 4K+ export, 100% private in-browser WebAssembly execution, zero server uploads, and comprehensive FAQ & How-To schemas for zero-bounce SERP dominance.',
+                description: 'Supercharged on-device AI background removal with full-resolution 4K+ export, 100% private in-browser WebAssembly execution, zero server uploads, and comprehensive FAQ & How-To schemas for zero-bounce SERP dominance.',
+                type: 'feature'
+            },
+            {
+                icon: Cpu,
+                title: 'Multi-Model AI Selector (BiRefNet BG0 & MODNet)',
+                description: 'Users can now choose between multiple browser-native, 100% open-source (Apache-2.0) neural networks: BiRefNet (the ultra-HD bilateral reference network behind bg0.dev) and MODNet (fast 25MB portrait specialist). Compare cutouts in real-time with full commercial usage rights and zero server uploads.',
                 type: 'feature'
             },
             {

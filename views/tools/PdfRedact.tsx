@@ -10,8 +10,10 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import * as pdfjsLib from 'pdfjs-dist';
 import { jsPDF } from 'jspdf';
 import { PDFDocument, rgb } from 'pdf-lib';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+setupPdfWorker();
 
 interface Rect { x: number; y: number; w: number; h: number }
 interface PageData { dataUrl: string; width: number; height: number }
@@ -96,27 +98,39 @@ export const PdfRedact: React.FC = () => {
         setFile(fd); setIsLoading(true); setError('');
         setPages(new Map()); setRedactions(new Map());
         setCurrentPage(1); setLoadProgress(0); setRawBytes(null);
+        let doc: pdfjsLib.PDFDocumentProxy | null = null;
         try {
+            const validationError = await validatePdfFile(fd.file);
+            if (validationError) { setError(validationError); return; }
             const buf = await fd.file.arrayBuffer();
             setRawBytes(buf.slice(0));
-            const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+            doc = await getPdfDocument(buf, 'pdf-redactor');
             setPageCount(doc.numPages);
             const pagesMap = new Map<number, PageData>();
             for (let i = 1; i <= doc.numPages; i++) {
                 const page = await doc.getPage(i);
-                const vp   = page.getViewport({ scale: RENDER_SCALE });
-                const off  = document.createElement('canvas');
-                off.width = vp.width; off.height = vp.height;
-                const ctx = off.getContext('2d')!;
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, vp.width, vp.height);
-                await page.render({ canvasContext: ctx, viewport: vp, canvas: off } as any).promise;
-                pagesMap.set(i, { dataUrl: off.toDataURL('image/png'), width: vp.width, height: vp.height });
-                setLoadProgress(Math.round((i / doc.numPages) * 100));
+                try {
+                    const vp   = page.getViewport({ scale: RENDER_SCALE });
+                    const off  = document.createElement('canvas');
+                    off.width = vp.width; off.height = vp.height;
+                    const ctx = off.getContext('2d');
+                    if (!ctx) throw new Error('Canvas 2D context unavailable');
+                    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, vp.width, vp.height);
+                    await page.render({ canvasContext: ctx, viewport: vp, canvas: off } as any).promise;
+                    pagesMap.set(i, { dataUrl: off.toDataURL('image/png'), width: vp.width, height: vp.height });
+                    setLoadProgress(Math.round((i / doc.numPages) * 100));
+                } finally {
+                    page.cleanup();
+                }
             }
             setPages(pagesMap);
-        } catch {
-            setError('Could not open PDF — make sure it is a valid, unencrypted PDF file.');
-        } finally { setIsLoading(false); }
+        } catch (err) {
+            logToolFailure('pdf-redactor', err, { stage: 'pdf-open' });
+            setError(classifyPdfError(err));
+        } finally {
+            if (doc) { try { await doc.destroy(); } catch { /* ignore */ } }
+            setIsLoading(false);
+        }
     }, []);
 
     // ── Redraw visible canvas ─────────────────────────────────────────────────
@@ -392,7 +406,7 @@ export const PdfRedact: React.FC = () => {
 
     // ── Export ────────────────────────────────────────────────────────────────
     const exportNormal = async () => {
-        if (!rawBytes) return;
+        if (!rawBytes) { setError('No PDF loaded — please re-upload the file.'); return; }
         const pdfDoc = await PDFDocument.load(rawBytes);
         const pdfPages = pdfDoc.getPages();
         for (const [pageNum, rects] of redactions) {
@@ -432,7 +446,7 @@ export const PdfRedact: React.FC = () => {
         if (!pages.size) return;
         setIsExporting(true); setError('');
         try { if (trueRedact) await exportTrue(); else await exportNormal(); }
-        catch { setError('Export failed. Please try again.'); }
+        catch (err) { logToolFailure('pdf-redactor', err, { stage: 'pdf-export' }); setError('Export failed. Please try again.'); }
         finally { setIsExporting(false); }
     };
 

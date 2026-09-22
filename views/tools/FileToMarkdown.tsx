@@ -10,8 +10,11 @@ import {
 import * as mammoth from 'mammoth';
 import Papa from 'papaparse';
 import * as pdfjsLib from 'pdfjs-dist';
+import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 const ACCEPTED = '.pdf,.docx,.txt,.md,.csv,.json,.yaml,.yml,.xml,.html';
 
@@ -27,13 +30,13 @@ async function fileToMarkdown(file: File): Promise<string> {
 
     if (ext === 'pdf') {
         const buf = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-        let md = `# ${file.name.replace('.pdf', '')}\n\n`;
+        const pdf = await getPdfDocument(buf, 'file-to-markdown');
+        let md = `# ${file.name.replace(/\.pdf$/i, '')}\n\n`;
         try {
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                const text = content.items.map((it: any) => it.str).join(' ').trim();
+                const text = content.items.filter((it: any) => 'str' in it && typeof it.str === 'string').map((it: any) => it.str).join(' ').trim();
                 if (text) md += `## Page ${i}\n\n${text}\n\n`;
             }
         } finally {
@@ -161,16 +164,22 @@ export const FileToMarkdown: React.FC = () => {
             const result = await fileToMarkdown(file.file);
             setMarkdown(result);
         } catch (err: any) {
-            setError(err.message || 'Conversion failed. Please try another file.');
+            logToolFailure('file-to-markdown', err, { stage: 'convert' });
+            setError(classifyPdfError(err) !== 'Could not open PDF — make sure it is a valid, unencrypted PDF file.' ? classifyPdfError(err) : (err.message || 'Conversion failed. Please try another file.'));
         } finally {
             setIsProcessing(false);
         }
     };
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(markdown);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (!navigator.clipboard) { setError('Clipboard unavailable in this browser context.'); return; }
+        navigator.clipboard.writeText(markdown).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch((err) => {
+            logToolFailure('file-to-markdown', err, { stage: 'clipboard-copy' });
+            setError('Copy failed — your browser blocked clipboard access.');
+        });
     };
 
     const handleDownload = () => {
@@ -178,9 +187,11 @@ export const FileToMarkdown: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = (file?.file.name.replace(/\.[^.]+$/, '') ?? 'output') + '.md';
+        a.download = (file?.file.name ?? 'output').replace(/\.[^.]+$/, '') + '.md';
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     const handleReset = () => {

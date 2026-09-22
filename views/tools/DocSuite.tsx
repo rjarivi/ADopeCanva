@@ -13,9 +13,11 @@ import {
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { PDFDocument, degrees, rgb, StandardFonts } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
+import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 function formatBytes(bytes: number): string {
     if (bytes < 1024) return `${bytes} B`;
@@ -28,16 +30,24 @@ type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure' | 'co
 // Renders a PDF page to a canvas data URL
 async function renderPageToDataUrl(file: File, pageIndex: number, scale = 0.4): Promise<string> {
     const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(pageIndex + 1);
-    const viewport = page.getViewport({ scale });
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    await page.render({ canvasContext: ctx, viewport } as any).promise;
-    return canvas.toDataURL('image/jpeg', 0.75);
+    const pdf = await getPdfDocument(arrayBuffer, 'pdf-suite');
+    try {
+        const page = await pdf.getPage(pageIndex + 1);
+        try {
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return '';
+            await page.render({ canvasContext: ctx, viewport } as any).promise;
+            return canvas.toDataURL('image/jpeg', 0.75);
+        } finally {
+            page.cleanup();
+        }
+    } finally {
+        await pdf.destroy();
+    }
 }
 
 // Parse range string like "1-3,5,7-9" into 0-based indices
@@ -108,7 +118,7 @@ export const PdfSuite: React.FC = () => {
         setThumbnails([...thumbs]);
         
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await getPdfDocument(arrayBuffer, 'pdf-suite');
         try {
             for (let i = 0; i < count; i++) {
                 try {
@@ -148,8 +158,8 @@ export const PdfSuite: React.FC = () => {
             setRangeError('');
             await generateThumbnails(file, count);
         } catch (e) {
-            console.error(e);
-            alert('Failed to load PDF. It might be encrypted or corrupted.');
+            logToolFailure('pdf-suite', e, { stage: 'pdf-info-load' });
+            setRangeError(classifyPdfError(e));
         }
     }, [generateThumbnails]);
 
@@ -358,7 +368,7 @@ export const PdfSuite: React.FC = () => {
                 if (smartCompress) {
                     // Quality mode: render each page at 1.5× DPI (sharp output) then
                     // overlay invisible selectable text so copy/search still works.
-                    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer.slice(0)) }).promise;
+                    const pdf = await getPdfDocument(new Uint8Array(arrayBuffer.slice(0)), 'pdf-suite');
                     const outDoc = await PDFDocument.create();
                     const helvetica = await outDoc.embedFont(StandardFonts.Helvetica);
                     const totalPages = pdf.numPages;
@@ -414,7 +424,7 @@ export const PdfSuite: React.FC = () => {
                 } else {
                     // Image compression: rasterise each page to JPEG.
                     // Achieves maximum size reduction; text is not selectable in output.
-                    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer.slice(0)) }).promise;
+                    const pdf = await getPdfDocument(new Uint8Array(arrayBuffer.slice(0)), 'pdf-suite');
                     const outDoc = await PDFDocument.create();
                     const scale = Math.max(0.3, compressionQuality / 100);
                     const jpegQuality = compressionQuality / 100;
@@ -460,8 +470,10 @@ export const PdfSuite: React.FC = () => {
             setResultBytes(bytes);
             setIsDone(true);
         } catch (e) {
-            console.error('PDF Processing Error', e);
-            alert('An error occurred while processing the PDF.');
+            logToolFailure('pdf-suite', e, { stage: 'pdf-process', mode });
+            setRangeError(classifyPdfError(e));
+            setIsProcessing(false);
+            setCompressionProgress(null);
         } finally {
             setIsProcessing(false);
         }

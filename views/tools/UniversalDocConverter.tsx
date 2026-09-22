@@ -19,9 +19,11 @@ import JSZip from 'jszip';
 import heic2any from 'heic2any';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import ePub from 'epubjs';
+import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set worker source — use local copy to satisfy worker-src CSP ('self' blob: only)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 type ConversionType =
     'docx-to-html' | 'docx-to-pdf' |
@@ -242,8 +244,7 @@ export const UniversalDocConverter: React.FC = () => {
             else if (conversionType === 'pdf-to-img') {
                 try {
                     const arrayBuffer = await file.file.arrayBuffer();
-                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                    const pdf = await loadingTask.promise;
+                    const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
 
                     if (pdf.numPages > 1) {
                         const zip = new JSZip();
@@ -279,13 +280,13 @@ export const UniversalDocConverter: React.FC = () => {
                         }
                     }
                 } catch (e) {
-                    console.error("PDF to Img Error:", e);
-                    throw new Error("Failed to convert PDF to Image.");
+                    logToolFailure('doc-converter', e, { stage: 'pdf-to-img' });
+                    throw new Error(classifyPdfError(e));
                 }
             }
             else if (conversionType === 'pdf-to-txt' || conversionType === 'pdf-to-docx') {
                 const arrayBuffer = await file.file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
                 let fullText = '';
                 const paragraphs: Paragraph[] = [];
 
@@ -293,7 +294,7 @@ export const UniversalDocConverter: React.FC = () => {
                     setProgress(Math.round((i / pdf.numPages) * 100));
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                    const pageText = textContent.items.filter((item: any) => 'str' in item && typeof item.str === 'string').map((item: any) => item.str).join(' ');
                     fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
 
                     if (conversionType === 'pdf-to-docx') {
@@ -366,12 +367,13 @@ export const UniversalDocConverter: React.FC = () => {
                     }
                 } else if (file.file.name.endsWith('.pdf')) {
                     const arrayBuffer = await file.file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+                        fullText += textContent.items.filter((item: any) => 'str' in item).map((item: any) => item.str).join(' ') + '\n';
                     }
+                    try { await pdf.destroy(); } catch { /* ignore */ }
                 } else {
                     const text = await file.file.text();
                     if (file.file.name.endsWith('.fb2')) {
@@ -426,8 +428,8 @@ export const UniversalDocConverter: React.FC = () => {
             }
 
         } catch (err) {
-            console.error(err);
-            setError("Conversion failed. Please check the file content and try again.");
+            logToolFailure('doc-converter', err, { stage: 'convert', conversionType });
+            setError(err instanceof Error ? err.message : 'Conversion failed. Please check the file content and try again.');
         } finally {
             setIsProcessing(false);
             setProgress(0);

@@ -7,9 +7,11 @@ import { FileText, Download, Copy, RefreshCcw, Check, Zap, Layers, FileSearch } 
 import { SectionLabel } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import * as pdfjsLib from 'pdfjs-dist';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker - using local file for privacy (no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 export const PdfToText: React.FC = () => {
     const isMobile = useIsMobile();
@@ -36,8 +38,10 @@ export const PdfToText: React.FC = () => {
         setExtractedText('');
 
         try {
+            const validationError = await validatePdfFile(file.file);
+            if (validationError) { setError(validationError); return; }
             const arrayBuffer = await file.file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const pdf = await getPdfDocument(arrayBuffer, 'pdf-to-text');
             try {
                 setPageCount(pdf.numPages);
 
@@ -68,17 +72,22 @@ export const PdfToText: React.FC = () => {
                 await pdf.destroy();
             }
         } catch (err) {
-            console.error('PDF extraction error:', err);
-            setError('Failed to extract text. The PDF may be scanned or image-based.');
+            logToolFailure('pdf-to-text', err, { stage: 'pdf-extract' });
+            setError(classifyPdfError(err));
         } finally {
             setIsProcessing(false);
         }
     }, [file]);
 
     const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(extractedText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (!navigator.clipboard) { setError('Clipboard unavailable in this browser context.'); return; }
+        navigator.clipboard.writeText(extractedText).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch((err) => {
+            logToolFailure('pdf-to-text', err, { stage: 'clipboard-copy' });
+            setError('Copy failed — your browser blocked clipboard access.');
+        });
     }, [extractedText]);
 
     const handleDownload = useCallback(() => {
@@ -86,11 +95,11 @@ export const PdfToText: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${file?.file.name.replace(/\.pdf$/i, '')}-text.txt`;
+        a.download = `${(file?.file.name ?? 'document.pdf').replace(/\.pdf$/i, '')}-text.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, [extractedText, file]);
 
     const handleReset = () => {

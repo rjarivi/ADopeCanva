@@ -8,9 +8,11 @@ import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker - using local file for privacy (no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 interface PageImage {
     pageNum: number;
@@ -48,8 +50,10 @@ export const PdfToJpg: React.FC = () => {
         setProgress(0);
 
         try {
+            const validationError = await validatePdfFile(file.file);
+            if (validationError) { setError(validationError); return; }
             const arrayBuffer = await file.file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const pdf = await getPdfDocument(arrayBuffer, 'pdf-to-jpg');
             try {
                 setPageCount(pdf.numPages);
 
@@ -93,8 +97,8 @@ export const PdfToJpg: React.FC = () => {
                 await pdf.destroy();
             }
         } catch (err) {
-            console.error('PDF conversion error:', err);
-            setError('Failed to convert PDF. The file may be corrupted or password protected.');
+            logToolFailure('pdf-to-jpg', err, { stage: 'pdf-convert' });
+            setError(classifyPdfError(err));
         } finally {
             setIsProcessing(false);
             setProgress(100);
@@ -102,9 +106,10 @@ export const PdfToJpg: React.FC = () => {
     }, [file, quality, scale]);
 
     const downloadSingle = useCallback((image: PageImage) => {
+        const baseName = (file?.file.name ?? 'document.pdf').replace(/\.pdf$/i, '');
         const link = document.createElement('a');
         link.href = image.dataUrl;
-        link.download = `${file?.file.name.replace(/\.pdf$/i, '')}-page-${image.pageNum}.jpg`;
+        link.download = `${baseName}-page-${image.pageNum}.jpg`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -118,25 +123,30 @@ export const PdfToJpg: React.FC = () => {
             return;
         }
 
-        const zip = new JSZip();
-        const folder = zip.folder('pdf-images');
+        try {
+            const zip = new JSZip();
+            const folder = zip.folder('pdf-images');
 
-        for (const image of pageImages) {
-            // Convert data URL to blob
-            const response = await fetch(image.dataUrl);
-            const blob = await response.blob();
-            folder?.file(`page-${image.pageNum}.jpg`, blob);
+            for (const image of pageImages) {
+                // Convert data URL to blob
+                const response = await fetch(image.dataUrl);
+                const blob = await response.blob();
+                folder?.file(`page-${image.pageNum}.jpg`, blob);
+            }
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${(file?.file.name ?? 'document.pdf').replace(/\.pdf$/i, '')}-images.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            logToolFailure('pdf-to-jpg', err, { stage: 'zip-download' });
+            setError('Failed to package images. Try downloading pages individually.');
         }
-
-        const content = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(content);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${file?.file.name.replace(/\.pdf$/i, '')}-images.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }, [pageImages, file, downloadSingle]);
 
     const handleReset = () => {
