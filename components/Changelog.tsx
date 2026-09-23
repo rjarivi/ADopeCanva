@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.17.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Zap,
+                title: 'Faster First Paint: Deterministic Vendor Chunks',
+                description: 'First-paint JS dropped from ~1.1MB to ~75KB gzip. Heavy engines (PDF, docs, capture, AI) now load only when their tool opens, vendor files keep stable URLs across deploys for long-term caching, and the embedded blog remover lazy-loads below the fold.',
+                type: 'feature'
+            },
+        ]
+    },
+    {
         version: '1.16.0',
         date: 'Sep 23, 2026',
         items: [

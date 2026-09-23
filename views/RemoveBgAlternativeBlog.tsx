@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
     Eraser, Shield, Check, X, ArrowRight, 
     Share2, Copy, CheckCircle2, ChevronRight, 
     Cpu, ExternalLink 
 } from 'lucide-react';
-import { BackgroundRemover } from './tools/BackgroundRemover';
 import { updateHeadTags, SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from '../utils/seoHelper';
+
+// Lazy: the embedded remover pulls transformers.js + image engines —
+// never part of first paint (loads when the reader scrolls to it).
+const BackgroundRemover = lazy(() =>
+    import('./tools/BackgroundRemover').then((m) => ({ default: m.BackgroundRemover })),
+);
 
 export const RemoveBgAlternativeBlog: React.FC = () => {
     const navigate = useNavigate();
@@ -275,9 +280,15 @@ export const RemoveBgAlternativeBlog: React.FC = () => {
                         </button>
                     </div>
 
-                    {/* Embedded Tool Component */}
+                    {/* Embedded Tool Component (lazy — below the fold) */}
                     <div className="pt-2">
-                        <BackgroundRemover />
+                        <Suspense fallback={
+                            <div className="py-16 text-center text-xs font-bold uppercase tracking-widest text-zinc-500 animate-pulse font-unbounded">
+                                Loading remover…
+                            </div>
+                        }>
+                            <BackgroundRemover />
+                        </Suspense>
                     </div>
                 </section>
 
