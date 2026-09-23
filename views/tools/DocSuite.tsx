@@ -184,6 +184,7 @@ export const PdfSuite: React.FC = () => {
         setRangeInput('');
         setRangeError('');
         if (newMode !== 'merge' && files.length > 1) {
+            files.slice(1).forEach((fd) => { if (fd.previewUrl) { try { URL.revokeObjectURL(fd.previewUrl); } catch { /* ignore */ } } });
             setFiles([files[0]]);
             loadPdfInfo(files[0].file);
         } else if (files.length > 0 && newMode !== 'merge') {
@@ -733,7 +734,10 @@ export const PdfSuite: React.FC = () => {
                         </h2>
                         <button
                             onClick={() => {
-                                setFiles([]);
+                                setFiles((prev) => {
+                                    prev.forEach((fd) => { if (fd.previewUrl) { try { URL.revokeObjectURL(fd.previewUrl); } catch { /* ignore */ } } });
+                                    return [];
+                                });
                                 setIsDone(false);
                                 setIsProcessing(false);
                                 setResultBytes(null);
@@ -801,7 +805,11 @@ export const PdfSuite: React.FC = () => {
                                                     <p className="text-[9px] text-zinc-600 font-bold uppercase">{file.size}</p>
                                                 </div>
                                                 <button
-                                                    onClick={() => setFiles(f => f.filter((_, idx) => idx !== i))}
+                                                    onClick={() => setFiles(f => {
+                                                        const removed = f[i];
+                                                        if (removed?.previewUrl) { try { URL.revokeObjectURL(removed.previewUrl); } catch { /* ignore */ } }
+                                                        return f.filter((_, idx) => idx !== i);
+                                                    })}
                                                     className="text-zinc-700 hover:text-red-500 p-2 hover:bg-red-500/5 rounded-lg transition-all"
                                                 >
                                                     <Trash2 size={14} />

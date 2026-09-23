@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Music, Video, Volume2, Download, CheckCircle, RefreshCcw, Trash2, ArrowRight, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -17,7 +18,7 @@ export const AudioReplacer: React.FC = () => {
     const [outputFormat, setOutputFormat] = useState('MP4');
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDone, setIsDone] = useState(false);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const ffmpegRef = useRef<FFmpeg | null>(null);

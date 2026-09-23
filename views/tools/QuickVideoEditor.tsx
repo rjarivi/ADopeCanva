@@ -11,6 +11,7 @@ import {
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +132,7 @@ export const QuickVideoEditor: React.FC = () => {
     // Export
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [exportUrl, setExportUrl] = useState<string | null>(null);
+    const [exportUrl, setExportUrl] = useObjectUrlState();
 
     // Hidden file input
     const fileInputRef = useRef<HTMLInputElement>(null);

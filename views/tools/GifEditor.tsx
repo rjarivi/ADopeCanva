@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
@@ -17,7 +18,7 @@ export const GifEditor: React.FC = () => {
     const isMobile = useIsMobile();
     const { file, select, clear } = useToolFile();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
 

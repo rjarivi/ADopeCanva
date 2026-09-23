@@ -50,6 +50,16 @@ const BITRATES = [
 
 export const AudioExtractor: React.FC = () => {
   const { file, select, clear } = useToolFile();
+  // Memoized video src: FileUploader usually provides previewUrl, but when
+  // it doesn't, creating the URL inline in render would leak one per render.
+  const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (file?.previewUrl) { setVideoSrc(file.previewUrl); return; }
+    if (!file) { setVideoSrc(null); return; }
+    const url = URL.createObjectURL(file.file);
+    setVideoSrc(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [selectedFormat, setSelectedFormat] = useState<string>('MP3');
   const [selectedBitrate, setSelectedBitrate] = useState<string>('192k');
@@ -381,7 +391,7 @@ export const AudioExtractor: React.FC = () => {
             <div className="relative aspect-video rounded-xl overflow-hidden bg-black border border-zinc-800 flex items-center justify-center">
               <video
                 ref={videoRef}
-                src={file.previewUrl || URL.createObjectURL(file.file)}
+                src={videoSrc ?? undefined}
                 controls
                 className="w-full h-full object-contain"
                 onLoadedMetadata={handleVideoLoadedMetadata}

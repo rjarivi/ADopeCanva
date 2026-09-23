@@ -13,6 +13,7 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 type ExportFormat = 'mp3' | 'wav' | 'aac' | 'm4a' | 'ogg' | 'flac';
 type BitrateOption = '128k' | '192k' | '256k' | '320k';
@@ -86,7 +87,7 @@ export const AudioTrimmer: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [trimmedUrl, setTrimmedUrl] = useState<string | null>(null);
+    const [trimmedUrl, setTrimmedUrl] = useObjectUrlState();
     const [trimmedSize, setTrimmedSize] = useState<string | null>(null);
 
     // Refs

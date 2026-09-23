@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.20.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Bug,
+                title: 'Backlog Blitz: Silent Data Loss & Memory Leaks Fixed',
+                description: 'Doc Converter now writes real multi-chapter EPUBs (readers rejected the old HTML-as-EPUB), preserves Unicode text, guards empty spreadsheets, and never deadlocks on unreadable files. Fixed render-per-frame URL leaks, the GIF MEMFS leak, and rolled leak-proof URL state out to all 12 media tools.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
         version: '1.19.0',
         date: 'Sep 23, 2026',
         items: [

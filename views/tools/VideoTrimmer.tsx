@@ -14,6 +14,7 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 type VideoExportFormat = 'mp4' | 'webm' | 'gif' | 'mp3';
 
@@ -94,7 +95,7 @@ export const VideoTrimmer: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [trimmedUrl, setTrimmedUrl] = useState<string | null>(null);
+    const [trimmedUrl, setTrimmedUrl] = useObjectUrlState();
     const [trimmedSize, setTrimmedSize] = useState<string | null>(null);
 
     // Refs

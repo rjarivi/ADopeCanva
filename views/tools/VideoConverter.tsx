@@ -5,6 +5,7 @@ import { FileData } from '../../types';
 import { ArrowRightLeft, FileVideo, Download, CheckCircle, RefreshCcw, Loader2, AlertCircle } from 'lucide-react';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
@@ -28,7 +29,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [convertedUrl, setConvertedUrl] = useState<string | null>(null);
+  const [convertedUrl, setConvertedUrl] = useObjectUrlState();
   const [logs, setLogs] = useState<string>('');
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');

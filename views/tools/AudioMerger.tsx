@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
@@ -55,7 +56,7 @@ export const AudioMerger: React.FC = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState('');
-    const [mergedUrl, setMergedUrl] = useState<string | null>(null);
+    const [mergedUrl, setMergedUrl] = useObjectUrlState();
     const [mergedDuration, setMergedDuration] = useState<number>(0);
     const [mergedSize, setMergedSize] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);

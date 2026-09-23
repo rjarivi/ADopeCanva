@@ -69,7 +69,6 @@ export const GifCompressor: React.FC = () => {
         setIsProcessing(true);
         setProgress(0);
         const ffmpeg = ffmpegRef.current;
-        const inputName = 'compress_input.gif';
         const outputName = 'compress_output.gif';
         setResultUrl(null);
 
@@ -82,20 +81,22 @@ export const GifCompressor: React.FC = () => {
         ffmpeg.on('progress', onProgress);
 
         try {
-            let inputName = sourceFileName;
+            // Single source name — the preloaded file is reused across
+            // re-compress runs (rewritten on file change, same MEMFS slot).
+            let activeInput = sourceFileName;
 
-            if (!isSourceReady || !inputName) {
-                inputName = 'compress_source.gif';
-                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
-                setSourceFileName(inputName);
+            if (!isSourceReady || !activeInput) {
+                activeInput = 'compress_source.gif';
+                await writeFileToFFmpeg(ffmpeg, activeInput, file.file);
+                setSourceFileName(activeInput);
                 setIsSourceReady(true);
             }
 
             // Final check
             try {
-                await ffmpeg.readFile(inputName);
+                await ffmpeg.readFile(activeInput);
             } catch (e) {
-                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+                await writeFileToFFmpeg(ffmpeg, activeInput, file.file);
             }
 
             // Level 0: 256 colors, 1.0 scale
@@ -113,7 +114,7 @@ export const GifCompressor: React.FC = () => {
 
             await ffmpeg.exec([
                 '-y',
-                '-i', inputName,
+                '-i', activeInput,
                 '-threads', threads,
                 '-vf', filter,
                 '-loop', '0',
@@ -135,7 +136,9 @@ export const GifCompressor: React.FC = () => {
             setErrorMessage(`Compression failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
         } finally {
             ffmpeg.off('progress', onProgress);
-            try { await ffmpeg.deleteFile(inputName); } catch (e) {}
+            // Delete the output only. The preloaded source is intentionally
+            // cached under a constant name for re-compress runs (overwritten
+            // on file change, so MEMFS cannot accumulate).
             try { await ffmpeg.deleteFile(outputName); } catch (e) {}
             setIsProcessing(false);
             setProgress(0);

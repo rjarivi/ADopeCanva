@@ -9,6 +9,7 @@ import {
     Settings, Shuffle, Play, Pause,
 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 type WaveStyle = 'bars' | 'sharp' | 'smooth' | 'dotted' | 'circular' | 'bubbles' | 'stacked' | 'radiating';
 type ColorMode = 'solid' | 'gradient-h' | 'gradient-v' | 'gradient-r' | 'image';
@@ -166,7 +167,7 @@ export const AudioWaveformExporter: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [audioUrl, setAudioUrl] = useObjectUrlState();
     const audioRef = useRef<HTMLAudioElement>(null);
 
     // Style
@@ -255,11 +256,10 @@ export const AudioWaveformExporter: React.FC = () => {
     }, [decodeAudio, select]);
     const reset       = useCallback(() => {
         clear(); setWaveData([]); setRawAudioData(null); setError('');
-        if (audioUrl) URL.revokeObjectURL(audioUrl);
-        setAudioUrl(null);
+        setAudioUrl(null); // useObjectUrlState revokes the previous URL
         setIsPlaying(false);
         setCurrentTime(0);
-    }, [audioUrl]);
+    }, []);
 
     // ── SVG generation ────────────────────────────────────────────────────────
     const svgString = useMemo(() => {

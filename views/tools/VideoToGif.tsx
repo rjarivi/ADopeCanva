@@ -11,6 +11,7 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 const FRAME_RATES = [10, 15, 20, 24, 30];
 const WIDTHS = [320, 480, 640, 800];
@@ -28,7 +29,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   const [quality, setQuality] = useState<'high' | 'standard'>('high');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  const [gifUrl, setGifUrl] = useState<string | null>(null);
+  const [gifUrl, setGifUrl] = useObjectUrlState();
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
 

@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
@@ -43,7 +44,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   const [frameRange, setFrameRange] = useState<[number, number]>([0, 0]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [resultGif, setResultGif] = useState<string | null>(null);
+  const [resultGif, setResultGif] = useObjectUrlState();
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'gif' | 'apng' | 'webp'>(initialOutputFormat);

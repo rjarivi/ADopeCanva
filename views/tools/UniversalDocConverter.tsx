@@ -23,6 +23,7 @@ import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pd
 import { logToolFailure } from '../../utils/toolHealth';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 // Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
 setupPdfWorker();
@@ -42,7 +43,7 @@ export const UniversalDocConverter: React.FC = () => {
     const [conversionType, setConversionType] = useState<ConversionType>('docx-to-pdf');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [resultName, setResultName] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
 
@@ -164,7 +165,9 @@ export const UniversalDocConverter: React.FC = () => {
                 } else {
                     const arrayBuffer = await file.file.arrayBuffer();
                     await workbook.xlsx.load(arrayBuffer);
-                    mainWorksheet = workbook.worksheets[0];
+                    const first = workbook.worksheets[0];
+                    if (!first) throw new Error('No worksheets found — the file may be empty or corrupted.');
+                    mainWorksheet = first;
                 }
                 const worksheet = mainWorksheet;
 
@@ -222,9 +225,11 @@ export const UniversalDocConverter: React.FC = () => {
                 }
             }
             else if (conversionType === 'img-to-pdf') {
-                const imgDataUrl = await new Promise<string>((resolve) => {
+                const imgDataUrl = await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target?.result as string);
+                    reader.onerror = () => reject(new Error('Could not read the image file.'));
+                    reader.onabort = () => reject(new Error('Image reading was aborted.'));
                     reader.readAsDataURL(file.file);
                 });
 
@@ -332,9 +337,11 @@ export const UniversalDocConverter: React.FC = () => {
                 const jpgBlob = Array.isArray(results) ? results[0] : results;
 
                 if (conversionType === 'heic-to-pdf') {
-                    const imgDataUrl = await new Promise<string>((resolve) => {
+                    const imgDataUrl = await new Promise<string>((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = (e) => resolve(e.target?.result as string);
+                        reader.onerror = () => reject(new Error('Could not read the converted image.'));
+                        reader.onabort = () => reject(new Error('Image reading was aborted.'));
                         reader.readAsDataURL(jpgBlob);
                     });
                     const pdf = new jsPDF();
@@ -383,7 +390,10 @@ export const UniversalDocConverter: React.FC = () => {
                     if (file.file.name.endsWith('.fb2')) {
                         fullText = text.replace(/<[^>]*>?/gm, ' ');
                     } else {
-                        fullText = text.replace(/[^\x20-\x7E\n\t]/g, '');
+                        // Preserve Unicode (accents, CJK): strip only control
+                        // characters, not everything outside ASCII.
+                        // eslint-disable-next-line no-control-regex
+                        fullText = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
                     }
                 }
 
@@ -415,8 +425,25 @@ export const UniversalDocConverter: React.FC = () => {
                     blob = await Packer.toBlob(doc);
                     downloadExt = 'docx';
                 } else if (conversionType.endsWith('-epub')) {
-                    const htmlContent = `<html><body><h1>${title}</h1><pre>${fullText}</pre></body></html>`;
-                    blob = new Blob([htmlContent], { type: 'application/epub+zip' });
+                    // Minimal valid EPUB 2.0 (zip with mimetype first +
+                    // container + OPF + one XHTML chapter) — readers reject
+                    // the raw-HTML blob this used to emit.
+                    const esc = (s: string) => s
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    const paras = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+                    const body = paras.length
+                        ? paras.map((p) => `    <p>${esc(p).replace(/\n/g, '<br/>')}</p>`).join('\n')
+                        : `    <p>${esc(fullText.slice(0, 4000))}</p>`;
+                    const opf = `<?xml version="1.0" encoding="UTF-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">\n  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n    <dc:title>${esc(title)}</dc:title>\n    <dc:language>en</dc:language>\n    <dc:identifier id="bookid">adopecanva-${Date.now()}</dc:identifier>\n  </metadata>\n  <manifest>\n    <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>\n  </manifest>\n  <spine toc="ncx">\n    <itemref idref="ch1"/>\n  </spine>\n</package>`;
+                    const xhtml = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml">\n<head><title>${esc(title)}</title></head>\n<body>\n  <h1>${esc(title)}</h1>\n${body}\n</body>\n</html>`;
+                    const container = `<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>`;
+                    const epub = new JSZip();
+                    epub.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+                    epub.file('META-INF/container.xml', container);
+                    epub.file('OEBPS/content.opf', opf);
+                    epub.file('OEBPS/chapter1.xhtml', xhtml);
+                    blob = await epub.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
                     downloadExt = 'epub';
                 } else {
                     blob = new Blob([fullText], { type: 'text/plain' });

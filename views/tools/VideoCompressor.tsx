@@ -10,12 +10,13 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 export const VideoCompressor: React.FC = () => {
     const isMobile = useIsMobile();
     const { file, select, clear } = useToolFile();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [resultSize, setResultSize] = useState<string | null>(null);
     const [progress, setProgress] = useState(0);
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -51,9 +52,8 @@ export const VideoCompressor: React.FC = () => {
         const ffmpeg = ffmpegRef.current;
         const inputExt = file.file.name.split('.').pop() || 'mp4';
         const inputName = `input.${inputExt}`;
-        const outputName = 'compressed.mp4';
-        if (resultUrl) URL.revokeObjectURL(resultUrl);
-        setResultUrl(null);
+                const outputName = 'compressed.mp4';
+                setResultUrl(null);
 
         // Progress Handler
         const onProgress = ({ progress }: { progress: number }) => {
@@ -93,7 +93,6 @@ export const VideoCompressor: React.FC = () => {
             const data = await ffmpeg.readFile(outputName);
             const blob = new Blob([data as any], { type: 'video/mp4' });
 
-            if (resultUrl) URL.revokeObjectURL(resultUrl);
             const url = URL.createObjectURL(blob);
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');

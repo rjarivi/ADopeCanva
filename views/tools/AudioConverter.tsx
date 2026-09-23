@@ -10,6 +10,7 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 const AUDIO_FORMATS = ['MP3', 'WAV', 'AAC', 'FLAC', 'M4A', 'OGG'];
 const BITRATES = ['128k', '192k', '256k', '320k'];
@@ -22,7 +23,7 @@ export const AudioConverter: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [convertedUrl, setConvertedUrl] = useState<string | null>(null);
+  const [convertedUrl, setConvertedUrl] = useObjectUrlState();
   const [logs, setLogs] = useState<string>('');
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
