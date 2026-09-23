@@ -1,0 +1,25 @@
+{
+  "id": "qr-generator",
+  "title": "QR Generator",
+  "description": "Create customizable QR codes for links and text.",
+  "category": "Image",
+  "icon": "QrCode",
+  "popular": false,
+  "guideTitle": "Generate custom QR codes with colors and logos",
+  "guideContent": "Create scanable QR codes for your websites, Wi-Fi networks, or business cards. Customize the colors, add your brand logo in the center, and adjust the error correction level to ensure reliable scanning.",
+  "faqs": [
+    { "question": "Do QR codes expire?", "answer": "No, these are static QR codes; they will work as long as the destination URL is active." },
+    { "question": "Can I add a custom logo?", "answer": "Yes, you can upload a PNG or SVG logo to be embedded in the center of the code." }
+  ],
+  "specs": [
+    { "label": "Types", "value": "URL, Text, Wi-Fi, vCard" },
+    { "label": "Export", "value": "PNG, SVG, JPG" },
+    { "label": "Customization", "value": "Colors, Logos, Corner Styles" }
+  ],
+  "privacyNotes": "QR generation happens on your device. We do not track the URLs you generate.",
+  "keywords": ["qr code generator", "custom qr", "wifi qr"],
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

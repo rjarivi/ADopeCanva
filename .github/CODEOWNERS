@@ -1,0 +1,37 @@
+# Any change needs a maintainer's eyes.
+* @rjarivi
+
+# ── Shell & platform (maintainers only) ─────────────────────────────
+# Tool PRs must NOT touch these (enforced by scripts/scope-guard.mjs).
+/package.json @rjarivi
+/package-lock.json @rjarivi
+/vite.config.ts @rjarivi
+/tsconfig.json @rjarivi
+/index.html @rjarivi
+/wrangler.toml @rjarivi
+/App.tsx @rjarivi
+/index.tsx @rjarivi
+/types.ts @rjarivi
+/views/Dashboard.tsx @rjarivi
+/views/*.tsx @rjarivi
+/components/Changelog.tsx @rjarivi
+/utils/analytics.ts @rjarivi
+/utils/seoHelper.ts @rjarivi
+/utils/ffmpeg.ts @rjarivi
+/utils/pdfWorker.ts @rjarivi
+/utils/toolHealth.ts @rjarivi
+/hooks/ @rjarivi
+/contexts/ @rjarivi
+/scripts/ @rjarivi
+/.github/ @rjarivi
+/public/sitemap.xml @rjarivi
+
+# ── Contribution lanes (reviewed, maintainer merges) ─────────────────
+# New tools: manifest + component only. Recipes: JSON only.
+/tools/ @rjarivi
+/recipes/ @rjarivi
+/views/tools/ @rjarivi
+
+# ── Docs (light review) ─────────────────────────────────────────────
+/*.md @rjarivi
+/tools/*/README.md @rjarivi

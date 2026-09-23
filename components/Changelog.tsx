@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck, Maximize2, RotateCw } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck, Maximize2, RotateCw, Scale, Users } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,24 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.13.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Scale,
+                title: 'Open Source Under AGPL-3.0',
+                description: 'The codebase is now open for contributions: manifest-based tool registry with lazy loading, recipes lane for presets, ToolShell + useToolFile SDK, scaffold CLI, and CI gates (typecheck, permission lint, scope guard, secret scan, bundle budget). See CONTRIBUTING.md and the open-source footer link.',
+                type: 'feature'
+            },
+            {
+                icon: Users,
+                title: 'Two Contribution Lanes',
+                description: 'Recipes (JSON presets, merge fast) and code tools (tools/<id>/ with manifest permissions + human review). Tool PRs can no longer touch the shell, lockfile, CSP, or analytics — enforced by CI.',
+                type: 'update'
+            },
+        ]
+    },
     {
         version: '1.12.0',
         date: 'Sep 23, 2026',

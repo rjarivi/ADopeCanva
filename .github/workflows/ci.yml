@@ -1,0 +1,54 @@
+name: CI
+
+# Fork PRs run here WITHOUT secrets (pull_request, not pull_request_target).
+# Production deploys only from `main` via the hosting dashboard — never from CI.
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build tool registry + sitemap
+        run: npm run registry:build
+
+      - name: Typecheck (vite build does NOT typecheck — this gate does)
+        run: npm run typecheck
+
+      - name: Permission lint (manifest vs code, recipes schema)
+        run: npm run audit:permissions
+
+      - name: Scope guard (tool PRs cannot touch the shell)
+        if: github.event_name == 'pull_request'
+        env:
+          ALLOW_SHELL: ${{ contains(github.event.pull_request.labels.*.name, 'allow-shell') }}
+        run: node scripts/scope-guard.mjs --base "${{ github.event.pull_request.base.sha }}" --allow-shell "$ALLOW_SHELL"
+
+      - name: Static tool audit
+        run: npm run audit:tools
+
+      - name: Production build
+        run: npm run build
+
+      - name: Bundle-size budget
+        run: npm run budget

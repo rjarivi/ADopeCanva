@@ -18,6 +18,7 @@ AdopeCanva is NOT a basic AI template. It is a high-end suite of tools.
 *   **Labels/Badges:** Small uppercase text with wide tracking for meta-information (e.g., `text-[10px] uppercase tracking-widest font-bold`).
 
 ## 3. Standard Tool Architecture (Upload View)
+New tools live in `tools/<tool-id>/` (`manifest.json` + `index.tsx`) — see `CONTRIBUTING.md`. Use `<ToolShell>` for the upload view and `useToolFile()` for file state; both enforce this layout automatically.
 Every tool that requires an initial upload state must use the following structure. Do not invent new initial layouts.
 1.  **Header (Top):** 
     *   Unbounded font, `text-4xl`, with the tool Icon next to the name.

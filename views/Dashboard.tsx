@@ -4,7 +4,7 @@ import {
     Search,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
-    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
+    Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
     GitCompare, Palette, FileDown, SplitSquareHorizontal, Pipette, FileAudio, Stamp
 } from 'lucide-react';
 import { VideoTrimmer } from './tools/VideoTrimmer';
@@ -25,7 +25,6 @@ import { GifMaker } from './tools/GifMaker';
 import { GifEditor } from './tools/GifEditor';
 import { GifCompressor } from './tools/GifCompressor';
 import { ImageEditor } from './tools/ImageEditor';
-import { QrGenerator } from './tools/QrGenerator';
 import { BackgroundRemover } from './tools/BackgroundRemover';
 import { TextTools } from './tools/TextTools';
 import { TextCleaner } from './tools/TextCleaner';
@@ -62,8 +61,9 @@ import { SocialMockupChecker } from './tools/SocialMockupChecker';
 import { PaletteExtractor } from './tools/PaletteExtractor';
 import { ExifStripper } from './tools/ExifStripper';
 import { PdfWatermark } from './tools/PdfWatermark';
+import { GENERATED_TOOLS } from '../utils/toolRegistry.generated';
 
-export const TOOLS: ToolItem[] = [
+const CORE_TOOLS: ToolItem[] = [
     {
         id: 'image-converter',
         title: 'Image Converter',
@@ -533,26 +533,6 @@ export const TOOLS: ToolItem[] = [
             { label: 'Dithering', value: 'Ordered, Diffusion' }
         ],
         privacyNotes: 'GIF assembly is processed entirely in your browser.'
-    },
-    {
-        id: 'qr-generator',
-        title: 'QR Generator',
-        description: 'Create customizable QR codes for links and text.',
-        category: ToolCategory.IMAGE,
-        icon: QrCode,
-        component: <QrGenerator />,
-        guideTitle: 'Generate custom QR codes with colors and logos',
-        guideContent: 'Create scanable QR codes for your websites, Wi-Fi networks, or business cards. Customize the colors, add your brand logo in the center, and adjust the error correction level to ensure reliable scanning.',
-        faqs: [
-            { question: 'Do QR codes expire?', answer: 'No, these are static QR codes; they will work as long as the destination URL is active.' },
-            { question: 'Can I add a custom logo?', answer: 'Yes, you can upload a PNG or SVG logo to be embedded in the center of the code.' }
-        ],
-        specs: [
-            { label: 'Types', value: 'URL, Text, Wi-Fi, vCard' },
-            { label: 'Export', value: 'PNG, SVG, JPG' },
-            { label: 'Customization', value: 'Colors, Logos, Corner Styles' }
-        ],
-        privacyNotes: 'QR generation happens on your device. We do not track the URLs you generate.'
     },
     {
         id: 'audio-replace',
@@ -1498,6 +1478,13 @@ export const TOOLS: ToolItem[] = [
         privacyNotes: 'Your photos are processed entirely on your device. Metadata is stripped locally in memory.'
     },
 ];
+
+/**
+ * Full registry: hand-maintained core tools (legacy, being migrated) +
+ * manifest-generated tools from tools/<id>/ (see scripts/build-registry.mjs).
+ * New tools MUST go in tools/ — do not append here.
+ */
+export const TOOLS: ToolItem[] = [...CORE_TOOLS, ...GENERATED_TOOLS];
 
 import { useNavigate } from 'react-router-dom';
 import { useRef, useEffect } from 'react';

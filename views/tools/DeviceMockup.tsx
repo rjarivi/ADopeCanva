@@ -313,12 +313,12 @@ export const DeviceMockup: React.FC = () => {
                 // fall through to next service
             }
 
-            // ── Fallback: thum.io (authenticated) ────────────────────────────
-            // Note: can't probe with new Image() under COEP — use directly
-            if (!shotUrl) {
-                shotUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
-            }
-
+            // ── Fallback: none by default ────────────────────────────────────
+            // A previous version used an authenticated thum.io URL with the
+            // account token baked into client code. That credential has been
+            // removed from the repo (see SECURITY.md: no secrets in code).
+            // Microlink above is the only capture service; anything else
+            // falls through to the upload-your-own-screenshot message.
             if (!shotUrl) throw new Error('Could not capture this URL — try uploading a screenshot directly instead')
             setFileData({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
             setImageUrl(shotUrl)

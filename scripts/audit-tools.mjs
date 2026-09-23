@@ -65,7 +65,7 @@ try {
 const { execSync: ex2 } = await import('node:child_process');
 let files = [];
 try {
-    const out = ex2(`git ls-files 'views/tools/*.tsx' 'components/*.tsx' 'utils/*.ts'`, { encoding: 'utf8' });
+    const out = ex2(`git ls-files 'views/tools/*.tsx' 'tools/*/*.tsx' 'components/*.tsx' 'utils/*.ts'`, { encoding: 'utf8' });
     files = out.split('\n').map((s) => s.trim()).filter(Boolean);
 } catch {
     const { readdirSync } = await import('node:fs');

@@ -25,7 +25,7 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure' | 'compress';
+type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'compress';
 
 // Renders a PDF page to a canvas data URL. Accepts the original File or
 // processed output bytes (so previews never show stale pre-rotate state).
@@ -111,6 +111,7 @@ export const PdfSuite: React.FC = () => {
 
     // Compression
     const [compressionQuality, setCompressionQuality] = useState<number>(70);
+    const [qualityLevel, setQualityLevel] = useState<number>(92);
     const [smartCompress, setSmartCompress] = useState(false);
     const [compressionProgress, setCompressionProgress] = useState<{ current: number; total: number } | null>(null);
 
@@ -431,8 +432,13 @@ export const PdfSuite: React.FC = () => {
                 setCompressionProgress(null);
 
                 if (smartCompress) {
-                    // Quality mode: render each page at 1.5× DPI (sharp output) then
+                    // Quality mode: render each page at a quality-driven DPI then
                     // overlay invisible selectable text so copy/search still works.
+                    // The quality slider maps to JPEG quality (high = gentle,
+                    // near-original size) while scale tracks it so fine reductions
+                    // like 12 MB → 10 MB stay possible.
+                    const jpegQuality = qualityLevel / 100;
+                    const renderScale = 1.2 + (qualityLevel - 50) / 50 * 0.8;
                     const pdf = await getPdfDocument(new Uint8Array(arrayBuffer.slice(0)), 'pdf-suite');
                     const outDoc = await PDFDocument.create();
                     const helvetica = await outDoc.embedFont(StandardFonts.Helvetica);
@@ -442,8 +448,8 @@ export const PdfSuite: React.FC = () => {
                     for (let i = 1; i <= totalPages; i++) {
                         const page = await pdf.getPage(i);
 
-                        // Render at 1.5× for crisp, high-quality output
-                        const hiResViewport = page.getViewport({ scale: 1.5 });
+                        // Render at quality-driven scale for crisp, high-quality output
+                        const hiResViewport = page.getViewport({ scale: renderScale });
                         const canvas = document.createElement('canvas');
                         canvas.width = Math.round(hiResViewport.width);
                         canvas.height = Math.round(hiResViewport.height);
@@ -451,7 +457,7 @@ export const PdfSuite: React.FC = () => {
                         if (!ctx) throw new Error('Canvas context not available');
                         await page.render({ canvasContext: ctx, viewport: hiResViewport } as any).promise;
 
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+                        const dataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
                         const base64 = dataUrl.split(',')[1];
                         const jpegBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
                         const jpegImage = await outDoc.embedJpg(jpegBytes);
@@ -517,15 +523,6 @@ export const PdfSuite: React.FC = () => {
                     setResultBytes(compressed.length < original.length ? compressed : original);
                 }
                 setCompressionProgress(null);
-                setIsDone(true);
-                setIsProcessing(false);
-                return;
-            } else if (mode === 'secure') {
-                const srcFile = files[0].file;
-                const arrayBuffer = await srcFile.arrayBuffer();
-                const srcDoc = await PDFDocument.load(arrayBuffer);
-                const bytes = await srcDoc.save();
-                setResultBytes(bytes);
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
@@ -918,21 +915,20 @@ export const PdfSuite: React.FC = () => {
                                                 </p>
                                             </>
                                         ) : (
-                                            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight leading-relaxed">
-                                                Preserves text, vectors &amp; image quality. Text stays copyable. Reduces size 15–40%.
-                                            </p>
+                                            <>
+                                                <SliderControl
+                                                    label="Quality"
+                                                    value={qualityLevel}
+                                                    min={50}
+                                                    max={100}
+                                                    onChange={setQualityLevel}
+                                                    unit="%"
+                                                />
+                                                <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight leading-relaxed">
+                                                    Preserves text, vectors &amp; image quality. Text stays copyable. Higher quality = gentler reduction (e.g. 12 MB → 10 MB); lower = smaller file.
+                                                </p>
+                                            </>
                                         )}
-                                    </div>
-                                </>
-                            )}
-
-                            {mode === 'secure' && (
-                                <>
-                                    <SectionLabel>Document Permissions</SectionLabel>
-                                    <div className="bg-[#121214] border border-zinc-800/50 p-4 rounded-2xl space-y-4">
-                                        <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-4 text-amber-400 text-sm">
-                                            ⚠️ Client-side PDF encryption is not supported in this version. Password protection requires a server-side component. This feature will apply metadata changes only.
-                                        </div>
                                     </div>
                                 </>
                             )}

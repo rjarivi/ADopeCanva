@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AdopeCanva recipe",
+  "type": "object",
+  "required": ["id", "title", "kind", "params"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "title": { "type": "string", "minLength": 3 },
+    "kind": { "enum": ["ffmpeg", "image", "audio", "document"] },
+    "engine": { "type": "string" },
+    "description": { "type": "string" },
+    "params": { "type": "object" }
+  },
+  "additionalProperties": true
+}

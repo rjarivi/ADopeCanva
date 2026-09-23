@@ -1,0 +1,24 @@
+{
+  "id": "__TOOL_ID__",
+  "title": "__TOOL_TITLE__",
+  "description": "One sentence: what it does.",
+  "category": "__CATEGORY__",
+  "icon": "__ICON__",
+  "popular": false,
+  "guideTitle": "How to …",
+  "guideContent": "2–3 sentences for the guide section and SEO.",
+  "faqs": [
+    { "question": "…?", "answer": "…" },
+    { "question": "…?", "answer": "…" }
+  ],
+  "specs": [
+    { "label": "Input", "value": "…" },
+    { "label": "Output", "value": "…" }
+  ],
+  "privacyNotes": "Files are processed locally in your browser. Nothing is uploaded.",
+  "keywords": [],
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

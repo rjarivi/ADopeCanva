@@ -65,10 +65,20 @@ if (!file) {
 *   **Typography**: Utilize `@fontsource/unbounded` (`font-unbounded`) strictly for main tool headers and impactful big numbers. The rest should use standard sans-serif (Inter).
 *   **Animations**: Ensure everything feels smooth by using standard Tailwind transitions (`transition-all duration-300`). Use `animate-fade-in` or `animate-slide-up` for new elements rendering on the screen.
 
-## 3. Creating the Component
-1. Make sure to define it in `views/tools/[ToolName].tsx`
-2. Export it from `views/tools/index.ts`
-3. Add its registry in `App.tsx` (or `registry.ts` if applicable) mapping its route, category, and target component. 
+## 3. Creating the Component (open-source lanes — see CONTRIBUTING.md)
+
+**Lane 1 first:** if the idea is a preset (FFmpeg args, conversion settings,
+resize profile), add a JSON file in `recipes/` — no component needed.
+
+**Lane 2 (custom UI):**
+1. Scaffold: `npm run new:tool -- --id=my-tool --title="My Tool" --category=image`
+2. Fill in `tools/my-tool/manifest.json` (permissions!) and build the workspace
+   in `tools/my-tool/index.tsx` (default export) using `<ToolShell>` +
+   `useToolFile()`. There is no `views/tools/index.ts` — the registry is
+   generated (`npm run registry:build`) from manifests.
+3. Do NOT touch the shell: `App.tsx`, `views/Dashboard.tsx`, `index.html`,
+   `vite.config.ts`, `package.json`, analytics, CSP. CI scope-guard fails
+   PRs that do.
 4. Verify the `FileUploader` component is imported if files are needed.
 
 FOLLOW THIS WORKFLOW EVERY TIME TO ENSURE UI CONSISTENCY ACROSS THE SUITE.

@@ -65,7 +65,7 @@
 │   └── feedbackApi.ts         # Google Sheets/Apps Script feedback backend
 │
 ├── views/
-│   ├── Dashboard.tsx          # Tool registry & grid (1,231 lines — source of truth for all tools)
+│   ├── Dashboard.tsx          # Core tool grid (legacy inline entries + GENERATED_TOOLS)
 │   └── tools/                 # 39 individual tool components
 │
 ├── public/
@@ -114,8 +114,14 @@ Set in `.env.local` for development; set in Cloudflare Dashboard for production.
 /studio       → Coming soon (Pro Editor)
 ```
 
-### Tool Registry (views/Dashboard.tsx)
-Every tool is defined here as a `ToolItem` object. This is the **single source of truth** — adding a tool means registering it here. Key fields:
+### Tool Registry (generated — do not hand-edit)
+New tools live in `tools/<id>/` (`manifest.json` + `index.tsx`) or as JSON in
+`recipes/`. `scripts/build-registry.mjs` (`npm run registry:build`, also on
+`prebuild`) emits `utils/toolRegistry.generated.ts`, which `Dashboard.tsx`
+concatenates after the legacy inline entries. **Never append to `TOOLS` by
+hand.** Manifest permissions (`network`, `npm`) are enforced by
+`npm run audit:permissions`; shell files are enforced by scope-guard.
+`ToolItem` shape (see `types.ts`):
 
 ```typescript
 interface ToolItem {
@@ -185,11 +191,14 @@ Always use **lucide-react** icons. Never use other icon libraries.
 
 Follow `.agents/workflows/Create_New_Tool.md` exactly. Summary:
 
-1. Create `views/tools/YourTool.tsx` using the standard layout
-2. Register it in `views/Dashboard.tsx` with full `ToolItem` metadata
-3. Update `Changelog.tsx` with the new release entry
-4. If using AI features, use `components/ui/ApiKeyInput.tsx` for the Gemini key
-5. Test on both desktop and mobile
+1. Lane 1 (preferred): add a JSON preset in `recipes/`
+2. Lane 2: `npm run new:tool -- --id=… --title=… --category=…`, fill the
+   manifest, build the workspace with `<ToolShell>` + `useToolFile()`
+3. `npm run registry:build && npm run audit:permissions && npm run audit:tools`
+4. Update `Changelog.tsx` with the new release entry
+5. AI features are bring-your-own-key: use `components/ui/ApiKeyInput.tsx`.
+   Never commit keys (see `SECURITY.md`)
+6. Test on both desktop and mobile
 
 ---
 

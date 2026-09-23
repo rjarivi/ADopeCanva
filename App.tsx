@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { FocusedModeCtx } from './contexts/FocusedMode';
 import { useFocusedMode } from './contexts/FocusedMode';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
@@ -124,9 +124,15 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                  * Mobile: natural content flow.
                  */}
                 <div className={focused ? 'h-[100dvh] overflow-hidden bg-zinc-950' : isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
-                    <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
-                        {tool.component}
-                    </ToolErrorBoundary>
+                    <Suspense fallback={
+                        <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                            <span className="animate-pulse font-bold uppercase tracking-widest text-xs font-unbounded">Loading tool…</span>
+                        </div>
+                    }>
+                        <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
+                            {tool.component}
+                        </ToolErrorBoundary>
+                    </Suspense>
                 </div>
 
                 {/* SEO & Guide Sections — below the fold, hidden in fullscreen */}
@@ -379,6 +385,8 @@ const App = () => {
                                 <p>© 2026 AdopeCanva - The Ultimate Omnitool Suite. Simplicity is the ultimate sophistication.</p>
                                 <div className="mt-2 flex items-center justify-center gap-4 text-xs text-zinc-500">
                                     <button onClick={() => navigate('/guides')} className="hover:text-zinc-300 hover:underline">How-to Guides</button>
+                                    <span>•</span>
+                                    <a href="https://github.com/rjarivi/ADopeCanva" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-300 hover:underline" title="Open source under AGPL-3.0 — fork us on GitHub">Open Source</a>
                                     <span>•</span>
                                     <button onClick={() => navigate('/remove-bg-alternative')} className="text-indigo-400 hover:text-indigo-300 hover:underline font-medium">Remove.bg Alternative</button>
                                     <span>•</span>

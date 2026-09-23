@@ -1,0 +1,11 @@
+{
+  "id": "audio-mp3-128k",
+  "title": "MP3 at 128k",
+  "kind": "audio",
+  "engine": "ffmpeg",
+  "description": "Convert any audio to MP3 at 128 kbps — small and everywhere-compatible.",
+  "params": {
+    "args": ["-codec:a", "libmp3lame", "-b:a", "128k"],
+    "ext": "mp3"
+  }
+}
