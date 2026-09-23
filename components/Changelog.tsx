@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;

@@ -23,6 +23,19 @@ const note = (kind, file, line, msg) => {
     (kind === 'fail' ? failures : warnings).push(`${kind === 'fail' ? 'FAIL' : 'WARN'} ${file}:${line} — ${msg}`);
 };
 
+// 0. TypeScript check — vite build does NOT typecheck, so undefined
+//    names (e.g. a missing icon import) ship as runtime ReferenceErrors.
+//    This gate catches them before deploy.
+try {
+    execSync('npx tsc --noEmit', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    console.log('ok tsc --noEmit clean');
+} catch (e) {
+    const out = (e.stdout || '') + (e.stderr || '');
+    for (const line of out.split('\n').map((s) => s.trim()).filter(Boolean).slice(0, 20)) {
+        note('fail', 'tsc', '-', line);
+    }
+}
+
 // 1. pdfjs-dist vs bundled worker version
 try {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));

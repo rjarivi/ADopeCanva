@@ -133,8 +133,8 @@ export function installGlobalFailureHook(): void {
         const err = (event as ErrorEvent).error ?? (event as ErrorEvent).message;
         // Skip resource 404 noise (favicons, dead avatars) — those are
         // handled per-component; only log script errors.
-        const target = event.target as HTMLElement | null;
-        if (target && target !== window && 'tagName' in target) return;
+        const target = event.target as EventTarget | null;
+        if (target && target !== window && target instanceof HTMLElement) return;
         logToolFailure('global', err, { kind: 'window-error' });
     }, true);
 }

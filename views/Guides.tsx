@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TOOLS } from './Dashboard';
 import { ToolCategory } from '../types';
-import { Search, BookOpen, ArrowRight, ExternalLink } from 'lucide-react';
+import { Search, BookOpen, ArrowRight, ExternalLink, Shield } from 'lucide-react';
 
 import { updateHeadTags, SITE_URL, SITE_NAME } from '../utils/seoHelper';
 

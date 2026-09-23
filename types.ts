@@ -3,7 +3,7 @@ import { LucideIcon } from 'lucide-react';
 
 declare global {
   interface Window {
-    gtag: (command: string, id: string, config?: any) => void;
+    gtag?: (...args: any[]) => void;
   }
   interface ImportMetaEnv {
     readonly VITE_FEEDBACK_API_URL: string;
