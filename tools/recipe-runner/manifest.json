@@ -1,0 +1,25 @@
+{
+  "id": "recipe-runner",
+  "title": "Recipe Runner",
+  "description": "Run community presets: video, audio, and image conversions in one click.",
+  "category": "Developer",
+  "icon": "ChefHat",
+  "popular": false,
+  "guideTitle": "How to run a conversion preset",
+  "guideContent": "Pick a recipe, drop a file, and download the result. Recipes are plain JSON presets maintained by the community — no new code runs, just trusted engines with prebuilt settings.",
+  "faqs": [
+    { "question": "What is a recipe?", "answer": "A JSON preset (FFmpeg args, image format settings) versioned in recipes/. Anyone can propose one via a tool-request issue." },
+    { "question": "Is it private?", "answer": "Yes. Recipes execute locally in your browser with the same engines as the built-in tools." }
+  ],
+  "specs": [
+    { "label": "Source", "value": "recipes/*.json" },
+    { "label": "Engines", "value": "FFmpeg WASM, Canvas" },
+    { "label": "Adds code?", "value": "No — data only" }
+  ],
+  "privacyNotes": "Recipes run locally. Nothing is uploaded.",
+  "keywords": ["preset", "recipe", "batch convert", "ffmpeg preset"],
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.16.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Zap,
+                title: 'Recipe Runner: Community Presets That Execute',
+                description: 'Lane 1 is now end-to-end: pick a JSON preset, drop a file, download. FFmpeg and image recipes run locally with the args shown upfront; document recipes explain they need a code tool instead of failing obscurely.',
+                type: 'feature'
+            },
+        ]
+    },
+    {
         version: '1.15.0',
         date: 'Sep 23, 2026',
         items: [

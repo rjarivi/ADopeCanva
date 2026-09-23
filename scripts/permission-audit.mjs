@@ -133,6 +133,16 @@ function lintRecipes() {
         }
         if (r.kind && !kinds.has(r.kind)) fail(`${tag}: unknown kind "${r.kind}"`);
         if (r.params && typeof r.params !== 'object') fail(`${tag}: params must be an object`);
+        // Runtime contract (see utils/recipeRunner.ts).
+        if ((r.kind === 'ffmpeg' || r.kind === 'audio') && (!Array.isArray(r.params?.args) || r.params.args.length === 0)) {
+            fail(`${tag}: ${r.kind} recipes need params.args (string array, supports {input}/{output})`);
+        }
+        if ((r.kind === 'ffmpeg' || r.kind === 'audio') && typeof r.params?.ext !== 'string') {
+            fail(`${tag}: ${r.kind} recipes need params.ext (output extension)`);
+        }
+        if (r.kind === 'image' && typeof r.params?.format !== 'string') {
+            fail(`${tag}: image recipes need params.format (webp|png|jpeg)`);
+        }
     }
 }
 

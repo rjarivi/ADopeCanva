@@ -19,6 +19,16 @@ code, no review bottleneck, merge-safe by construction.
 
 Full schema: `recipes/schema.json`. Validated by `npm run audit:permissions`.
 
+## Execution semantics (what the runner does)
+
+- **ffmpeg / audio**: `params.args` (string array) + `params.ext` (output
+  extension) are required. Use `{input}` / `{output}` tokens for full
+  control; otherwise the runner wraps as `ffmpeg -i {input} …args… {output}`.
+- **image**: `params.format` (`webp`|`png`|`jpeg`) + optional `params.quality`
+  (1–100, default 80). Converted via canvas (metadata dropped).
+- **document**: validated but needs a code tool (Lane 2) — the runner
+  explains this instead of failing obscurely.
+
 ## Requesting vs contributing
 
 - **Request**: open a `tool-request` issue; a maintainer or contributor turns it
