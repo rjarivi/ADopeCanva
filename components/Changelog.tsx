@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck, Maximize2, RotateCw } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,30 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.12.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Maximize2,
+                title: 'Fullscreen Focus Mode for Every Tool',
+                description: 'New fullscreen toggle in each tool toolbar (or press F): hides the header, breadcrumbs, and guide sections and stretches the workspace edge-to-edge, using the native Fullscreen API with graceful fallback. ESC exits. Mobile gets a floating button plus hidden nav chrome.',
+                type: 'feature'
+            },
+            {
+                icon: Layers,
+                title: 'Adobe-Style Page Rail in PDF Preview',
+                description: 'The full-page preview now has a left thumbnail rail for one-click page jumping, and the grid expand button moved to the top-left so it never covers the selection checkmark again.',
+                type: 'fix'
+            },
+            {
+                icon: RotateCw,
+                title: 'Single-Page Rotate Without the Friction',
+                description: 'Hover (or tap) any page for instant ⟲ ⟳ quick-rotate with a live angle badge — no selection needed. After Process, thumbnails and preview render the actual output so the workspace always matches the download, and rotating again keeps stacking on the last result.',
+                type: 'feature'
+            },
+        ]
+    },
     {
         version: '1.11.2',
         date: 'Sep 22, 2026',

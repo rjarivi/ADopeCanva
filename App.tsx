@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FocusedModeCtx } from './contexts/FocusedMode';
+import { useFocusedMode } from './contexts/FocusedMode';
 import { Routes, Route, useNavigate, useLocation, useParams, Navigate } from 'react-router-dom';
 import {
-    Wand2, LayoutGrid,
+    Wand2, LayoutGrid, Maximize2,
     Video, Music, Image as ImageIcon, FileText, Code, Layers, X, Type, ArrowLeftRight, ChevronLeft
 } from 'lucide-react';
 import { Dashboard, TOOLS } from './views/Dashboard';
@@ -15,6 +16,7 @@ import { SEOSections } from './components/SEOSections';
 import { Comparison } from './views/Comparison';
 import { ToolLoader } from './components/ToolLoader';
 import { ToolErrorBoundary } from './components/ToolErrorBoundary';
+import { ToolFullscreenButton } from './components/ToolFullscreenButton';
 import { ToolHealth } from './views/ToolHealth';
 import { Guides } from './views/Guides';
 import { CategoryHub } from './views/CategoryHub';
@@ -37,6 +39,8 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
     const isMobile = useIsMobile();
     const { toolId } = useParams();
     const navigate = useNavigate();
+    const { focused, setFocused } = useFocusedMode();
+    const wrapRef = useRef<HTMLDivElement>(null);
     const tool = TOOLS.find(t => t.id === toolId);
 
     if (!tool) {
@@ -62,14 +66,32 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
         setActiveCategory(tool.category);
     }, [tool, setActiveCategory]);
 
+    // Exit fullscreen/focus when switching tools; keyboard shortcut (F).
+    useEffect(() => {
+        setFocused(false);
+    }, [tool.id, setFocused]);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const el = e.target as HTMLElement | null;
+            if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+            if (e.key === 'f' || e.key === 'F') {
+                const btn = wrapRef.current?.querySelector<HTMLButtonElement>('[data-tool-fullscreen]');
+                btn?.click();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, []);
+
     const steps = getDefaultSteps(tool);
     const comparisonTable = getDefaultComparisonTable(tool);
 
     return (
-        <div className={`animate-fade-in ${isMobile ? 'p-0 pb-20' : 'p-4 md:p-6'}`}>
-            <div className={`${isMobile ? '' : 'max-w-7xl mx-auto'}`}>
-                {/* Breadcrumb / Back navigation */}
-                {!isMobile && (
+        <div ref={wrapRef} className={`animate-fade-in ${focused ? 'p-0' : isMobile ? 'p-0 pb-20' : 'p-4 md:p-6'}`}>
+            <div className={`${isMobile || focused ? '' : 'max-w-7xl mx-auto'}`}>
+                {/* Breadcrumb / Back navigation — hidden in fullscreen */}
+                {!isMobile && !focused && (
                     <div className="flex items-center gap-2 mb-4 text-sm">
                         <button
                             onClick={() => navigate('/')}
@@ -90,40 +112,64 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                         </button>
                         <span className="text-zinc-700">/</span>
                         <span className="text-zinc-300 font-medium">{tool.title}</span>
+                        <div className="flex-1" />
+                        <ToolFullscreenButton targetRef={wrapRef} />
                     </div>
                 )}
 
                 {/*
                  * Fixed-height tool container — prevents layout shift when switching tabs/panels.
                  * Desktop: locked to viewport height minus header (64px) + top-padding (24px) + breadcrumb (40px) = 128px.
+                 * Fullscreen: edge-to-edge viewport, zero chrome.
                  * Mobile: natural content flow.
                  */}
-                <div className={isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
+                <div className={focused ? 'h-[100dvh] overflow-hidden bg-zinc-950' : isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
                     <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
                         {tool.component}
                     </ToolErrorBoundary>
                 </div>
 
-                {/* SEO & Guide Sections — below the fold, accessible by scrolling */}
-                <div className="mt-8 pb-20">
-                    <SEOSections
-                        toolId={tool.id}
-                        category={tool.category}
-                        guideTitle={tool.guideTitle}
-                        guideContent={tool.guideContent}
-                        steps={steps}
-                        comparisonTable={comparisonTable}
-                        faqs={tool.faqs}
-                        specs={tool.specs}
-                        privacyNotes={tool.privacyNotes}
-                        beforeAfterImage={tool.beforeAfterImage}
-                        relatedToolIds={tool.relatedToolIds}
-                    />
-                </div>
+                {/* SEO & Guide Sections — below the fold, hidden in fullscreen */}
+                {!focused && (
+                    <div className="mt-8 pb-20">
+                        <SEOSections
+                            toolId={tool.id}
+                            category={tool.category}
+                            guideTitle={tool.guideTitle}
+                            guideContent={tool.guideContent}
+                            steps={steps}
+                            comparisonTable={comparisonTable}
+                            faqs={tool.faqs}
+                            specs={tool.specs}
+                            privacyNotes={tool.privacyNotes}
+                            beforeAfterImage={tool.beforeAfterImage}
+                            relatedToolIds={tool.relatedToolIds}
+                        />
+                    </div>
+                )}
             </div>
 
+            {/* Mobile floating fullscreen button (drives the hidden toolbar toggle) */}
+            {isMobile && !focused && (
+                <>
+                    <div className="hidden">
+                        <ToolFullscreenButton targetRef={wrapRef} />
+                    </div>
+                    <button
+                        onClick={() => {
+                            const btn = wrapRef.current?.querySelector<HTMLButtonElement>('[data-tool-fullscreen]');
+                            btn?.click();
+                        }}
+                        title="Fullscreen"
+                        className="fixed bottom-24 left-4 z-40 p-3 rounded-full bg-zinc-900/90 border border-zinc-700 text-zinc-400 shadow-xl backdrop-blur-sm"
+                    >
+                        <Maximize2 size={16} />
+                    </button>
+                </>
+            )}
+
             {/* Swap Tool Button — floating pill, only shown when a swap partner exists */}
-            {swapTool && (
+            {!focused && swapTool && (
                 <button
                     onClick={() => navigate(`/${swapTool.id}`)}
                     title={`Switch to ${swapTool.title}`}
@@ -419,6 +465,7 @@ const App = () => {
 
     if (isMobile) {
         return (
+            <FocusedModeCtx.Provider value={{ focused: toolFocused, setFocused: setToolFocused }}>
             <MobileLayout
                 activeCategory={activeCategory}
                 setActiveCategory={setActiveCategory}
@@ -427,6 +474,7 @@ const App = () => {
 
                 {!isProMode && <Feedback />}
             </MobileLayout>
+            </FocusedModeCtx.Provider>
         );
     }
 

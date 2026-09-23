@@ -4,12 +4,15 @@ import { Home, Search, Library } from 'lucide-react';
 interface MobileNavbarProps {
     activeTab: 'home' | 'search' | 'media';
     onTabChange: (tab: 'home' | 'search' | 'media') => void;
+    hidden?: boolean;
 }
 
 export const MobileNavbar: React.FC<MobileNavbarProps> = ({
     activeTab,
-    onTabChange
+    onTabChange,
+    hidden = false
 }) => {
+    if (hidden) return null;
     return (
         <div className="fixed bottom-0 left-0 right-0 h-20 bg-zinc-900/90 backdrop-blur-xl border-t border-zinc-800 px-12 flex items-center justify-between z-50">
             {/* Home Link */}

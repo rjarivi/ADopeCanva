@@ -5,7 +5,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
-    FileText, Layers, Scissors, RotateCw, Download, Trash2, CheckCircle, Plus,
+    FileText, Layers, Scissors, RotateCw, RotateCcw, Download, Trash2, CheckCircle, Plus,
     Loader2, Settings, RefreshCcw, LayoutGrid, FilePlus, Zap, Shrink,
     ChevronLeft, ChevronRight, X, Maximize2, CheckSquare, Square, ToggleLeft,
     GripVertical
@@ -27,10 +27,11 @@ function formatBytes(bytes: number): string {
 
 type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure' | 'compress';
 
-// Renders a PDF page to a canvas data URL
-async function renderPageToDataUrl(file: File, pageIndex: number, scale = 0.4): Promise<string> {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await getPdfDocument(arrayBuffer, 'pdf-suite');
+// Renders a PDF page to a canvas data URL. Accepts the original File or
+// processed output bytes (so previews never show stale pre-rotate state).
+async function renderPageToDataUrl(source: File | Uint8Array, pageIndex: number, scale = 0.4): Promise<string> {
+    const data = source instanceof Uint8Array ? source : new Uint8Array(await source.arrayBuffer());
+    const pdf = await getPdfDocument(data, 'pdf-suite');
     try {
         const page = await pdf.getPage(pageIndex + 1);
         try {
@@ -87,6 +88,13 @@ export const PdfSuite: React.FC = () => {
     const [password, setPassword] = useState<string>('');
     const [reorderOrder, setReorderOrder] = useState<number[]>([]);
 
+    // Per-page committed rotation (degrees, multiples of 90). Applied at
+    // process time via pdf-lib; thumbnails preview it instantly with CSS.
+    const [pageRotations, setPageRotations] = useState<Map<number, number>>(new Map());
+    // After a successful rotate process, thumbs + preview render from the
+    // OUTPUT bytes so what you see is what the download contains.
+    const [showingResult, setShowingResult] = useState(false);
+
     // Thumbnails: array of data URLs indexed by page
     const [thumbnails, setThumbnails] = useState<string[]>([]);
     const [thumbnailsLoading, setThumbnailsLoading] = useState(false);
@@ -112,13 +120,13 @@ export const PdfSuite: React.FC = () => {
 
     // ── Thumbnail generation ──────────────────────────────────────────────────
 
-    const generateThumbnails = useCallback(async (file: File, count: number) => {
+    const generateThumbnails = useCallback(async (source: File | Uint8Array, count: number) => {
         setThumbnailsLoading(true);
         const thumbs: string[] = new Array(count).fill('');
         setThumbnails([...thumbs]);
-        
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await getPdfDocument(arrayBuffer, 'pdf-suite');
+
+        const data = source instanceof Uint8Array ? source : new Uint8Array(await source.arrayBuffer());
+        const pdf = await getPdfDocument(data, 'pdf-suite');
         try {
             for (let i = 0; i < count; i++) {
                 try {
@@ -169,6 +177,8 @@ export const PdfSuite: React.FC = () => {
         setIsProcessing(false);
         setResultBytes(null);
         setRotation(0);
+        setPageRotations(new Map());
+        setShowingResult(false);
         setPassword('');
         setRangeInput('');
         setRangeError('');
@@ -183,6 +193,8 @@ export const PdfSuite: React.FC = () => {
     const handleFileSelect = async (newFiles: FileData | FileData[]) => {
         const fileArray = Array.isArray(newFiles) ? newFiles : [newFiles];
         setFiles(prev => mode === 'merge' ? [...prev, ...fileArray] : fileArray);
+        setPageRotations(new Map());
+        setShowingResult(false);
         if (mode !== 'merge') {
             const firstFile = fileArray[0];
             if (firstFile) await loadPdfInfo(firstFile.file);
@@ -218,6 +230,38 @@ export const PdfSuite: React.FC = () => {
         setSelectedPages(indices);
     };
 
+    // ── Rotation helpers ────────────────────────────────────────────────────
+
+    /** Normalize any angle to [0, 360). */
+    const normDeg = (deg: number): number => ((deg % 360) + 360) % 360;
+
+    /**
+     * Total preview angle for a thumbnail = committed per-page rotation +
+     * the pending sidebar value for currently-selected pages (rotate mode).
+     */
+    const previewAngle = useCallback((pageIndex: number): number => {
+        const committed = pageRotations.get(pageIndex) ?? 0;
+        const pending = mode === 'rotate' && selectedPages.includes(pageIndex) ? rotation : 0;
+        return normDeg(committed + pending);
+    }, [pageRotations, mode, selectedPages, rotation]);
+
+    /** Single-page quick rotate (hover buttons + preview modal). */
+    const rotateSinglePage = useCallback((pageIndex: number, delta: number) => {
+        setPageRotations(prev => {
+            const next = new Map(prev);
+            next.set(pageIndex, normDeg((prev.get(pageIndex) ?? 0) + delta));
+            return next;
+        });
+        // NOTE: intentionally stays on the current source (original or last
+        // result) so tweaks stack — Process always applies on top of it.
+    }, []);
+
+    /** Bytes the full-page preview should render from (output when available). */
+    const previewSource = useCallback((): File | Uint8Array | null => {
+        if (showingResult && resultBytes) return resultBytes;
+        return files[0]?.file ?? null;
+    }, [showingResult, resultBytes, files]);
+
     // ── Full-page preview ─────────────────────────────────────────────────────
 
     const openPreview = async (pageIndex: number) => {
@@ -226,9 +270,9 @@ export const PdfSuite: React.FC = () => {
         setPreviewLoading(true);
         setPreviewDataUrl('');
         try {
-            const file = files[0]?.file;
-            if (!file) return;
-            const url = await renderPageToDataUrl(file, pageIndex, 1.5);
+            const src = previewSource();
+            if (!src) return;
+            const url = await renderPageToDataUrl(src, pageIndex, 1.5);
             setPreviewDataUrl(url);
         } catch {
             // ignore
@@ -244,16 +288,16 @@ export const PdfSuite: React.FC = () => {
         setPreviewLoading(true);
         setPreviewDataUrl('');
         try {
-            const file = files[0]?.file;
-            if (!file) return;
-            const url = await renderPageToDataUrl(file, next, 1.5);
+            const src = previewSource();
+            if (!src) return;
+            const url = await renderPageToDataUrl(src, next, 1.5);
             setPreviewDataUrl(url);
         } catch {
             // ignore
         } finally {
             setPreviewLoading(false);
         }
-    }, [previewPage, pageCount, files]);
+    }, [previewPage, pageCount, previewSource]);
 
     // Keyboard navigation for preview
     useEffect(() => {
@@ -345,19 +389,40 @@ export const PdfSuite: React.FC = () => {
                 copiedPages.forEach((page) => resultDoc.addPage(page));
             } else if (mode === 'rotate') {
                 const srcFile = files[0].file;
-                const arrayBuffer = await srcFile.arrayBuffer();
-                const srcDoc = await PDFDocument.load(arrayBuffer);
+                // Iterative workflow: rotate → process → rotate more keeps
+                // building on the last output instead of restarting.
+                const srcBytes = showingResult && resultBytes
+                    ? resultBytes
+                    : new Uint8Array(await srcFile.arrayBuffer());
+                const srcDoc = await PDFDocument.load(srcBytes);
                 const pages = srcDoc.getPages();
-                const targetIndices = selectedPages.length > 0 ? selectedPages : srcDoc.getPageIndices();
-                targetIndices.forEach(idx => {
+                const hasSelection = selectedPages.length > 0;
+                const indices = hasSelection ? selectedPages : srcDoc.getPageIndices();
+                indices.forEach(idx => {
+                    // Committed single-page tweaks + pending sidebar value
+                    // (pending applies to selected pages, or all when none selected).
+                    const committed = pageRotations.get(idx) ?? 0;
+                    const total = normDeg(committed + rotation);
+                    if (total === 0) return;
                     const page = pages[idx];
                     const currentRot = page.getRotation().angle;
-                    page.setRotation(degrees(currentRot + rotation));
+                    page.setRotation(degrees(currentRot + total));
                 });
                 const bytes = await srcDoc.save();
                 setResultBytes(bytes);
+                // Bake rotations in: thumbs + preview now render the OUTPUT so
+                // the workspace always matches the download. Pending state resets
+                // so a second Process click can't double-apply.
+                setPageRotations(new Map());
+                setRotation(0);
+                setShowingResult(true);
                 setIsDone(true);
                 setIsProcessing(false);
+                try {
+                    await generateThumbnails(bytes, srcDoc.getPageCount());
+                } catch (thumbErr) {
+                    logToolFailure('pdf-suite', thumbErr, { stage: 'rotate-thumb-refresh' });
+                }
                 return;
             } else if (mode === 'compress') {
                 const srcFile = files[0].file;
@@ -485,7 +550,7 @@ export const PdfSuite: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const name = files[0]?.file.name.replace('.pdf', '') || 'document';
+        const name = (files[0]?.file.name ?? 'document').replace(/\.pdf$/i, '') || 'document';
         const suffix = mode === 'merge' ? 'merged' : mode === 'split' ? 'extracted' : mode === 'compress' ? 'compressed' : mode === 'reorder' ? 'reordered' : mode === 'remove' ? 'trimmed' : 'rotated';
         a.download = `${name}_${suffix}.pdf`;
         document.body.appendChild(a);
@@ -550,67 +615,134 @@ export const PdfSuite: React.FC = () => {
 
     return (
         <>
-            {/* Full-page preview modal */}
+            {/* Full-page preview modal (Adobe-style: left page rail + stage) */}
             {previewOpen && (
                 <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setPreviewOpen(false)}>
-                    <div className="relative w-full h-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
-                        {/* Close */}
-                        <button
-                            onClick={() => setPreviewOpen(false)}
-                            className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all"
-                        >
-                            <X size={20} />
-                        </button>
-
-                        {/* Page counter */}
-                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-2 text-xs font-black text-zinc-300 font-unbounded tracking-widest">
-                            PAGE {previewPage + 1} / {pageCount}
+                    <div className="relative w-full h-full flex items-stretch justify-center gap-3 p-4 md:p-8" onClick={e => e.stopPropagation()}>
+                        {/* Left page rail */}
+                        <div className="hidden md:flex flex-col w-28 shrink-0 rounded-2xl bg-zinc-950/80 border border-zinc-800/60 overflow-hidden">
+                            <div className="px-3 py-2 text-[9px] font-black uppercase tracking-widest text-zinc-500 font-unbounded border-b border-zinc-800/60 shrink-0">
+                                Pages
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+                                {thumbnails.map((t, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => openPreview(i)}
+                                        title={`Go to page ${i + 1}`}
+                                        className={`relative w-full aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all shrink-0 ${
+                                            i === previewPage
+                                                ? 'border-indigo-500 shadow-[0_0_16px_rgba(99,102,241,0.35)]'
+                                                : 'border-zinc-800 hover:border-zinc-600'
+                                        }`}
+                                    >
+                                        {t ? (
+                                            <img src={t} alt={`Page ${i + 1}`} className="w-full h-full object-cover" draggable={false} />
+                                        ) : (
+                                            <div className="w-full h-full bg-zinc-900 flex items-center justify-center">
+                                                <FileText size={18} className="text-zinc-700" />
+                                            </div>
+                                        )}
+                                        <span className={`absolute bottom-0.5 right-1 text-[9px] font-black font-mono px-1 rounded ${i === previewPage ? 'bg-indigo-600 text-white' : 'bg-black/70 text-zinc-400'}`}>
+                                            {i + 1}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* Prev */}
-                        <button
-                            onClick={() => navigatePreview(-1)}
-                            disabled={previewPage === 0}
-                            className="absolute left-4 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft size={24} />
-                        </button>
+                        {/* Stage */}
+                        <div className="relative flex-1 flex items-center justify-center min-w-0">
+                            {/* Close */}
+                            <button
+                                onClick={() => setPreviewOpen(false)}
+                                className="absolute top-0 right-0 z-10 p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all"
+                            >
+                                <X size={20} />
+                            </button>
 
-                        {/* Image */}
-                        <div className="max-w-[70vw] max-h-[85vh] flex items-center justify-center">
-                            {previewLoading ? (
-                                <div className="flex flex-col items-center gap-4 text-zinc-500">
-                                    <Loader2 size={40} className="animate-spin text-indigo-400" />
-                                    <span className="text-xs font-bold uppercase tracking-widest font-unbounded">Rendering Page...</span>
-                                </div>
-                            ) : previewDataUrl ? (
-                                <img
-                                    src={previewDataUrl}
-                                    alt={`Page ${previewPage + 1}`}
-                                    className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl border border-zinc-800"
-                                />
-                            ) : (
-                                <div className="text-zinc-600 text-sm">Failed to render page.</div>
-                            )}
-                        </div>
+                            {/* Page counter */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-zinc-900/90 border border-zinc-800 rounded-xl px-4 py-2 text-xs font-black text-zinc-300 font-unbounded tracking-widest whitespace-nowrap">
+                                PAGE {previewPage + 1} / {pageCount}
+                                {showingResult && resultBytes && (
+                                    <span className="ml-2 text-indigo-400">· OUTPUT</span>
+                                )}
+                            </div>
 
-                        {/* Next */}
-                        <button
-                            onClick={() => navigatePreview(1)}
-                            disabled={previewPage === pageCount - 1}
-                            className="absolute right-4 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight size={24} />
-                        </button>
+                            {/* Prev */}
+                            <button
+                                onClick={() => navigatePreview(-1)}
+                                disabled={previewPage === 0}
+                                className="absolute left-0 md:left-2 z-10 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                <ChevronLeft size={24} />
+                            </button>
 
-                        {/* Key hint */}
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 text-zinc-600 text-[10px] font-bold uppercase tracking-widest font-unbounded">
-                            <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">A / ←</span>
-                            <span>Prev</span>
-                            <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">D / →</span>
-                            <span>Next</span>
-                            <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">ESC</span>
-                            <span>Close</span>
+                            {/* Image */}
+                            <div className="max-w-[70vw] max-h-[80vh] flex items-center justify-center">
+                                {previewLoading ? (
+                                    <div className="flex flex-col items-center gap-4 text-zinc-500">
+                                        <Loader2 size={40} className="animate-spin text-indigo-400" />
+                                        <span className="text-xs font-bold uppercase tracking-widest font-unbounded">Rendering Page...</span>
+                                    </div>
+                                ) : previewDataUrl ? (
+                                    <img
+                                        src={previewDataUrl}
+                                        alt={`Page ${previewPage + 1}`}
+                                        className="max-w-full max-h-[80vh] object-contain rounded-xl shadow-2xl border border-zinc-800 transition-transform duration-300"
+                                        style={mode === 'rotate' && !showingResult && previewAngle(previewPage) !== 0
+                                            ? { transform: `rotate(${previewAngle(previewPage)}deg)` }
+                                            : undefined}
+                                    />
+                                ) : (
+                                    <div className="text-zinc-600 text-sm">Failed to render page.</div>
+                                )}
+                            </div>
+
+                            {/* Next */}
+                            <button
+                                onClick={() => navigatePreview(1)}
+                                disabled={previewPage === pageCount - 1}
+                                className="absolute right-0 md:right-2 z-10 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-indigo-500/50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                <ChevronRight size={24} />
+                            </button>
+
+                            {/* Footer: key hints + quick rotate */}
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex items-center gap-3 text-zinc-600 text-[10px] font-bold uppercase tracking-widest font-unbounded whitespace-nowrap">
+                                {mode === 'rotate' && !showingResult ? (
+                                    <>
+                                        <button
+                                            onClick={() => rotateSinglePage(previewPage, -90)}
+                                            title="Rotate this page 90° left"
+                                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+                                        <span className="px-2 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-indigo-300 font-mono">
+                                            {previewAngle(previewPage)}°
+                                        </span>
+                                        <button
+                                            onClick={() => rotateSinglePage(previewPage, 90)}
+                                            title="Rotate this page 90° right"
+                                            className="p-2 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all"
+                                        >
+                                            <RotateCw size={16} />
+                                        </button>
+                                        <span className="hidden sm:inline text-zinc-700">·</span>
+                                        <span className="hidden sm:inline">ESC Close</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">A / ←</span>
+                                        <span>Prev</span>
+                                        <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">D / →</span>
+                                        <span>Next</span>
+                                        <span className="px-2 py-1 bg-zinc-900/80 rounded border border-zinc-800">ESC</span>
+                                        <span>Close</span>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -635,6 +767,8 @@ export const PdfSuite: React.FC = () => {
                                 setSelectedPages([]);
                                 setReorderOrder([]);
                                 setRangeInput('');
+                                setPageRotations(new Map());
+                                setShowingResult(false);
                             }}
                             className="text-zinc-600 hover:text-red-400 transition-all p-2 hover:bg-red-500/5 rounded-xl"
                             title="Reset Project"
@@ -743,6 +877,9 @@ export const PdfSuite: React.FC = () => {
                                             </button>
                                         ))}
                                     </div>
+                                    <p className="text-[9px] text-zinc-600 leading-relaxed">
+                                        Applies to <span className="text-zinc-400">selected pages</span> (or all, if none selected) on Process. Hover any page for single-page ⟲ ⟳.
+                                    </p>
                                 </>
                             )}
 
@@ -935,7 +1072,18 @@ export const PdfSuite: React.FC = () => {
                                         <Download size={20} /> Download PDF
                                     </Button>
                                     <button
-                                        onClick={() => setIsDone(false)}
+                                        onClick={async () => {
+                                            setIsDone(false);
+                                            // Drop back to the original file so further
+                                            // tweaks start from un-rotated pages.
+                                            // (Reads files/pageCount directly — state
+                                            // setters above haven't flushed yet.)
+                                            setShowingResult(false);
+                                            const f = files[0]?.file;
+                                            if (f && pageCount > 0) {
+                                                try { await generateThumbnails(f, pageCount); } catch { /* ignore */ }
+                                            }
+                                        }}
                                         className="w-full py-3 text-zinc-600 hover:text-zinc-200 text-[10px] font-black uppercase tracking-widest font-unbounded transition-colors"
                                     >
                                         Re-configure Settings
@@ -998,9 +1146,14 @@ export const PdfSuite: React.FC = () => {
                         style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
 
                     {/* Workspace toolbar */}
-                    {isSingleFileMode && pageCount > 0 && (
+                            {isSingleFileMode && pageCount > 0 && (
                         <div className="relative z-10 flex items-center gap-3 px-4 py-3 border-b border-zinc-900 bg-[#0c0c0e]/60 backdrop-blur-sm shrink-0">
                             <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest font-unbounded">{pageCount} pages</span>
+                            {showingResult && resultBytes && (
+                                <span className="px-2 py-1 rounded-md bg-indigo-600/15 border border-indigo-500/30 text-indigo-400 text-[9px] font-black uppercase tracking-widest font-unbounded">
+                                    Output preview — matches download
+                                </span>
+                            )}
                             {thumbnailsLoading && (
                                 <span className="flex items-center gap-1.5 text-[9px] text-zinc-600 font-bold uppercase tracking-wider">
                                     <Loader2 size={10} className="animate-spin" /> Loading previews...
@@ -1014,7 +1167,7 @@ export const PdfSuite: React.FC = () => {
                             )}
                             {showSelectionTools && (
                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider">
-                                    Click to select · double-click to preview
+                                    Click to select · double-click to preview{mode === 'rotate' ? ' · hover to rotate' : ''}
                                 </span>
                             )}
                             {!showSelectionTools && mode !== 'reorder' && (
@@ -1068,7 +1221,7 @@ export const PdfSuite: React.FC = () => {
                                                     src={thumbSrc}
                                                     alt={`Page ${originalIndex + 1}`}
                                                     className={`w-full h-full object-cover transition-all duration-300 ${isSelected ? 'opacity-80' : 'opacity-100'}`}
-                                                    style={mode === 'rotate' && isSelected ? { transform: `rotate(${rotation}deg)`, transformOrigin: 'center' } : undefined}
+                                                    style={previewAngle(originalIndex) !== 0 ? { transform: `rotate(${previewAngle(originalIndex)}deg) scale(${previewAngle(originalIndex) % 180 !== 0 ? 0.72 : 1})`, transformOrigin: 'center' } : undefined}
                                                     draggable={false}
                                                 />
                                             ) : (
@@ -1107,14 +1260,41 @@ export const PdfSuite: React.FC = () => {
                                             </div>
                                         )}
 
-                                        {/* Preview button on hover */}
+                                        {/* Preview button on hover — top-LEFT so it never
+                                            covers the selection checkmark (top-right) */}
                                         {files[0]?.file && pageCount > 0 && mode !== 'reorder' && (
-                                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                            <div className={`absolute top-2 left-2 transition-opacity duration-200 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                                                 onClick={(e) => { e.stopPropagation(); openPreview(originalIndex); }}>
                                                 <div className={`p-1.5 rounded-lg backdrop-blur-sm border transition-all
                                                     ${isSelected ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-black/50 border-zinc-700/50 text-zinc-400 hover:text-white'}`}>
                                                     <Maximize2 size={11} />
                                                 </div>
+                                            </div>
+                                        )}
+
+                                        {/* Single-page quick rotate (rotate mode, on hover) */}
+                                        {mode === 'rotate' && (
+                                            <div
+                                                className={`absolute bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-1 transition-opacity duration-200 ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <button
+                                                    onClick={() => rotateSinglePage(originalIndex, -90)}
+                                                    title="Rotate this page 90° left"
+                                                    className="p-1.5 rounded-lg bg-black/60 backdrop-blur-sm border border-zinc-700/50 text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all"
+                                                >
+                                                    <RotateCcw size={12} />
+                                                </button>
+                                                <span className="px-1.5 py-1 rounded-md bg-black/60 backdrop-blur-sm border border-zinc-700/50 text-[9px] font-black font-mono text-indigo-300 min-w-[38px] text-center">
+                                                    {previewAngle(originalIndex)}°
+                                                </span>
+                                                <button
+                                                    onClick={() => rotateSinglePage(originalIndex, 90)}
+                                                    title="Rotate this page 90° right"
+                                                    className="p-1.5 rounded-lg bg-black/60 backdrop-blur-sm border border-zinc-700/50 text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all"
+                                                >
+                                                    <RotateCw size={12} />
+                                                </button>
                                             </div>
                                         )}
 
