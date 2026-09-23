@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { useToolFile } from '../../hooks/useToolFile';
 import { Table, FileSpreadsheet, Download, RefreshCw, FileJson, FileCode, CheckCircle, Loader2, AlertCircle, ArrowRightLeft } from 'lucide-react';
 
 type ConversionMode = 'excel-to-other' | 'other-to-excel';
@@ -12,14 +13,16 @@ type TargetFormat = 'csv' | 'json' | 'html' | 'txt' | 'xlsx';
 export const SpreadsheetTools: React.FC = () => {
     const [mode, setMode] = useState<ConversionMode>('excel-to-other');
     const [targetFormat, setTargetFormat] = useState<TargetFormat>('csv');
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const handleFileSelect = (newFile: FileData) => {
-        setFile(newFile);
+    const handleFileSelect = (newFile: FileData | FileData[]) => {
+        const selected = Array.isArray(newFile) ? newFile[0] : newFile;
+        if (!selected) return;
+        select(selected);
         setResult(null);
         setDownloadUrl(null);
         setError(null);
@@ -191,13 +194,13 @@ export const SpreadsheetTools: React.FC = () => {
 
                 <div className="flex justify-center gap-4 mt-6">
                     <button
-                        onClick={() => { setMode('excel-to-other'); setFile(null); setResult(null); }}
+                        onClick={() => { setMode('excel-to-other'); clear(); setResult(null); }}
                         className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Excel → Other
                     </button>
                     <button
-                        onClick={() => { setMode('other-to-excel'); setFile(null); setResult(null); }}
+                        onClick={() => { setMode('other-to-excel'); clear(); setResult(null); }}
                         className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Other → Excel
@@ -309,7 +312,7 @@ export const SpreadsheetTools: React.FC = () => {
 
                         <div className="mt-4 flex justify-between items-center text-xs text-zinc-500">
                             <span>Preview shows first 1000 characters</span>
-                            <button onClick={() => { setResult(null); setFile(null); }} className="text-zinc-400 hover:text-white">Convert another</button>
+                            <button onClick={() => { setResult(null); clear(); }} className="text-zinc-400 hover:text-white">Convert another</button>
                         </div>
                     </div>
                 </div>

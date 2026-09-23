@@ -1,6 +1,5 @@
 /// <reference lib="dom" />
 import React, { useState } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
@@ -12,6 +11,8 @@ import Papa from 'papaparse';
 import * as pdfjsLib from 'pdfjs-dist';
 import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
 import { logToolFailure } from '../../utils/toolHealth';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 
 // Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
 setupPdfWorker();
@@ -143,7 +144,7 @@ const FORMAT_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export const FileToMarkdown: React.FC = () => {
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [markdown, setMarkdown] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -151,7 +152,8 @@ export const FileToMarkdown: React.FC = () => {
 
     const handleFileSelect = (f: FileData | FileData[]) => {
         const selected = Array.isArray(f) ? f[0] : f;
-        setFile(selected);
+        if (!selected) return;
+        select(selected);
         setMarkdown('');
         setError(null);
     };
@@ -195,7 +197,7 @@ export const FileToMarkdown: React.FC = () => {
     };
 
     const handleReset = () => {
-        setFile(null);
+        clear();
         setMarkdown('');
         setError(null);
     };
@@ -203,51 +205,25 @@ export const FileToMarkdown: React.FC = () => {
     const ext = file?.file.name.split('.').pop()?.toLowerCase() ?? '';
     const fmt = FORMAT_LABELS[ext];
 
-    if (!file) {
-        return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <FileText size={32} /> File to Markdown
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Convert PDFs, DOCX, CSV, HTML, and more into clean Markdown — all in-browser.
-                    </p>
-                </div>
-
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept={ACCEPTED}
-                        label="Drop any document"
-                        description="PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, MD"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: FileText, label: 'PDF / DOCX', desc: 'Extract content' },
-                        { icon: FileJson, label: 'CSV / JSON', desc: 'Tables & data' },
-                        { icon: FileCode, label: 'HTML / XML', desc: 'Strip tags' },
-                        { icon: Download, label: 'Clean .md', desc: 'Download instantly' },
-                    ].map((f, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400"><f.icon size={20} /></div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{f.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{f.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] min-h-[600px] flex flex-col gap-4 animate-slide-up">
+        <ToolShell
+            icon={FileText}
+            title="File to Markdown"
+            description="Convert PDFs, DOCX, CSV, HTML, and more into clean Markdown — all in-browser."
+            features={[
+                { icon: FileText, label: 'PDF / DOCX', desc: 'Extract content' },
+                { icon: FileJson, label: 'CSV / JSON', desc: 'Tables & data' },
+                { icon: FileCode, label: 'HTML / XML', desc: 'Strip tags' },
+                { icon: Download, label: 'Clean .md', desc: 'Download instantly' },
+            ]}
+            file={file}
+            accept={ACCEPTED}
+            uploadLabel="Drop any document"
+            uploadDescription="PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, MD"
+            onFileSelect={handleFileSelect}
+            error={error}
+        >
+            <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] min-h-[600px] flex flex-col gap-4 animate-slide-up">
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-3">
@@ -321,6 +297,7 @@ export const FileToMarkdown: React.FC = () => {
                     </>
                 )}
             </div>
-        </div>
+            </div>
+        </ToolShell>
     );
 };

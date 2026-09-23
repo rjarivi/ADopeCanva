@@ -1,8 +1,9 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import { Settings, Download, RefreshCcw, Film, Scissors, Type, Clock, CheckCircle, AlertCircle, Loader2, ArrowRightLeft, FileVideo } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
@@ -20,7 +21,7 @@ interface VideoToGifProps {
 
 export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) => {
   const isMobile = useIsMobile();
-  const [file, setFile] = useState<FileData | null>(null);
+  const { file, select, clear } = useToolFile();
   const [fps, setFps] = useState(15);
   const [progress, setProgress] = useState(0);
   const [width, setWidth] = useState(480);
@@ -296,51 +297,33 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     );
   }
 
+  const handleFileSelect = (f: FileData | FileData[]) => {
+    const selected = Array.isArray(f) ? f[0] : f;
+    if (!selected) return;
+    select(selected);
+  };
+
   if (!file) {
     return (
-      <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-        {/* Header */}
-        <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-            <Film size={32} /> GIF Generator
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Convert videos to high-quality {outputFormat.toUpperCase()}s with trim and text capabilities.
-          </p>
-        </div>
-
-        {/* Upload Area */}
-        <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <FileUploader
-            onFileSelect={setFile}
-            accept="video/*"
-            label="Upload Video"
-            description="MP4, MOV, AVI"
-            className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-          />
-        </div>
-
-        {/* Feature Highlights */}
-        <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-          {[
-            { icon: Film, label: 'Any Format', desc: 'MP4, MOV, AVI support' },
-            { icon: Scissors, label: 'Smart Trim', desc: 'Select perfect moments' },
-            { icon: Type, label: 'Text Overlay', desc: 'Add captions easily' },
-            { icon: Settings, label: 'Optimize', desc: 'Control size and FPS' }
-          ].map((feat, i) => (
-            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-              <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                <feat.icon size={20} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ToolShell
+        icon={Film}
+        title="GIF Generator"
+        description={`Convert videos to high-quality ${outputFormat.toUpperCase()}s with trim and text capabilities.`}
+        features={[
+          { icon: Film, label: 'Any Format', desc: 'MP4, MOV, AVI support' },
+          { icon: Scissors, label: 'Smart Trim', desc: 'Select perfect moments' },
+          { icon: Type, label: 'Text Overlay', desc: 'Add captions easily' },
+          { icon: Settings, label: 'Optimize', desc: 'Control size and FPS' },
+        ]}
+        file={file}
+        accept="video/*"
+        uploadLabel="Upload Video"
+        uploadDescription="MP4, MOV, AVI"
+        onFileSelect={handleFileSelect}
+        error={errorMessage || null}
+      >
+        <></>
+      </ToolShell>
     );
   }
 
@@ -355,7 +338,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
           <h2 className="flex items-center gap-2 font-black text-xs text-indigo-400 uppercase tracking-widest font-unbounded">
             <Film size={20} /> {outputFormat.toUpperCase()} Generator
           </h2>
-          <Button variant="ghost" size="sm" onClick={() => { setFile(null); setIsDone(false); setGifUrl(null); }}>
+          <Button variant="ghost" size="sm" onClick={() => { clear(); setIsDone(false); setGifUrl(null); }}>
             <RefreshCcw size={14} />
           </Button>
         </div>

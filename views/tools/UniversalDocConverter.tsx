@@ -21,6 +21,8 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import ePub from 'epubjs';
 import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
 import { logToolFailure } from '../../utils/toolHealth';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 
 // Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
 setupPdfWorker();
@@ -36,7 +38,7 @@ type ConversionType =
     'mobi-to-pdf' | 'fb2-to-pdf' | 'epub-to-docx';
 
 export const UniversalDocConverter: React.FC = () => {
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [conversionType, setConversionType] = useState<ConversionType>('docx-to-pdf');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -47,14 +49,16 @@ export const UniversalDocConverter: React.FC = () => {
     // Hidden preview container for HTML-to-PDF rendering
     const previewRef = useRef<HTMLDivElement>(null);
 
-    const handleFileSelect = (newFile: FileData) => {
-        setFile(newFile);
+    const handleFileSelect = (newFile: FileData | FileData[]) => {
+        const selected = Array.isArray(newFile) ? newFile[0] : newFile;
+        if (!selected) return;
+        select(selected);
         setResultUrl(null);
         setError(null);
         setProgress(0);
 
         // Auto-detect best conversion
-        const ext = newFile.file.name.split('.').pop()?.toLowerCase();
+        const ext = selected.file.name.split('.').pop()?.toLowerCase();
         if (ext === 'docx') setConversionType('docx-to-pdf');
         else if (ext === 'md') setConversionType('md-to-pdf');
         else if (ext === 'html') setConversionType('html-to-pdf');
@@ -454,49 +458,25 @@ export const UniversalDocConverter: React.FC = () => {
 
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Layers size={32} /> Universal Doc Converter
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Convert Ebooks, PDFs, Docs, and Images locally.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
-                        label="Upload Document"
-                        description="DOCX, PDF, EPUB, HEIC, and more..."
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW' },
-                        { icon: FileText, label: 'Documents', desc: 'Word, PDF, MD' },
-                        { icon: ImageIcon, label: 'Images', desc: 'HEIC, PNG, JPG' },
-                        { icon: Layers, label: 'Batch Ready', desc: 'Client-side Only' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Layers}
+                title="Universal Doc Converter"
+                description="Convert Ebooks, PDFs, Docs, and Images locally."
+                features={[
+                    { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW' },
+                    { icon: FileText, label: 'Documents', desc: 'Word, PDF, MD' },
+                    { icon: ImageIcon, label: 'Images', desc: 'HEIC, PNG, JPG' },
+                    { icon: Layers, label: 'Batch Ready', desc: 'Client-side Only' },
+                ]}
+                file={file}
+                accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
+                uploadLabel="Upload Document"
+                uploadDescription="DOCX, PDF, EPUB, HEIC, and more..."
+                onFileSelect={handleFileSelect}
+                error={error}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -510,7 +490,7 @@ export const UniversalDocConverter: React.FC = () => {
                     <Layers size={32} /> Universal Doc Converter
                 </h2>
                 <button
-                    onClick={() => setFile(null)}
+                    onClick={() => clear()}
                     className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full uppercase font-bold tracking-widest text-[10px]"
                 >
                     Back to Upload
@@ -635,7 +615,7 @@ export const UniversalDocConverter: React.FC = () => {
                                 <Download size={24} className="mr-3" /> Download Result
                             </a>
                             <button
-                                onClick={() => { setFile(null); setResultUrl(null); }}
+                                onClick={() => { clear(); setResultUrl(null); }}
                                 className="text-zinc-500 hover:text-white text-base py-4 font-bold transition-colors"
                             >
                                 Convert Another File

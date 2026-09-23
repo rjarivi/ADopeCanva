@@ -11,6 +11,7 @@ import { useIsMobile } from '../../hooks/useIsMobile'
 import { FileData } from '../../types'
 import { useFocusedMode } from '../../contexts/FocusedMode'
 import { logToolFailure } from '../../utils/toolHealth'
+import { useToolFile } from '../../hooks/useToolFile'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -234,7 +235,7 @@ export const DeviceMockup: React.FC = () => {
     const previewRef   = useRef<HTMLDivElement>(null)
     const imageWrapRef = useRef<HTMLDivElement>(null)
 
-    const [fileData, setFileData]   = useState<FileData | null>(null)
+    const { file: fileData, select: selectFile, clear: clearFile } = useToolFile()
     const [imageUrl, setImageUrl]   = useState<string | null>(null)
     const [settings, setSettings]   = useState<Settings>(DEFAULTS)
     const [exporting, setExporting] = useState(false)
@@ -266,18 +267,20 @@ export const DeviceMockup: React.FC = () => {
         setActivePreset(preset.name)
     }
 
-    const handleFile = useCallback((fd: FileData) => {
-        setFileData(fd)
+    const handleFile = useCallback((fd: FileData | FileData[]) => {
+        const selected = Array.isArray(fd) ? fd[0] : fd
+        if (!selected) return
+        selectFile(selected)
         setImageUrl(prev => {
             if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
-            return fd.previewUrl ?? URL.createObjectURL(fd.file);
+            return selected.previewUrl ?? URL.createObjectURL(selected.file);
         })
         setIsExternalImage(false)
         setCorsFallback(false)
     }, [])
 
     const handleReset = () => {
-        setFileData(null)
+        clearFile()
         if (imageUrl && !isExternalImage) URL.revokeObjectURL(imageUrl)
         setImageUrl(null)
         setSettings(DEFAULTS)
@@ -320,7 +323,7 @@ export const DeviceMockup: React.FC = () => {
             // Microlink above is the only capture service; anything else
             // falls through to the upload-your-own-screenshot message.
             if (!shotUrl) throw new Error('Could not capture this URL — try uploading a screenshot directly instead')
-            setFileData({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
+            selectFile({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
             setImageUrl(shotUrl)
             setIsExternalImage(true)
         } catch (err: unknown) {

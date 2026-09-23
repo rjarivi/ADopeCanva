@@ -5,9 +5,9 @@ import {
     Maximize2, RefreshCw, Upload, Wifi, Signal, Battery,
     ZoomIn, ZoomOut, Lock, ChevronDown, Repeat
 } from 'lucide-react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { ToolShell } from '../../components/ToolShell';
 import { FileData } from '../../types';
 import { useFocusedMode } from '../../contexts/FocusedMode';
 
@@ -284,46 +284,24 @@ export const SocialMockupChecker: React.FC = () => {
     // ─── INITIAL UPLOAD STATE (AGENTS.md Compliant) ───────────────────────────
     if (images.length === 0) {
         return (
-            <div className="container mx-auto px-6 h-[85vh] flex flex-col justify-center animate-fade-in text-center">
-                <div className="flex-none space-y-3 mb-8">
-                    <h2 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-pink-400 to-purple-400 flex items-center justify-center gap-3 font-unbounded">
-                        <Smartphone size={36} className="text-indigo-400" /> Social Mockup Checker
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Upload your story image or video to check Instagram safe zones and preview real UI overlays inside a 3D mobile mockup.
-                    </p>
-                </div>
-
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFilesSelect}
-                        accept="image/*"
-                        label="Upload Story Design or Carousel Slides"
-                        description="PNG, JPG, WebP — Upload 1 or multiple images"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                    {[
-                        { icon: Eye, label: 'Safe Zone Guides', desc: '155px Top/Bottom Margins' },
-                        { icon: Layers, label: 'Real Instagram UI', desc: 'Authentic 9:16 Overlays' },
-                        { icon: Smartphone, label: 'Phone Mockup Stage', desc: 'Sleek 2026 Mobile Frames' },
-                        { icon: Sparkles, label: 'Instant 4K Export', desc: 'Client-Ready PNGs' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group">
-                            <div className="p-2.5 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1 group-hover:text-zinc-400 transition-colors">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Smartphone}
+                title="Social Mockup Checker"
+                description="Upload your story image or video to check Instagram safe zones and preview real UI overlays inside a 3D mobile mockup."
+                features={[
+                    { icon: Eye, label: 'Safe Zone Guides', desc: '155px Top/Bottom Margins' },
+                    { icon: Layers, label: 'Real Instagram UI', desc: 'Authentic 9:16 Overlays' },
+                    { icon: Smartphone, label: 'Phone Mockup Stage', desc: 'Sleek 2026 Mobile Frames' },
+                    { icon: Sparkles, label: 'Instant 4K Export', desc: 'Client-Ready PNGs' },
+                ]}
+                file={[]}
+                accept="image/*"
+                uploadLabel="Upload Story Design or Carousel Slides"
+                uploadDescription="PNG, JPG, WebP — Upload 1 or multiple images"
+                onFileSelect={handleFilesSelect}
+            >
+                <></>
+            </ToolShell>
         );
     }
 

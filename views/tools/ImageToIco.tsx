@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     Image as ImageIcon, Download, CheckCircle, RefreshCcw,
     FileArchive, Zap, Sparkles, Globe, Copy, Check,
@@ -175,12 +176,14 @@ function PreviewSizes({ imgSrc }: { imgSrc: string }) {
 // --- Main Component ---
 
 export const ImageToIco: React.FC = () => {
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [imgSrc, setImgSrc] = useState<string | null>(null);
 
-    const handleFileSelect = async (selectedFile: FileData) => {
-        const processed = await preprocessImageFileData(selectedFile);
-        setFile(processed);
+    const handleFileSelect = async (selectedFile: FileData | FileData[]) => {
+        const first = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+        if (!first) return;
+        const processed = await preprocessImageFileData(first);
+        select(processed);
     };
 
     const [bundleMode, setBundleMode] = useState(true);
@@ -305,7 +308,7 @@ export const ImageToIco: React.FC = () => {
 
     const handleReset = () => {
         if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-        setFile(null);
+        clear();
         setImgSrc(null);
         setIsDone(false);
         setIsProcessing(false);
@@ -322,60 +325,38 @@ export const ImageToIco: React.FC = () => {
     // --- Upload screen ---
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <ImageIcon size={32} /> Favicon Generator
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Convert any image into pixel-perfect favicons and app icons. Full SEO bundle or single ICO — all in your browser.
+            <ToolShell
+                icon={ImageIcon}
+                title="Favicon Generator"
+                description="Convert any image into pixel-perfect favicons and app icons. Full SEO bundle or single ICO — all in your browser."
+                features={[
+                    { icon: Zap, label: 'Instant & Private', desc: 'No server uploads' },
+                    { icon: Package, label: 'Full SEO Bundle', desc: 'ICO + PNG + Manifest' },
+                    { icon: Globe, label: 'App Icon Sizes', desc: 'iOS, Android, PWA' },
+                    { icon: Sparkles, label: 'Transparency', desc: 'Alpha preserved' },
+                ]}
+                file={file}
+                accept="image/*, .heic, .heif, .avif"
+                uploadLabel="Upload Image"
+                uploadDescription="Supports JPG, PNG, WEBP, AVIF, HEIC, SVG"
+                onFileSelect={handleFileSelect}
+                footer={
+                    <p className="text-xs text-zinc-600">
+                        Inspired by{' '}
+                        <a
+                            href="https://github.com/atybdot/favcn"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-zinc-500 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
+                        >
+                            favcn <ExternalLink size={10} />
+                        </a>
+                        {' '}— open source favicon generator
                     </p>
-                </div>
-
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept="image/*, .heic, .heif, .avif"
-                        label="Upload Image"
-                        description="Supports JPG, PNG, WEBP, AVIF, HEIC, SVG"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Zap, label: 'Instant & Private', desc: 'No server uploads' },
-                        { icon: Package, label: 'Full SEO Bundle', desc: 'ICO + PNG + Manifest' },
-                        { icon: Globe, label: 'App Icon Sizes', desc: 'iOS, Android, PWA' },
-                        { icon: Sparkles, label: 'Transparency', desc: 'Alpha preserved' },
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors cursor-default group">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400 group-hover:scale-110 group-hover:bg-indigo-500/20 transition-all">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1 group-hover:text-zinc-400 transition-colors">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Credit */}
-                <p className="mt-6 text-xs text-zinc-600">
-                    Inspired by{' '}
-                    <a
-                        href="https://github.com/atybdot/favcn"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-zinc-500 hover:text-indigo-400 transition-colors inline-flex items-center gap-1"
-                    >
-                        favcn <ExternalLink size={10} />
-                    </a>
-                    {' '}— open source favicon generator
-                </p>
-            </div>
+                }
+            >
+                <></>
+            </ToolShell>
         );
     }
 

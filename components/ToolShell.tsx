@@ -23,6 +23,10 @@ interface ToolShellProps {
     uploadDescription?: string;
     onFileSelect: (file: FileData | FileData[]) => void;
     error?: string | null;
+    /** Optional line under the feature grid (credits, attributions). */
+    footer?: React.ReactNode;
+    /** Optional block between the header and the upload area (e.g. model pickers). */
+    headerExtra?: React.ReactNode;
     children: React.ReactNode;
 }
 
@@ -43,6 +47,8 @@ export const ToolShell: React.FC<ToolShellProps> = ({
     uploadDescription,
     onFileSelect,
     error,
+    footer,
+    headerExtra,
     children,
 }) => {
     const hasFile = Array.isArray(file) ? file.length > 0 : !!file;
@@ -60,6 +66,11 @@ export const ToolShell: React.FC<ToolShellProps> = ({
                     </p>
                     {error && <p className="text-red-400 text-sm">{error}</p>}
                 </div>
+                {headerExtra && (
+                    <div className="flex-none w-full max-w-4xl mx-auto mb-6">
+                        {headerExtra}
+                    </div>
+                )}
                 <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
                     <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -84,6 +95,11 @@ export const ToolShell: React.FC<ToolShellProps> = ({
                         </div>
                     ))}
                 </div>
+                {footer && (
+                    <div className="flex-none max-w-4xl mx-auto w-full mt-6 text-center">
+                        {footer}
+                    </div>
+                )}
             </div>
         );
     }

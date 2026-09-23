@@ -1,8 +1,9 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     Play, Pause, Scissors, Film, Volume2, VolumeX, RotateCcw, Loader2,
     AlertCircle, Download, Settings, Trash2, Undo2, Maximize, Clock,
@@ -62,7 +63,7 @@ export const VideoTrimmer: React.FC = () => {
     const isMobile = useIsMobile();
 
     // Source File & Video State
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
@@ -530,52 +531,33 @@ export const VideoTrimmer: React.FC = () => {
     }
 
     // Clean Golden-Standard Upload Landing Page
+    const handleFileSelect = (f: FileData | FileData[]) => {
+        const selected = Array.isArray(f) ? f[0] : f;
+        if (!selected) return;
+        select(selected);
+    };
+
     if (!file || !videoUrl) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
-                        <div className="text-indigo-500"><Scissors size={32} /></div>
-                        <span className="text-white">Video Trimmer</span>
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Trim, cut, and export high-quality video clips with frame precision.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={setFile}
-                        accept="video/*"
-                        label="Upload Video Clip"
-                        description="MP4, MOV, WEBM, MKV up to 500MB"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Film, label: 'Filmstrip Scrubber', desc: 'Visual timeline navigation' },
-                        { icon: Scissors, label: 'Frame Precision', desc: 'Millisecond cuts' },
-                        { icon: Clock, label: 'Smart Presets', desc: '15s Stories / 30s TikTok' },
-                        { icon: Download, label: 'Multi-Format', desc: 'MP4, WebM, GIF, MP3' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Scissors}
+                title="Video Trimmer"
+                description="Trim, cut, and export high-quality video clips with frame precision."
+                features={[
+                    { icon: Film, label: 'Filmstrip Scrubber', desc: 'Visual timeline navigation' },
+                    { icon: Scissors, label: 'Frame Precision', desc: 'Millisecond cuts' },
+                    { icon: Clock, label: 'Smart Presets', desc: '15s Stories / 30s TikTok' },
+                    { icon: Download, label: 'Multi-Format', desc: 'MP4, WebM, GIF, MP3' },
+                ]}
+                file={file}
+                accept="video/*"
+                uploadLabel="Upload Video Clip"
+                uploadDescription="MP4, MOV, WEBM, MKV up to 500MB"
+                onFileSelect={handleFileSelect}
+                error={errorMessage || null}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -617,7 +599,7 @@ export const VideoTrimmer: React.FC = () => {
                         <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => setFile(null)}
+                            onClick={() => clear()}
                             className="text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-indigo-500/50 rounded-xl px-3 py-1.5 flex items-center gap-1.5"
                             title="Upload New Video"
                         >

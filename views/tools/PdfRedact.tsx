@@ -1,5 +1,4 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import {
@@ -12,6 +11,8 @@ import { jsPDF } from 'jspdf';
 import { PDFDocument, rgb } from 'pdf-lib';
 import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
 import { logToolFailure } from '../../utils/toolHealth';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 
 setupPdfWorker();
 
@@ -66,7 +67,7 @@ export const PdfRedact: React.FC = () => {
     const isMobile = useIsMobile();
 
     // PDF state
-    const [file, setFile]                 = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [rawBytes, setRawBytes]         = useState<ArrayBuffer | null>(null);
     const [pageCount, setPageCount]       = useState(0);
     const [currentPage, setCurrentPage]   = useState(1);
@@ -95,7 +96,7 @@ export const PdfRedact: React.FC = () => {
 
     // ── Load PDF ──────────────────────────────────────────────────────────────
     const handleFile = useCallback(async (fd: FileData) => {
-        setFile(fd); setIsLoading(true); setError('');
+        select(fd); setIsLoading(true); setError('');
         setPages(new Map()); setRedactions(new Map());
         setCurrentPage(1); setLoadProgress(0); setRawBytes(null);
         let doc: pdfjsLib.PDFDocumentProxy | null = null;
@@ -131,7 +132,7 @@ export const PdfRedact: React.FC = () => {
             if (doc) { try { await doc.destroy(); } catch { /* ignore */ } }
             setIsLoading(false);
         }
-    }, []);
+    }, [select]);
 
     // ── Redraw visible canvas ─────────────────────────────────────────────────
     const pageImgCache = useRef<HTMLImageElement | null>(null);
@@ -388,7 +389,7 @@ export const PdfRedact: React.FC = () => {
     };
 
     const reset = () => {
-        setFile(null); setRawBytes(null); setPageCount(0); setPages(new Map());
+        clear(); setRawBytes(null); setPageCount(0); setPages(new Map());
         setRedactions(new Map()); setCurrentPage(1); setError('');
     };
 
@@ -450,44 +451,28 @@ export const PdfRedact: React.FC = () => {
         finally { setIsExporting(false); }
     };
 
-    // ── Pre-upload landing ────────────────────────────────────────────────────
+    // ── Pre-upload landing (standard ToolShell) ─────────────────────────────
     if (!file && !isLoading) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                <div className="flex-none space-y-3 mb-10">
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight flex items-center justify-center gap-4 font-unbounded">
-                        <div className="text-indigo-400"><EyeOff size={42} /></div>
-                        <span className="text-white">PDF Redactor</span>
-                    </h1>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto font-medium">
-                        Draw black bars over sensitive information. Choose normal or true permanent redaction.
-                    </p>
-                    {error && <p className="text-red-400 text-sm">{error}</p>}
-                </div>
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader onFileSelect={handleFile} accept=".pdf,application/pdf" multiple={false}
-                        label="Drop a PDF to start redacting" description="All processing happens in your browser — nothing is uploaded"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all" />
-                </div>
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                    {[
-                        { icon: EyeOff,      label: 'Draw Redactions', desc: 'Drag to cover any area' },
-                        { icon: Shield,      label: 'Normal Mode',     desc: 'Keeps PDF quality & size' },
-                        { icon: Lock,        label: 'True Redact',     desc: 'Text permanently destroyed' },
-                        { icon: ShieldCheck, label: 'AI-proof',        desc: 'No text layer in output' },
-                    ].map((f, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-5 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors group">
-                            <div className="p-3 bg-zinc-900 rounded-full text-indigo-400 group-hover:scale-110 transition-transform shadow-inner"><f.icon size={20} /></div>
-                            <div>
-                                <h3 className="text-xs font-black text-zinc-300 uppercase tracking-wider font-unbounded">{f.label}</h3>
-                                <p className="text-[9px] text-zinc-500 font-bold uppercase mt-1 tracking-tight">{f.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={EyeOff}
+                title="PDF Redactor"
+                description="Draw black bars over sensitive information. Choose normal or true permanent redaction."
+                features={[
+                    { icon: EyeOff, label: 'Draw Redactions', desc: 'Drag to cover any area' },
+                    { icon: Shield, label: 'Normal Mode', desc: 'Keeps PDF quality & size' },
+                    { icon: Lock, label: 'True Redact', desc: 'Text permanently destroyed' },
+                    { icon: ShieldCheck, label: 'AI-proof', desc: 'No text layer in output' },
+                ]}
+                file={file}
+                accept=".pdf,application/pdf"
+                uploadLabel="Drop a PDF to start redacting"
+                uploadDescription="All processing happens in your browser — nothing is uploaded"
+                onFileSelect={handleFile}
+                error={error || null}
+            >
+                <></>
+            </ToolShell>
         );
     }
 

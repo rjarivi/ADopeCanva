@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     AudioWaveform, Download, BarChart3, Palette, Ruler,
     Image as ImageIcon, RefreshCcw, Loader2, Zap, Copy, Check,
@@ -153,7 +154,7 @@ export const AudioWaveformExporter: React.FC = () => {
     const isMobile = useIsMobile();
 
     // Core state
-    const [file, setFile]         = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [waveData, setWaveData] = useState<number[]>([]);
     const [rawAudioData, setRawAudioData] = useState<Float32Array | null>(null);
     const [isDecoding, setIsDecoding] = useState(false);
@@ -245,13 +246,15 @@ export const AudioWaveformExporter: React.FC = () => {
         }
     }, [samples, rawAudioData, computeWaveData]);
 
-    const handleFile  = useCallback((fd: FileData) => { 
-        setFile(fd); decodeAudio(fd); 
-        const url = URL.createObjectURL(fd.file);
+    const handleFile  = useCallback((fd: FileData | FileData[]) => {
+        const selected = Array.isArray(fd) ? fd[0] : fd;
+        if (!selected) return;
+        select(selected); decodeAudio(selected);
+        const url = URL.createObjectURL(selected.file);
         setAudioUrl(url);
-    }, [decodeAudio]);
-    const reset       = useCallback(() => { 
-        setFile(null); setWaveData([]); setRawAudioData(null); setError(''); 
+    }, [decodeAudio, select]);
+    const reset       = useCallback(() => {
+        clear(); setWaveData([]); setRawAudioData(null); setError('');
         if (audioUrl) URL.revokeObjectURL(audioUrl);
         setAudioUrl(null);
         setIsPlaying(false);
