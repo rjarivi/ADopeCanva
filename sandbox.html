@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <!--
+    Phase 2 sandbox document. This page hosts ONE community tool inside an
+    <iframe sandbox="allow-scripts allow-downloads"> WITHOUT allow-same-origin,
+    so the tool runs at an opaque origin: no parent DOM, no cookies/storage,
+    no parent JS access. Network here is deliberately narrower than the main
+    app (no analytics, ads, or secrets endpoints) — declared tool hosts only.
+    Parent<->child talk exclusively via the postMessage protocol in
+    components/SandboxedToolFrame.tsx (parent) and sandbox.tsx (child).
+  -->
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self';
+             script-src 'self' blob:;
+             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+             font-src 'self' data: https://fonts.gstatic.com;
+             img-src 'self' data: blob:;
+             worker-src 'self' blob:;
+             media-src 'self' blob: data:;
+             connect-src 'self' blob: data: https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://huggingface.co https://*.huggingface.co https://cdn-lfs.huggingface.co https://hf.co https://*.hf.co;
+             frame-ancestors 'self';">
+  <title>Tool Sandbox</title>
+  <link rel="icon" type="image/svg+xml" href="/adopecanva.svg" />
+  <style>
+    body { margin: 0; background: #09090b; color: #f4f4f5; font-family: system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="sandbox-root"></div>
+  <script type="module" src="/sandbox.tsx"></script>
+</body>
+</html>

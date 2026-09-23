@@ -77,6 +77,12 @@ export interface ToolItem {
   popular?: boolean;
   comingSoon?: boolean;
   swapId?: string;        // ID of the reverse/paired tool (enables swap button)
+  /**
+   * Phase 2 isolation: render inside the opaque-origin sandbox frame
+   * (/sandbox.html) instead of directly. For vetted community tools that
+   * haven't earned full first-party trust yet. Set via manifest.json.
+   */
+  sandbox?: boolean;
   // SEO & Guides fields
   seoTitle?: string;
   metaDescription?: string;

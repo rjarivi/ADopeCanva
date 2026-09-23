@@ -17,6 +17,7 @@ import { Comparison } from './views/Comparison';
 import { ToolLoader } from './components/ToolLoader';
 import { ToolErrorBoundary } from './components/ToolErrorBoundary';
 import { ToolFullscreenButton } from './components/ToolFullscreenButton';
+import { SandboxedToolFrame } from './components/SandboxedToolFrame';
 import { ToolHealth } from './views/ToolHealth';
 import { Guides } from './views/Guides';
 import { CategoryHub } from './views/CategoryHub';
@@ -124,15 +125,19 @@ const ToolRenderer = ({ setActiveCategory }: { setActiveCategory: (cat: string) 
                  * Mobile: natural content flow.
                  */}
                 <div className={focused ? 'h-[100dvh] overflow-hidden bg-zinc-950' : isMobile ? 'pb-20' : 'h-[calc(100vh-128px)] overflow-hidden'}>
-                    <Suspense fallback={
-                        <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
-                            <span className="animate-pulse font-bold uppercase tracking-widest text-xs font-unbounded">Loading tool…</span>
-                        </div>
-                    }>
-                        <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
-                            {tool.component}
-                        </ToolErrorBoundary>
-                    </Suspense>
+                    {tool.sandbox ? (
+                        <SandboxedToolFrame toolId={tool.id} toolTitle={tool.title} className="h-full" />
+                    ) : (
+                        <Suspense fallback={
+                            <div className="h-full flex items-center justify-center text-zinc-500 text-sm">
+                                <span className="animate-pulse font-bold uppercase tracking-widest text-xs font-unbounded">Loading tool…</span>
+                            </div>
+                        }>
+                            <ToolErrorBoundary toolId={tool.id} toolTitle={tool.title}>
+                                {tool.component}
+                            </ToolErrorBoundary>
+                        </Suspense>
+                    )}
                 </div>
 
                 {/* SEO & Guide Sections — below the fold, hidden in fullscreen */}

@@ -10,6 +10,22 @@ community tools, every merged tool is reviewed and shipped as **first-party
 code**. That is why tool PRs go through manifest permissions, CI linting, and
 human diff review (see `CONTRIBUTING.md`).
 
+## Phase 2 sandbox (experimental, opt-in per tool)
+
+Tools with `"sandbox": true` in `tools/<id>/manifest.json` render inside
+`/sandbox.html?tool=<id>` in an `<iframe sandbox="allow-scripts
+allow-downloads">` **without** `allow-same-origin`:
+
+- **opaque origin**: no parent DOM, cookies, storage, or parent JS access;
+- **narrower CSP** than the main app (no analytics, ads, or secret endpoints);
+- **all failure signals** return via `postMessage` and still land in `/health`.
+
+What this does and doesn't mean: the frame contains a tool from a malicious
+PR to *its own* origin — it cannot touch adopecanva.com state or other tools.
+It does **not** make review optional: exfiltration to a *declared* host is
+still possible, so `permissions.network` review and diff review still apply.
+Sandboxed tools graduate to first-party rendering only by maintainer decision.
+
 ## Reporting a vulnerability
 
 - **Do not open a public issue** for anything security-sensitive.

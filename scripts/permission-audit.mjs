@@ -54,6 +54,9 @@ function lintTool(dir) {
     catch (e) { fail(`tools/${dir}/manifest.json: invalid JSON`); return; }
     const declaredHosts = (m.permissions?.network || []).map(String);
     const declaredNpm = (m.permissions?.npm || []).map(String);
+    if (m.sandbox !== undefined && typeof m.sandbox !== 'boolean') {
+        fail(`tools/${dir}: manifest.sandbox must be a boolean`);
+    }
 
     const files = readdirSync(base).filter((f) => f.endsWith('.tsx') || f.endsWith('.ts'));
     if (files.length === 0) { fail(`tools/${dir}: no component source found`); return; }

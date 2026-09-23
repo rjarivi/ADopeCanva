@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.19.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Lock,
+                title: 'Sandboxed Execution for Community Tools (Experimental)',
+                description: 'Tools can now opt into opaque-origin iframe isolation via "sandbox": true — no parent DOM, cookies, or storage access, narrower CSP, failures still reported to /health. Recipe Runner pilots it.',
+                type: 'security'
+            },
+        ]
+    },
+    {
         version: '1.18.0',
         date: 'Sep 23, 2026',
         items: [

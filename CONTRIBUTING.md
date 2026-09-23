@@ -57,6 +57,9 @@ and fill in the PR template checklist.
 - No `eval`, `new Function`, `document.write`, or remote `<script>` injection.
 - Every tool gets a stable `toolId` and reports failures via `logToolFailure`
   so breakage shows up on `/health` before users report it.
+- `sandbox: true` (manifest) renders the tool in the opaque-origin iframe
+  (`/sandbox.html`). New community tools should opt in; graduation to
+  first-party rendering is a maintainer decision, never automatic.
 - No secrets, keys, or tracking endpoints. Ever. See `SECURITY.md`.
 - Changelog entries are generated from manifests at release — don't hand-edit
   `components/Changelog.tsx` in tool PRs.

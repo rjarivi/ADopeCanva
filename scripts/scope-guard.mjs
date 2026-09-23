@@ -19,6 +19,8 @@ const PROTECTED = [
     'wrangler.toml',
     'App.tsx',
     'index.tsx',
+    'sandbox.html',
+    'sandbox.tsx',
     'types.ts',
     'views/Dashboard.tsx',
     'components/Changelog.tsx',

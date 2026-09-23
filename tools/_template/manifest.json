@@ -17,6 +17,7 @@
   ],
   "privacyNotes": "Files are processed locally in your browser. Nothing is uploaded.",
   "keywords": [],
+  "sandbox": true,
   "permissions": {
     "network": [],
     "npm": []

@@ -29,6 +29,12 @@ export default defineConfig(({ mode }) => {
     plugins: [tailwindcss(), react(), crossOriginIsolation()],
     build: {
       rollupOptions: {
+        // Phase 2 sandbox: standalone entry so community tools can run at
+        // an opaque origin (/sandbox.html?tool=<id>), isolated from the app.
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          sandbox: path.resolve(__dirname, 'sandbox.html'),
+        },
         output: {
           // Deterministic chunk names: vendors keep their URLs across
           // deploys (long-term caching), tools split per manifest entry.

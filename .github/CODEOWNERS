@@ -8,6 +8,8 @@
 /vite.config.ts @rjarivi
 /tsconfig.json @rjarivi
 /index.html @rjarivi
+/sandbox.html @rjarivi
+/sandbox.tsx @rjarivi
 /wrangler.toml @rjarivi
 /App.tsx @rjarivi
 /index.tsx @rjarivi
@@ -15,6 +17,7 @@
 /views/Dashboard.tsx @rjarivi
 /views/*.tsx @rjarivi
 /components/Changelog.tsx @rjarivi
+/components/SandboxedToolFrame.tsx @rjarivi
 /utils/analytics.ts @rjarivi
 /utils/seoHelper.ts @rjarivi
 /utils/ffmpeg.ts @rjarivi
