@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.18.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'Unified Tool Framework Rollout',
+                description: 'All 34 file-based tools now share the standard ToolShell upload view and leak-free useToolFile state — consistent headers, feature grids, error display, and automatic preview-URL cleanup everywhere, plus footer/header slots for credits and model pickers.',
+                type: 'update'
+            },
+        ]
+    },
+    {
         version: '1.17.0',
         date: 'Sep 23, 2026',
         items: [
