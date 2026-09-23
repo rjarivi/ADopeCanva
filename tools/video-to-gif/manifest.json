@@ -34,7 +34,9 @@
   "privacyNotes": "Processing happens entirely in your browser. Your video files are never uploaded to our servers.",
   "order": 9,
   "permissions": {
-    "network": [],
+    "network": [
+      "cdn.jsdelivr.net"
+    ],
     "npm": []
   }
 }

@@ -38,6 +38,9 @@ jobs:
       - name: Permission lint (manifest vs code, recipes schema)
         run: npm run audit:permissions
 
+      - name: CSP coverage (code hosts must be in CSP)
+        run: npm run audit:csp
+
       - name: Scope guard (tool PRs cannot touch the shell)
         if: github.event_name == 'pull_request'
         env:

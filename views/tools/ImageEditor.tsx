@@ -2322,7 +2322,7 @@ export const ImageEditor: React.FC = () => {
                         <div className="flex items-center gap-2 mr-4">
                             <span className="text-xs text-zinc-500">Canvas BG:</span>
                             <div
-                                className={`w-6 h-6 rounded border cursor-pointer ${bgColor === 'transparent' ? 'bg-[url(https://www.transparenttextures.com/patterns/checkerboard.png)]' : ''}`}
+                                className={`w-6 h-6 rounded border cursor-pointer ${bgColor === 'transparent' ? 'bg-checkerboard' : ''}`}
                                 style={{ backgroundColor: bgColor !== 'transparent' ? bgColor : undefined }}
                                 onClick={() => setBgColor(prev => prev === 'transparent' ? '#ffffff' : prev === '#ffffff' ? '#000000' : 'transparent')}
                                 title="Click to toggle: Transparent -> White -> Black"
@@ -2362,7 +2362,7 @@ export const ImageEditor: React.FC = () => {
                             ref={canvasRef}
                             width={canvasSize.width}
                             height={canvasSize.height}
-                            className={`block w-full h-full bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] ${isDragging ? 'cursor-grabbing' : isCanvasLocked ? 'cursor-not-allowed' : 'cursor-grab'}`}
+                            className={`block w-full h-full bg-checkerboard ${isDragging ? 'cursor-grabbing' : isCanvasLocked ? 'cursor-not-allowed' : 'cursor-grab'}`}
                             onMouseDown={(e) => {
                                 if (isCanvasLocked) return;
                                 const rect = canvasRef.current?.getBoundingClientRect();

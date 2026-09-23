@@ -1,12 +1,12 @@
 {
   "id": "mockup-generator",
   "title": "Mockup Generator",
-  "description": "Drop your screenshot into a cinematic device frame — iPhone, Android, iPad, MacBook, Browser, or Window.",
+  "description": "Drop your screenshot into a cinematic device frame \u2014 iPhone, Android, iPad, MacBook, Browser, or Window.",
   "category": "Image",
   "icon": "Smartphone",
   "popular": true,
   "guideTitle": "How to create device mockups from screenshots",
-  "guideContent": "Upload any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3× resolution — all client-side with no uploads required.",
+  "guideContent": "Upload any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3\u00d7 resolution \u2014 all client-side with no uploads required.",
   "faqs": [
     {
       "question": "What image formats are supported?",
@@ -14,15 +14,15 @@
     },
     {
       "question": "Can I export with a transparent background?",
-      "answer": "Yes — choose the \"None\" background preset and export as PNG to get a transparent background behind the device frame."
+      "answer": "Yes \u2014 choose the \"None\" background preset and export as PNG to get a transparent background behind the device frame."
     },
     {
       "question": "What does the export scale mean?",
-      "answer": "1× outputs 1200×900 px, 2× outputs 2400×1800 px, and 3× outputs 3600×2700 px. Use 2× or 3× for sharp, retina-quality images."
+      "answer": "1\u00d7 outputs 1200\u00d7900 px, 2\u00d7 outputs 2400\u00d71800 px, and 3\u00d7 outputs 3600\u00d72700 px. Use 2\u00d7 or 3\u00d7 for sharp, retina-quality images."
     },
     {
       "question": "Is my screenshot uploaded anywhere?",
-      "answer": "No — all rendering happens locally in your browser using the Canvas API. Your screenshots never leave your device."
+      "answer": "No \u2014 all rendering happens locally in your browser using the Canvas API. Your screenshots never leave your device."
     }
   ],
   "specs": [
@@ -40,7 +40,7 @@
     },
     {
       "label": "Max resolution",
-      "value": "3× (3600 × 2700 px)"
+      "value": "3\u00d7 (3600 \u00d7 2700 px)"
     },
     {
       "label": "Engine",
@@ -50,7 +50,9 @@
   "privacyNotes": "All mockup rendering is performed locally in your browser using the Canvas API. No screenshots or generated images are sent to any server.",
   "order": 6,
   "permissions": {
-    "network": [],
+    "network": [
+      "api.microlink.io"
+    ],
     "npm": []
   }
 }

@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.15.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Lock,
+                title: 'CSP Now Enforced by CI',
+                description: 'Every network/image host in code and manifests must be covered by the Content-Security-Policy or CI fails. Cleanup removed dead avatar/thumbnail hosts, fixed silently-blocked GIF captions and transparency grids, and declared per-tool network permissions.',
+                type: 'security'
+            },
+        ]
+    },
+    {
         version: '1.14.0',
         date: 'Sep 23, 2026',
         items: [

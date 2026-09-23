@@ -34,7 +34,9 @@
   "privacyNotes": "GIF frame extraction and re-assembly are done locally via WebAssembly.",
   "order": 2,
   "permissions": {
-    "network": [],
+    "network": [
+      "cdn.jsdelivr.net"
+    ],
     "npm": []
   }
 }

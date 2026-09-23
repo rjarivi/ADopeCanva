@@ -87,7 +87,7 @@ export const GifEditor: React.FC = () => {
 
     const loadFont = async (ffmpeg: FFmpeg) => {
         try {
-            const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf';
+            const fontUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/roboto/Roboto-Bold.ttf';
             const fontBlob = await fetch(fontUrl).then(r => r.blob());
             const fontData = await fontBlob.arrayBuffer();
             await ffmpeg.writeFile('font.ttf', new Uint8Array(fontData));

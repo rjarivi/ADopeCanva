@@ -447,7 +447,7 @@ export const ImageCropper: React.FC = () => {
                     <Check size={40} />
                 </div>
                 <h2 className="text-3xl font-black text-white font-unbounded">Image Ready!</h2>
-                <div className="bg-surface p-2 rounded-2xl border border-zinc-800 inline-block shadow-2xl relative bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
+                <div className="bg-surface p-2 rounded-2xl border border-zinc-800 inline-block shadow-2xl relative bg-checkerboard">
                     <img
                         src={croppedImage}
                         alt="Result"

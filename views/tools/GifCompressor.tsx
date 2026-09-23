@@ -314,7 +314,7 @@ export const GifCompressor: React.FC = () => {
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                 <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-checkerboard flex items-center justify-center">
                         <img src={resultUrl || file.previewUrl} className={`max-w-full max-h-full object-contain transition-opacity duration-500 ${isProcessing ? 'opacity-30' : 'opacity-100'}`} alt="Preview" />
 
                         {isProcessing && (

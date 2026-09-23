@@ -121,7 +121,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     try {
       // Load a basic font for text overlay
       // Use a reliable URL for Roboto-Bold
-      const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/Roboto-Bold.ttf';
+      const fontUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/roboto/Roboto-Bold.ttf';
       const fontBlob = await fetch(fontUrl).then(r => {
         if (!r.ok) throw new Error(`Font fetch failed: ${r.statusText} `);
         return r.blob();

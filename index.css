@@ -31,3 +31,14 @@
     100% { transform: scale(1); opacity: 1; }
   }
 }
+
+/* Transparency checkerboard — pure CSS replacement for the old
+   transparenttextures.com background (blocked by CSP, needs no network). */
+.bg-checkerboard {
+  background-color: #27272a;
+  background-image:
+    linear-gradient(45deg, #3f3f46 25%, transparent 25%, transparent 75%, #3f3f46 75%),
+    linear-gradient(45deg, #3f3f46 25%, transparent 25%, transparent 75%, #3f3f46 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+}

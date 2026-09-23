@@ -49,7 +49,7 @@
       {
         "label": "Cost & Credits",
         "values": {
-          "Remove.bg (Legacy Cloud)": "$0.20 – $1.99 per image / Subscription",
+          "Remove.bg (Legacy Cloud)": "$0.20 \u2013 $1.99 per image / Subscription",
           "AdopeCanva Smart BG Remover": "$0 Free Forever (Unlimited images)"
         },
         "highlight": true
@@ -65,7 +65,7 @@
       {
         "label": "Free Export Resolution",
         "values": {
-          "Remove.bg (Legacy Cloud)": "Low-res 0.25MP preview (612×408 px)",
+          "Remove.bg (Legacy Cloud)": "Low-res 0.25MP preview (612\u00d7408 px)",
           "AdopeCanva Smart BG Remover": "Full Source Resolution (Up to 4K+)"
         },
         "highlight": true
@@ -82,7 +82,7 @@
         "label": "Offline Capability",
         "values": {
           "Remove.bg (Legacy Cloud)": "Requires active internet & server API",
-          "AdopeCanva Smart BG Remover": "Cached in browser — works offline"
+          "AdopeCanva Smart BG Remover": "Cached in browser \u2014 works offline"
         }
       },
       {
@@ -155,7 +155,12 @@
   ],
   "order": 8,
   "permissions": {
-    "network": [],
+    "network": [
+      "huggingface.co",
+      "cdn-lfs.huggingface.co",
+      "hf.co",
+      "cdn.jsdelivr.net"
+    ],
     "npm": []
   }
 }
