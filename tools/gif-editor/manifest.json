@@ -1,0 +1,40 @@
+{
+  "id": "gif-editor",
+  "title": "GIF Editor",
+  "description": "Trim, crop, and add text to GIFs.",
+  "category": "Image",
+  "icon": "Edit3",
+  "popular": true,
+  "guideTitle": "How to trim and crop animated GIFs",
+  "guideContent": "Perfect your animations by removing unwanted frames or focusing on a specific area. Our GIF Editor lets you trim the start and end of any GIF with frame precision, ensuring your loops are seamless and engaging.",
+  "faqs": [
+    {
+      "question": "Can I add text to a GIF?",
+      "answer": "Yes, the editor allows adding customizable text layers to your animations."
+    },
+    {
+      "question": "Does editing reduce GIF quality?",
+      "answer": "We use high-quality dithering algorithms to maintain visual integrity during re-encoding."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Frame Limit",
+      "value": "Up to 200 frames per GIF"
+    },
+    {
+      "label": "Tools",
+      "value": "Trim, Crop, Resize, Annotate"
+    },
+    {
+      "label": "Dithering",
+      "value": "Floyd-Steinberg enabled"
+    }
+  ],
+  "privacyNotes": "GIF frame extraction and re-assembly are done locally via WebAssembly.",
+  "order": 2,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

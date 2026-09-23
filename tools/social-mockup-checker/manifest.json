@@ -1,0 +1,51 @@
+{
+  "id": "social-mockup-checker",
+  "title": "Social Mockup Checker",
+  "description": "Preview Instagram Stories, Reels, Feed Posts, Carousels & Ads inside a 3D phone mockup with official Meta safe zone guides.",
+  "category": "Image",
+  "icon": "Smartphone",
+  "guideTitle": "How to preview social media graphics & check safe zones",
+  "guideContent": "Upload your design images or multi-slide carousel images, select your target Instagram/Meta format (Story 9:16, Story Ad 9:16, Feed 4:5, Feed 1:1, Carousel, or Feed Ad), and preview them live inside an interactive 3D mobile phone mockup. Toggle official Meta safe zone guides to ensure top headers, bottom CTA buttons, message reply bars, and profile grid cropping will not obscure your text or logos.",
+  "faqs": [
+    {
+      "question": "What are Meta / Instagram safe zones?",
+      "answer": "Safe zones are the recommended areas inside a story or reel graphic where text and key elements will not be covered by top account headers, status bars, or bottom message reply pills and swipe-up buttons."
+    },
+    {
+      "question": "What is the 1:1 profile grid crop for 4:5 posts?",
+      "answer": "When you post a 4:5 portrait post (1080×1350), Instagram crops the top and bottom ~135px when displaying it in your 1:1 profile grid. The safe zone guide highlights this crop boundary so your grid looks perfect."
+    },
+    {
+      "question": "Can I preview multi-slide carousels?",
+      "answer": "Yes — upload multiple images at once to switch between slides with realistic swipe arrow buttons, pagination dots, and slide counters inside the 3D phone screen."
+    },
+    {
+      "question": "Are my designs uploaded to a server?",
+      "answer": "No — all rendering, 3D transformations, and high-res PNG exports occur entirely client-side in your browser for 100% privacy."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported Formats",
+      "value": "Stories (9:16), Reels, Feed 4:5, Feed 1:1, Carousels, Story Ads, Feed Ads"
+    },
+    {
+      "label": "Export Options",
+      "value": "1×, 2×, 3× Retina PNG (With/Without UI Chrome)"
+    },
+    {
+      "label": "3D Phone Stage",
+      "value": "Interactive Tilt X/Y/Z, Device Finishes, Studio Backdrops"
+    },
+    {
+      "label": "Engine",
+      "value": "HTML Canvas & CSS 3D (100% Client-Side)"
+    }
+  ],
+  "privacyNotes": "All mockup rendering and safe zone checks are processed locally inside your web browser. No graphics or data are sent to external servers.",
+  "order": 63,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

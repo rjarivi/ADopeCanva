@@ -1,0 +1,39 @@
+{
+  "id": "exif-stripper",
+  "title": "EXIF Metadata Stripper",
+  "description": "Inspect camera info, remove GPS geo-tags, and sanitize photos before sharing.",
+  "category": "Image",
+  "icon": "EyeOff",
+  "guideTitle": "How to remove GPS and personal metadata from photos",
+  "guideContent": "Digital photos often contain sensitive metadata including GPS coordinates, camera serial numbers, and exact timestamps. Our EXIF stripper audits these hidden tags and losslessly sanitizes the file without touching pixel quality.",
+  "faqs": [
+    {
+      "question": "Does stripping metadata reduce image quality?",
+      "answer": "No! For JPEG files, our tool performs a lossless binary segment strip that leaves 100% of your pixel data untouched."
+    },
+    {
+      "question": "What metadata is removed?",
+      "answer": "GPS latitude/longitude, camera model, lens specs, shutter speed, ISO, timestamps, and editing software tags."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported Formats",
+      "value": "JPEG, PNG, WebP, TIFF"
+    },
+    {
+      "label": "Stripping Engine",
+      "value": "Lossless Binary Slice & Canvas Sanitizer"
+    },
+    {
+      "label": "Audit Details",
+      "value": "GPS Coordinates, Camera Specs, Timestamps"
+    }
+  ],
+  "privacyNotes": "Your photos are processed entirely on your device. Metadata is stripped locally in memory.",
+  "order": 65,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

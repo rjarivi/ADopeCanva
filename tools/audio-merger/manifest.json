@@ -1,0 +1,39 @@
+{
+  "id": "audio-merger",
+  "title": "Audio Merger",
+  "description": "Join multiple audio files into one track.",
+  "category": "Audio",
+  "icon": "ListMusic",
+  "guideTitle": "How to merge multiple audio files online",
+  "guideContent": "Join multiple songs or voice recordings into a single seamless track. Perfect for creating podcasts, mixed tapes, or long ambient loops. Simply upload your files, arrange them in order, and export as a high-quality MP3.",
+  "faqs": [
+    {
+      "question": "Is there a limit on file count?",
+      "answer": "You can merge up to 20 files at a time."
+    },
+    {
+      "question": "Does it support crossfade?",
+      "answer": "Currently, it joins files end-to-end; crossfade support is in development."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Max Files",
+      "value": "20 concurrent tracks"
+    },
+    {
+      "label": "Dithering",
+      "value": "Enabled for bitrate changes"
+    },
+    {
+      "label": "Output",
+      "value": "Lossless WAV or optimized MP3"
+    }
+  ],
+  "privacyNotes": "Merging is done via your local CPU/RAM using WebAssembly.",
+  "order": 22,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

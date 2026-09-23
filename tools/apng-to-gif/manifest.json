@@ -1,0 +1,32 @@
+{
+  "id": "apng-to-gif",
+  "title": "APNG to GIF",
+  "description": "Convert APNG files to standard GIF.",
+  "swapId": "gif-to-apng",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to convert APNG to GIF for compatibility",
+  "guideContent": "If you need an animation to work on older platforms or email clients that don't support APNG, converting to GIF is the safest choice. Our converter maintains the timing and frame sequence of your original animation.",
+  "faqs": [
+    {
+      "question": "Will I lose quality?",
+      "answer": "GIF is limited to 256 colors, so some color banding may occur if your APNG uses 24-bit color."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "APNG -> GIF"
+    },
+    {
+      "label": "Colors",
+      "value": "Quantized to 256"
+    }
+  ],
+  "privacyNotes": "Conversion is processed via local WebAssembly scripts.",
+  "order": 33,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

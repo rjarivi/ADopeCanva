@@ -1,0 +1,39 @@
+{
+  "id": "pdf-watermark",
+  "title": "PDF Watermark & Numberer",
+  "description": "Add confidential watermarks, text stamps, and page numbers to PDFs.",
+  "category": "Docs",
+  "icon": "Stamp",
+  "guideTitle": "How to add watermarks and page numbers to PDF documents",
+  "guideContent": "Stamp diagonal confidential watermarks (CONFIDENTIAL, DRAFT, SAMPLE) or custom text onto your PDF pages with adjustable opacity and rotation. Also adds headers and footers with flexible page numbering templates.",
+  "faqs": [
+    {
+      "question": "Can I choose which pages get watermarked?",
+      "answer": "Yes, apply to all pages, first page only, odd pages, even pages, or specific ranges."
+    },
+    {
+      "question": "Is my PDF uploaded to a cloud server?",
+      "answer": "No. All stamping and page rendering occurs locally inside your browser using pdf-lib and PDF.js."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Watermark Styles",
+      "value": "Diagonal (45°), Horizontal (0°), Custom Angles"
+    },
+    {
+      "label": "Page Numbering",
+      "value": "Page {n} of {total}, {n}/{total}, Top/Bottom Alignment"
+    },
+    {
+      "label": "Engine",
+      "value": "pdf-lib & PDF.js (100% Client-Side)"
+    }
+  ],
+  "privacyNotes": "No document leaves your browser. All vector stamping happens locally on-device.",
+  "order": 26,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

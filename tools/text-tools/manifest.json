@@ -1,0 +1,40 @@
+{
+  "id": "text-tools",
+  "title": "Fancy Text Generator",
+  "description": "Generate stylish unicode text for social media.",
+  "category": "Text",
+  "icon": "Type",
+  "popular": true,
+  "guideTitle": "Create stylish text for Instagram and social media",
+  "guideContent": "Stand out on social media with unique fonts and stylish unicode characters. Simply type your text, and our generator will provide dozens of creative variations that you can copy and paste directly into your bio, captions, or tweets.",
+  "faqs": [
+    {
+      "question": "Do these fonts work everywhere?",
+      "answer": "Yes, they use standard Unicode characters that are supported by most modern platforms and apps."
+    },
+    {
+      "question": "Are there any weird symbols?",
+      "answer": "We offer a wide variety, from professional-looking bolds to decorative flourishes."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Styles",
+      "value": "50+ Aesthetic font styles"
+    },
+    {
+      "label": "Output",
+      "value": "Unicode-based text"
+    },
+    {
+      "label": "Clipboard",
+      "value": "One-click copy support"
+    }
+  ],
+  "privacyNotes": "Text transformations are performed using client-side JavaScript mappings.",
+  "order": 5,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

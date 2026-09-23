@@ -1,0 +1,27 @@
+{
+  "id": "text-cleaner",
+  "title": "Text Cleaner",
+  "description": "Remove repetitive phrases and clean formatting.",
+  "category": "Text",
+  "icon": "RefreshCcw",
+  "guideTitle": "How to clean and normalize messy text",
+  "guideContent": "Remove extra spaces, empty lines, and repetitive phrases from your documents. Perfect for cleaning up text copied from PDFs, websites, or legacy software.",
+  "faqs": [
+    {
+      "question": "Can I remove duplicates?",
+      "answer": "Yes, the tool includes an option to remove duplicate lines and phrases."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Tools",
+      "value": "Trim, De-duplicate, Line-ending fix"
+    }
+  ],
+  "privacyNotes": "Text is processed locally; no data retention.",
+  "order": 48,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

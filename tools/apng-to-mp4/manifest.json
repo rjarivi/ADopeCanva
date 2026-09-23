@@ -1,0 +1,31 @@
+{
+  "id": "apng-to-mp4",
+  "title": "APNG to MP4",
+  "description": "Convert APNG animations to MP4 video.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to turn APNG animations into MP4 videos",
+  "guideContent": "Convert your high-quality animations into MP4 videos for easy sharing on Instagram, Twitter, or YouTube. MP4 files are universally supported and offer excellent compression for long sequences.",
+  "faqs": [
+    {
+      "question": "Can I use MP4 for transparent backgrounds?",
+      "answer": "Standard MP4 does not support transparency. We recommend WebM for transparent video if needed."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Codec",
+      "value": "H.264 / AVC"
+    },
+    {
+      "label": "Compatibility",
+      "value": "Universal"
+    }
+  ],
+  "privacyNotes": "Transcoding is done locally via FFmpeg.wasm.",
+  "order": 35,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

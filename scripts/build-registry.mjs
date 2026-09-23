@@ -24,6 +24,9 @@ const DASHBOARD_PATH = join(ROOT, 'views/Dashboard.tsx');
 
 const CATEGORIES = ['Video', 'Audio', 'Image', 'Docs', 'Text', 'Developer'];
 
+// Manifest icon names that are local aliases of a different lucide export.
+const LUCIDE_ALIASES = { ImageIcon: 'Image as ImageIcon' };
+
 // Non-tool routes, preserved from the hand-maintained sitemap.
 const STATIC_ROUTES = [
     '/',
@@ -90,6 +93,9 @@ function loadManifests() {
         if (!m.permissions || !Array.isArray(m.permissions.network)) {
             fail(`tools/${dir.name}: manifest.permissions.network must be an array (use [] for offline tools)`);
         }
+        if (m.iconFrom !== undefined && (typeof m.iconFrom !== 'string' || /^https?:/.test(m.iconFrom))) {
+            fail(`tools/${dir.name}: manifest.iconFrom must be a local path, never a URL`);
+        }
         const indexPath = join(TOOLS_DIR, dir.name, 'index.tsx');
         if (!existsSync(indexPath)) fail(`tools/${dir.name}: missing index.tsx (default export)`);
         tools.push(m);
@@ -106,45 +112,45 @@ function dashboardIds() {
 }
 
 function emitRegistry(tools) {
-    const icons = [...new Set(tools.map((t) => t.icon))].sort();
+    // Preserve legacy Dashboard ordering (stable sort under popular-first).
+    const sorted = [...tools].sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999));
+    const lucide = [...new Set(sorted.filter((t) => !t.iconFrom).map((t) => t.icon))].sort()
+        .map((n) => LUCIDE_ALIASES[n] ?? n);
+    const local = sorted.filter((t) => t.iconFrom);
+    const hasLocalIcons = local.length > 0;
     const varName = (id) => id.replace(/[^a-zA-Z0-9]/g, '') + 'Tool';
     const lines = [
         '// GENERATED — do not edit. Run `npm run registry:build`.',
         "// Source of truth: tools/<id>/manifest.json + tools/<id>/index.tsx",
         "import { lazy, createElement } from 'react';",
-        `import { ${icons.join(', ')} } from 'lucide-react';`,
+        ...(lucide.length ? [`import { ${lucide.join(', ')} } from 'lucide-react';`] : []),
+        ...(hasLocalIcons ? [`import type { LucideIcon } from 'lucide-react';`] : []),
+        ...local.map((t) => `import { ${t.icon} } from '../${t.iconFrom}';`),
         "import type { ToolItem } from '../types';",
         "import { ToolCategory } from '../types';",
         '',
-        ...tools.map((t) => `const ${varName(t.id)} = lazy(() => import('../tools/${t.id}/index'));`),
+        ...sorted.map((t) => `const ${varName(t.id)} = lazy(() => import('../tools/${t.id}/index'));`),
         '',
         'export const GENERATED_TOOLS: ToolItem[] = [',
     ];
-    for (const t of tools) {
-        const entry = {
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            category: t.category,
-            guideTitle: t.guideTitle,
-            guideContent: t.guideContent,
-            faqs: t.faqs,
-            specs: t.specs,
-            privacyNotes: t.privacyNotes,
-            seoTitle: t.seoTitle,
-            metaDescription: t.metaDescription,
-            keywords: t.keywords,
-            popular: t.popular,
-        };
-        // Drop undefined keys for a clean diff.
+    for (const t of sorted) {
+        // Pass through every manifest field except the contract internals
+        // (permissions, order, iconFrom) — ToolItem carries the rest (swapId,
+        // subRoutes, keywords, comingSoon, popular, faqs, specs, …).
+        const { permissions, order, iconFrom, id, title, description, category, icon, ...rest } = t;
+        void permissions; void order; void iconFrom;
+        const entry = { id, title, description, ...rest };
         for (const k of Object.keys(entry)) if (entry[k] === undefined) delete entry[k];
-        let json = JSON.stringify({ ...entry, category: `__CAT_${t.category}__` }, null, 4)
-            .replace(/"__CAT_(.+?)__"/g, 'ToolCategory.' + t.category.toUpperCase().replace('DEVELOPER', 'DEV'));
-        lines.push(`    { ...${json}, icon: ${t.icon}, component: createElement(${varName(t.id)}) },`);
+        let json = JSON.stringify({ ...entry, category: `__CAT_${category}__` }, null, 4)
+            .replace(/"__CAT_(.+?)__"/g, 'ToolCategory.' + String(category).toUpperCase().replace('DEVELOPER', 'DEV'));
+        // Custom (non-lucide) icons are plain components — cast to LucideIcon
+        // at the boundary so ToolItem stays strict for everything else.
+        const iconExpr = t.iconFrom ? `${icon} as unknown as LucideIcon` : icon;
+        lines.push(`    { ...${json}, icon: ${iconExpr}, component: createElement(${varName(id)}) },`);
     }
     lines.push('];', '');
     writeFileSync(OUT_PATH, lines.join('\n'));
-    console.log(`wrote ${OUT_PATH} (${tools.length} tool(s))`);
+    console.log(`wrote ${OUT_PATH} (${sorted.length} tool(s))`);
 }
 
 function emitSitemap(dashIds, tools) {

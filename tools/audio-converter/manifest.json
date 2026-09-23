@@ -1,0 +1,40 @@
+{
+  "id": "audio-converter",
+  "title": "Audio Converter",
+  "description": "Convert between MP3, WAV, AAC formats.",
+  "category": "Audio",
+  "icon": "Music",
+  "popular": true,
+  "guideTitle": "Convert high-quality audio files instantly",
+  "guideContent": "Convert your music and voice recordings between all major formats. Whether you need a small MP3 for sharing or a lossless WAV for production, our converter handles the processing with high-fidelity sample rates.",
+  "faqs": [
+    {
+      "question": "Can I convert multiple files at once?",
+      "answer": "Yes, you can select multiple audio files for batch conversion."
+    },
+    {
+      "question": "Is the quality preserved?",
+      "answer": "Yes, we provide options for high bitrate (up to 320kbps) to ensure minimal loss during conversion."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported Formats",
+      "value": "MP3, WAV, AAC, OGG, FLAC"
+    },
+    {
+      "label": "Bitrate Options",
+      "value": "128k, 192k, 256k, 320k"
+    },
+    {
+      "label": "Engine",
+      "value": "FFmpeg.wasm"
+    }
+  ],
+  "privacyNotes": "Your audio files are processed locally. Perfect for sensitive voice memos or unreleased tracks.",
+  "order": 3,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

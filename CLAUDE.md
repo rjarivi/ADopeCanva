@@ -65,7 +65,7 @@
 │   └── feedbackApi.ts         # Google Sheets/Apps Script feedback backend
 │
 ├── views/
-│   ├── Dashboard.tsx          # Core tool grid (legacy inline entries + GENERATED_TOOLS)
+│   ├── Dashboard.tsx          # Core tool grid (reads GENERATED_TOOLS; entries live in tools/)
 │   └── tools/                 # 39 individual tool components
 │
 ├── public/

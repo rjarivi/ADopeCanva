@@ -1,0 +1,32 @@
+{
+  "id": "jpg-to-webp",
+  "title": "JPG to WebP",
+  "description": "Convert JPG images to WebP.",
+  "swapId": "webp-to-jpg",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to convert JPG to WebP for Google PageSpeed",
+  "guideContent": "Converting your product photos from JPG to WebP is one of the easiest ways to improve your Google PageSpeed Insights score. WebP files are smaller, meaning faster load times and better SEO rankings.",
+  "faqs": [
+    {
+      "question": "Will it improve my SEO?",
+      "answer": "Faster page loads are a key ranking factor for Google, so using WebP indirectly boosts your SEO."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "JPG -> WebP"
+    },
+    {
+      "label": "Speed",
+      "value": "Instant"
+    }
+  ],
+  "privacyNotes": "Metadata is stripped by default for privacy and smaller size.",
+  "order": 40,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

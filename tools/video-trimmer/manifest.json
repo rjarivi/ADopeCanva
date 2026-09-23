@@ -1,0 +1,39 @@
+{
+  "id": "video-trimmer",
+  "title": "Video Trimmer",
+  "description": "Cut clips with frame precision and volume control.",
+  "category": "Video",
+  "icon": "Scissors",
+  "guideTitle": "How to trim videos with frame precision",
+  "guideContent": "Remove unwanted parts of your video by setting precise start and end points. Our trimmer provides a high-resolution preview and frame-by-frame control, perfect for creating short clips for TikTok, Instagram, or YouTube Shorts.",
+  "faqs": [
+    {
+      "question": "Does it support 4K?",
+      "answer": "Yes, you can trim 4K videos, though processing speed depends on your device hardware."
+    },
+    {
+      "question": "Can I change the volume?",
+      "answer": "Yes, the trimmer includes volume adjustment and muting options."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "In-browser FFmpeg"
+    },
+    {
+      "label": "Supported Video",
+      "value": "MP4, MOV, WebM"
+    },
+    {
+      "label": "Precision",
+      "value": "Single-frame seeking"
+    }
+  ],
+  "privacyNotes": "Video editing is performed using WebAssembly on your machine. Your data never leaves the browser.",
+  "order": 15,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

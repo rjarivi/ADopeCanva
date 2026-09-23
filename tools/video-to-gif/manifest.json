@@ -1,0 +1,40 @@
+{
+  "id": "video-to-gif",
+  "title": "Video to GIF",
+  "description": "Convert video clips to animated GIFs.",
+  "category": "Video",
+  "icon": "Video",
+  "popular": true,
+  "guideTitle": "How to make high-quality GIFs for Slack/Microsoft Teams",
+  "guideContent": "GIFs are a great way to communicate in Slack or Microsoft Teams. To create a high-quality GIF, upload your video, select the best frame rate (10-15 fps is usually enough for chat), and ensure the file size stayes under 5MB for best performance in messaging apps.",
+  "faqs": [
+    {
+      "question": "Will my video have a watermark?",
+      "answer": "No, AdopeCanva provides watermark-free GIF conversion."
+    },
+    {
+      "question": "What video formats are supported?",
+      "answer": "We support MP4, MOV, AVI, and WebM for conversion to GIF."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Max Upload",
+      "value": "50MB"
+    },
+    {
+      "label": "Output Format",
+      "value": "GIF, MP4"
+    },
+    {
+      "label": "Compatibility",
+      "value": "Chrome, Safari, Edge"
+    }
+  ],
+  "privacyNotes": "Processing happens entirely in your browser. Your video files are never uploaded to our servers.",
+  "order": 9,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

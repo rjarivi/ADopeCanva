@@ -1,0 +1,39 @@
+{
+  "id": "webp-maker",
+  "title": "WebP Maker",
+  "description": "Create animated WebP from images.",
+  "category": "Image",
+  "icon": "Film",
+  "guideTitle": "Create animated WebP for high-performance websites",
+  "guideContent": "WebP is the gold standard for web animations today. Create small, high-quality animated WebP files from your image sequences or videos to ensure your site stays fast.",
+  "faqs": [
+    {
+      "question": "Why use WebP over GIF?",
+      "answer": "WebP files are typically 30-50% smaller than GIFs for the same quality."
+    },
+    {
+      "question": "Is WebP supported everywhere?",
+      "answer": "Yes, all modern browsers have full support for both static and animated WebP."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Compression",
+      "value": "Lossy & Lossless"
+    },
+    {
+      "label": "Features",
+      "value": "Animation + Transparency"
+    },
+    {
+      "label": "Browser Support",
+      "value": "96% of global users"
+    }
+  ],
+  "privacyNotes": "WebP encoding uses your local CPU via WebAssembly.",
+  "order": 37,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

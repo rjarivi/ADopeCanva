@@ -1,0 +1,39 @@
+{
+  "id": "video-to-apng",
+  "title": "Video to APNG",
+  "description": "Convert video clips to APNG animations.",
+  "category": "Video",
+  "icon": "FileVideo",
+  "guideTitle": "Convert Video to APNG with transparency",
+  "guideContent": "Turn your video clips into high-quality APNG loops. Essential for professional web animations where GIF quality is not enough.",
+  "faqs": [
+    {
+      "question": "Can I keep transparency?",
+      "answer": "Yes, if your source video has an alpha channel, it will be preserved."
+    },
+    {
+      "question": "What is the advantage?",
+      "answer": "Lossless quality and superior color compared to GIF."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input",
+      "value": "MP4, MOV, WebM"
+    },
+    {
+      "label": "Transparency",
+      "value": "Preserved"
+    },
+    {
+      "label": "Engine",
+      "value": "FFmpeg.wasm"
+    }
+  ],
+  "privacyNotes": "Processing is performed locally on your device.",
+  "order": 31,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

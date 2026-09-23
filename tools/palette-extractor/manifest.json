@@ -1,0 +1,39 @@
+{
+  "id": "palette-extractor",
+  "title": "Palette Extractor",
+  "description": "Extract dominant color palettes, moods, and CSS variables from images.",
+  "category": "Image",
+  "icon": "Palette",
+  "guideTitle": "How to extract dominant color palettes from any photo",
+  "guideContent": "Drop any image to extract dominant color swatches using Canvas color quantization. Explore different moods (Vibrant, Muted, Light, Dark, Pastel), sample custom points with the interactive eyedropper, and copy CSS variables or Tailwind snippets.",
+  "faqs": [
+    {
+      "question": "What formats can I export?",
+      "answer": "You can copy individual HEX/RGB/HSL values, CSS Variables, Tailwind config, JSON data, or download a high-res PNG swatch card."
+    },
+    {
+      "question": "Can I pick custom colors from the image?",
+      "answer": "Yes! Simply click anywhere on the image preview to sample custom color points."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported Inputs",
+      "value": "PNG, JPG, WebP, AVIF, SVG, GIF"
+    },
+    {
+      "label": "Export Options",
+      "value": "HEX, CSS Variables, Tailwind, JSON, PNG Card"
+    },
+    {
+      "label": "Color Quantization",
+      "value": "Spatial 3D RGB Clustering (100% Local)"
+    }
+  ],
+  "privacyNotes": "Color extraction happens entirely in-browser. No images are uploaded to any server.",
+  "order": 64,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

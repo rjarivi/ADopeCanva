@@ -1,0 +1,39 @@
+{
+  "id": "gif-maker",
+  "title": "GIF Maker",
+  "description": "Create animated GIFs from multiple images.",
+  "category": "Image",
+  "icon": "Film",
+  "guideTitle": "How to create high-quality animated GIFs from images",
+  "guideContent": "Turn your photo collections into engaging animations. Upload a sequence of images, adjust the delay between frames, and export a perfectly looped GIF for social media or presentations.",
+  "faqs": [
+    {
+      "question": "How many images can I add?",
+      "answer": "You can add up to 100 images to a single GIF."
+    },
+    {
+      "question": "Can I reorder frames?",
+      "answer": "Yes, the editor allows drag-and-drop frame reordering."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Interpolation",
+      "value": "Bilinear"
+    },
+    {
+      "label": "Color Palette",
+      "value": "Global and per-frame support"
+    },
+    {
+      "label": "Dithering",
+      "value": "Ordered, Diffusion"
+    }
+  ],
+  "privacyNotes": "GIF assembly is processed entirely in your browser.",
+  "order": 18,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "id": "gradient-creator",
+  "title": "Gradient Creator",
+  "description": "Design linear, radial, and conic gradients and export as PNG.",
+  "category": "Image",
+  "icon": "Palette",
+  "guideTitle": "How to create and export gradient images",
+  "guideContent": "Build beautiful gradients for backgrounds, banners, and UI components. Choose from linear, radial, or conic types, add multiple colour stops, and fine-tune positions. Use built-in presets for instant inspiration, then export at any custom resolution.",
+  "faqs": [
+    {
+      "question": "What sizes can I export?",
+      "answer": "You can choose from common presets (Square, HD, FHD, Story, Banner) or enter any custom width and height."
+    },
+    {
+      "question": "Can I copy the CSS gradient?",
+      "answer": "Yes — the tool shows the equivalent CSS gradient string that you can copy and paste directly into your stylesheet."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Types",
+      "value": "Linear, Radial, Conic"
+    },
+    {
+      "label": "Color stops",
+      "value": "Unlimited, freely positioned"
+    },
+    {
+      "label": "Export",
+      "value": "PNG or JPEG at any resolution"
+    }
+  ],
+  "privacyNotes": "Gradients are rendered on an HTML Canvas in your browser. No data is uploaded.",
+  "order": 58,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "webp-to-mp4",
+  "title": "WebP to MP4",
+  "description": "Convert WebP to MP4 video.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to convert animated WebP to MP4 video",
+  "guideContent": "Turn your animated WebP files into MP4 videos that can be shared on any platform. MP4 is the universal standard for video and works perfectly on mobile devices and all social networks.",
+  "faqs": [
+    {
+      "question": "Can I share these on Instagram?",
+      "answer": "Yes, converting to MP4 makes your animations fully compatible with Instagram and other video-first platforms."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "Animated WebP -> MP4"
+    },
+    {
+      "label": "Codec",
+      "value": "H.264"
+    }
+  ],
+  "privacyNotes": "Conversion is done on your machine via WebAssembly.",
+  "order": 46,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

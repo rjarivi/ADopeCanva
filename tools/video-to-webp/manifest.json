@@ -1,0 +1,35 @@
+{
+  "id": "video-to-webp",
+  "title": "Video to WebP",
+  "description": "Convert video to animated WebP.",
+  "category": "Video",
+  "icon": "FileVideo",
+  "guideTitle": "How to convert Video to Animated WebP",
+  "guideContent": "The best way to display short video loops on websites. Animated WebP offers superior compression and quality compared to GIF or APNG.",
+  "faqs": [
+    {
+      "question": "Can I control the quality?",
+      "answer": "Yes, you can adjust the lossy compression level to balance quality and file size."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Source",
+      "value": "MP4, MOV, WebM"
+    },
+    {
+      "label": "Looping",
+      "value": "Customizable"
+    },
+    {
+      "label": "Output",
+      "value": "Animated WebP"
+    }
+  ],
+  "privacyNotes": "Transcoding happens entirely in your browser.",
+  "order": 38,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

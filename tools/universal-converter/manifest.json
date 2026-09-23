@@ -1,0 +1,39 @@
+{
+  "id": "universal-converter",
+  "title": "Universal Converter",
+  "description": "Convert between JSON, XML, CSV, and YAML.",
+  "category": "Developer",
+  "icon": "ArrowRightLeft",
+  "guideTitle": "How to convert between JSON, XML, and CSV",
+  "guideContent": "Easily transform data between common developer formats. Convert nested JSON into a flat CSV for Excel analysis, or turn XML API responses into readable JSON structures instantly.",
+  "faqs": [
+    {
+      "question": "Does it support large files?",
+      "answer": "Yes, we use streaming parsers to handle large data sets smoothly."
+    },
+    {
+      "question": "Can I minify the output?",
+      "answer": "Yes, you can choose between \"Pretty Print\" for readability or \"Minified\" for performance."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported formats",
+      "value": "JSON, XML, CSV, YAML"
+    },
+    {
+      "label": "Features",
+      "value": "Syntax highlighting, validation"
+    },
+    {
+      "label": "Conversion",
+      "value": "Preserves data types where possible"
+    }
+  ],
+  "privacyNotes": "Data parsing happens in your browser script. No data is transmitted.",
+  "order": 27,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

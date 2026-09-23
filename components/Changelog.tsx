@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.14.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'All 67 Tools Migrated to Manifest Registry',
+                description: 'Every tool now lives in tools/<id>/ with a manifest (metadata, permissions) and lazy-loaded component. The Dashboard registry is fully generated, new tools load on demand, and the sitemap regenerates automatically.',
+                type: 'update'
+            },
+        ]
+    },
+    {
         version: '1.13.0',
         date: 'Sep 23, 2026',
         items: [

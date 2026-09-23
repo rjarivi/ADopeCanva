@@ -1,0 +1,32 @@
+{
+  "id": "png-to-webp",
+  "title": "PNG to WebP",
+  "description": "Convert PNG images to WebP.",
+  "swapId": "webp-to-png",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Convert PNG to WebP while keeping transparency",
+  "guideContent": "WebP supports the same 8-bit alpha transparency as PNG but at a much smaller file size. Convert your UI assets and logos to WebP to speed up your website significantly.",
+  "faqs": [
+    {
+      "question": "Will transparency be lost?",
+      "answer": "No, WebP fully supports transparency (alpha channel)."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "PNG -> WebP"
+    },
+    {
+      "label": "Transparency",
+      "value": "Lossless support"
+    }
+  ],
+  "privacyNotes": "All metadata is handled locally.",
+  "order": 41,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

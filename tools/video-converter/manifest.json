@@ -1,0 +1,40 @@
+{
+  "id": "video-converter",
+  "title": "Video Converter",
+  "description": "Convert MP4, MOV, AVI, GIF, MKV instantly.",
+  "category": "Video",
+  "icon": "ArrowRightLeft",
+  "popular": true,
+  "guideTitle": "Convert videos between any format instantly",
+  "guideContent": "Transform your video files into compatible formats for any device. Convert large MOV files from iPhone to efficient MP4s, or turn videos into WebM for high-performance web use without losing visual quality.",
+  "faqs": [
+    {
+      "question": "What is the fastest format?",
+      "answer": "We recommend MP4 (H.264) for the best balance of speed and compatibility."
+    },
+    {
+      "question": "Can I extract audio?",
+      "answer": "Yes, you can convert video files directly to MP3 or WAV format."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Codecs",
+      "value": "H.264, VP9, AV1, ProRes"
+    },
+    {
+      "label": "Output",
+      "value": "MP4, MOV, WebM, AVI, MKV"
+    },
+    {
+      "label": "Max Filesize",
+      "value": "Browser limited (usually 2GB)"
+    }
+  ],
+  "privacyNotes": "Transcoding is done locally using FFmpeg.wasm. Privacy and speed guaranteed.",
+  "order": 16,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

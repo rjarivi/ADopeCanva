@@ -1,0 +1,161 @@
+{
+  "id": "bg-remover",
+  "title": "Smart BG Remover",
+  "seoTitle": "Best Free Remove.bg Alternative: 100% In-Browser & Private | AdopeCanva",
+  "metaDescription": "Looking for a Remove.bg alternative? Remove image backgrounds online for free with zero server uploads. 100% private, on-device AI neural matting, unlimited full-res PNG downloads.",
+  "description": "Instantly remove image backgrounds locally in your browser with zero server uploads.",
+  "category": "Image",
+  "icon": "Eraser",
+  "keywords": [
+    "remove.bg alternative",
+    "best remove.bg alternative",
+    "free remove bg alternative",
+    "remove.bg shutting down alternative",
+    "remove background free",
+    "remove background online",
+    "transparent background maker",
+    "private background remover",
+    "remove image background no upload",
+    "unlimited background remover",
+    "in-browser background removal"
+  ],
+  "guideTitle": "The #1 Free Remove.bg Alternative: How to Remove Backgrounds 100% Privately",
+  "guideContent": "With Remove.bg shutting down and third-party cloud services charging expensive credit fees or harvesting your private photos, AdopeCanva Smart BG Remover provides the ultimate zero-cost, privacy-first alternative. Running entirely inside your web browser via cutting-edge ONNX neural WebAssembly (Transformers.js MODNet), it cuts out subjects, hair, and complex edges with zero server uploads, zero subscriptions, and unlimited full-resolution transparent PNG exports.",
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Select or Drop Any Image",
+      "description": "Upload your portrait, product photo, graphic, or signature. Files are loaded straight into local browser memory with zero network transmission."
+    },
+    {
+      "stepNumber": 2,
+      "title": "Instant On-Device Neural Matting",
+      "description": "Click \"Remove Background\". The on-device MODNet AI model isolates the subject directly using your computer hardware with no API limits or cloud queues."
+    },
+    {
+      "stepNumber": 3,
+      "title": "Download Full-Resolution Transparent PNG",
+      "description": "Review the crisp cutout with our split before/after slider and download a 32-bit alpha transparent PNG ready for Shopify, Amazon, or graphic design."
+    }
+  ],
+  "comparisonTable": {
+    "title": "Remove.bg vs. AdopeCanva Smart BG Remover",
+    "headers": [
+      "Feature / Metric",
+      "Remove.bg (Legacy Cloud)",
+      "AdopeCanva Smart BG Remover"
+    ],
+    "rows": [
+      {
+        "label": "Cost & Credits",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "$0.20 – $1.99 per image / Subscription",
+          "AdopeCanva Smart BG Remover": "$0 Free Forever (Unlimited images)"
+        },
+        "highlight": true
+      },
+      {
+        "label": "Data Privacy",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "Uploaded to third-party cloud servers",
+          "AdopeCanva Smart BG Remover": "100% Private (Runs locally in browser RAM)"
+        },
+        "highlight": true
+      },
+      {
+        "label": "Free Export Resolution",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "Low-res 0.25MP preview (612×408 px)",
+          "AdopeCanva Smart BG Remover": "Full Source Resolution (Up to 4K+)"
+        },
+        "highlight": true
+      },
+      {
+        "label": "Account & Sign Up",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "Mandatory login & payment prompt",
+          "AdopeCanva Smart BG Remover": "Zero Signup (Instant 1-click execution)"
+        },
+        "highlight": true
+      },
+      {
+        "label": "Offline Capability",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "Requires active internet & server API",
+          "AdopeCanva Smart BG Remover": "Cached in browser — works offline"
+        }
+      },
+      {
+        "label": "Commercial Rights",
+        "values": {
+          "Remove.bg (Legacy Cloud)": "Restricted without commercial plan",
+          "AdopeCanva Smart BG Remover": "100% Royalty-Free for any purpose"
+        }
+      }
+    ]
+  },
+  "faqs": [
+    {
+      "question": "What is the best free alternative to Remove.bg now that it is shutting down?",
+      "answer": "AdopeCanva Smart BG Remover is the premier free alternative to Remove.bg. Unlike Remove.bg which requires cloud uploads and paid credits for full-resolution downloads, AdopeCanva uses in-browser neural networks (MODNet with WebAssembly) to isolate subjects locally on your device with 100% privacy, zero uploads, and unlimited free exports."
+    },
+    {
+      "question": "How is AdopeCanva different from Remove.bg?",
+      "answer": "The three biggest differences are: (1) Privacy: Remove.bg uploads your photos to external cloud servers; AdopeCanva processes 100% locally on your machine. (2) Cost: Remove.bg charges up to $1.99/image or requires recurring plans; AdopeCanva is completely free forever. (3) Quality: Remove.bg caps free downloads at low-resolution 0.25MP previews; AdopeCanva outputs full-resolution transparent PNGs with no watermarks."
+    },
+    {
+      "question": "Are my photos uploaded to any server or used for AI training?",
+      "answer": "Never. AdopeCanva does not transmit your images across the internet. The AI model runs in your browser via WebAssembly, meaning sensitive photos, confidential product prototypes, and personal portraits never leave your computer."
+    },
+    {
+      "question": "Do I need an account, credit card, or API key?",
+      "answer": "No. AdopeCanva requires zero signup, no account creation, and no API keys. You simply visit the site, drop your photo, and download your transparent PNG immediately."
+    },
+    {
+      "question": "Does it handle hair, transparent fabrics, and complex edges?",
+      "answer": "Yes. The underlying MODNet neural matting model is purpose-built for portrait and object boundary refinement, capturing fine strands of hair, clothing silhouettes, and intricate edges cleanly without harsh cutout halos."
+    },
+    {
+      "question": "Can I choose between different AI models?",
+      "answer": "Yes! AdopeCanva provides a multi-model selector allowing you to switch between BiRefNet (the ultra-HD bilateral reference network powering bg0.dev) and MODNet (fast portrait specialist ~25MB). Both models are 100% open-source (Apache-2.0) with zero commercial restrictions."
+    },
+    {
+      "question": "Can I use the transparent PNGs for commercial e-commerce (Shopify, Amazon, Etsy)?",
+      "answer": "Yes. All transparent PNG cutouts produced by AdopeCanva are completely royalty-free with no commercial restrictions. They are ready to drop directly into product listings, social media ads, and marketing graphics."
+    }
+  ],
+  "specs": [
+    {
+      "label": "AI Engines",
+      "value": "BiRefNet (BG0 Engine, Apache-2.0), MODNet (Apache-2.0)"
+    },
+    {
+      "label": "Processing",
+      "value": "100% Client-Side Device Hardware (CPU / WebGPU)"
+    },
+    {
+      "label": "Privacy Architecture",
+      "value": "Zero-Knowledge / Zero Cloud Transmission"
+    },
+    {
+      "label": "Export Format",
+      "value": "Lossless 32-bit Transparent PNG (RGBA)"
+    },
+    {
+      "label": "Pricing",
+      "value": "$0 Free Forever (No Subscriptions, No Credits)"
+    }
+  ],
+  "privacyNotes": "Your photos are processed locally in browser RAM using ONNX WebAssembly. Zero bytes are uploaded to external servers.",
+  "relatedToolIds": [
+    "image-editor",
+    "image-compressor",
+    "image-cropper",
+    "mockup-generator"
+  ],
+  "order": 8,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

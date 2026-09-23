@@ -1,0 +1,40 @@
+{
+  "id": "universal-doc-converter",
+  "title": "Universal Doc Converter",
+  "description": "Convert Word, Markdown, HTML, and Images to PDF/HTML.",
+  "category": "Docs",
+  "icon": "ArrowRightLeft",
+  "popular": true,
+  "guideTitle": "Convert any document to PDF or HTML",
+  "guideContent": "Easily transform Word documents, Markdown files, or plain text into polished PDFs or clean HTML code. Our universal converter maintains formatting and structure, making it ideal for creating resumes, reports, or web content.",
+  "faqs": [
+    {
+      "question": "Does it support Markdown?",
+      "answer": "Yes, it perfectly converts Markdown syntax into styled PDF or HTML output."
+    },
+    {
+      "question": "Can I convert images to PDF?",
+      "answer": "Yes, you can upload images to generate an image-only PDF document."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "jsPDF & Marked"
+    },
+    {
+      "label": "Output",
+      "value": "PDF, HTML"
+    },
+    {
+      "label": "Styles",
+      "value": "Modern document presets"
+    }
+  ],
+  "privacyNotes": "Document parsing and PDF generation happen 100% client-side.",
+  "order": 4,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

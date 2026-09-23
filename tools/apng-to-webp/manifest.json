@@ -1,0 +1,31 @@
+{
+  "id": "apng-to-webp",
+  "title": "APNG to WebP",
+  "description": "Convert APNG to animated WebP.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Convert APNG to WebP for better web performance",
+  "guideContent": "WebP offers modern compression that is significantly more efficient than APNG. Convert your animations to WebP to reduce page load times without sacrificing transparency or color depth.",
+  "faqs": [
+    {
+      "question": "Is WebP smaller than APNG?",
+      "answer": "Yes, WebP typically offers 20-40% better compression than APNG for similar quality."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "APNG -> WebP"
+    },
+    {
+      "label": "Compression",
+      "value": "Lossy/Lossless selection"
+    }
+  ],
+  "privacyNotes": "Processed entirely in your browser.",
+  "order": 34,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

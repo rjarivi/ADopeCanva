@@ -1,0 +1,41 @@
+{
+  "id": "pdf-to-text",
+  "title": "PDF to Text",
+  "description": "Extract text content from PDF documents.",
+  "swapId": "text-to-pdf",
+  "category": "Docs",
+  "icon": "FileText",
+  "popular": true,
+  "guideTitle": "How to extract text from PDF files accurately",
+  "guideContent": "Convert your PDF documents into editable text files. Our extractor parses layers and text paths to recover as much content as possible without needing expensive OCR software.",
+  "faqs": [
+    {
+      "question": "Does it work with scanned images?",
+      "answer": "Currently, it extracts selectable text. For images, we recommend an OCR tool."
+    },
+    {
+      "question": "Is formatting preserved?",
+      "answer": "We attempt to maintain basic layout and spacing during extraction."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "PDF.js"
+    },
+    {
+      "label": "Output",
+      "value": "Plain Text (.txt)"
+    },
+    {
+      "label": "Batch",
+      "value": "Coming soon"
+    }
+  ],
+  "privacyNotes": "Your PDF content is read locally; your documents are never uploaded.",
+  "order": 49,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

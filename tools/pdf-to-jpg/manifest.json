@@ -1,0 +1,32 @@
+{
+  "id": "pdf-to-jpg",
+  "title": "PDF to JPG",
+  "description": "Convert PDF pages to high-quality JPG images.",
+  "category": "Docs",
+  "icon": "FileText",
+  "popular": true,
+  "guideTitle": "How to convert PDF pages to high-quality images",
+  "guideContent": "Extract individual pages from your PDF documents and save them as high-resolution JPG files. Great for sharing document snippets on social media or using them in presentations.",
+  "faqs": [
+    {
+      "question": "Can I choose the resolution?",
+      "answer": "Yes, we offer multiple DPI settings for high-fidelity extraction."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "PDF -> High DPI JPG"
+    },
+    {
+      "label": "Engine",
+      "value": "PDF.js"
+    }
+  ],
+  "privacyNotes": "Your PDF pages are rendered to images locally.",
+  "order": 53,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}
