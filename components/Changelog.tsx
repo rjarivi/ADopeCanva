@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Box } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -13,6 +13,30 @@ interface ChangeEntry {
 }
 
 const CHANGES: ChangeEntry[] = [
+    {
+        version: '1.11.0',
+        date: 'Sep 10, 2026',
+        items: [
+            {
+                icon: Box,
+                title: '3D Mockup Studio — Cinematic Reveal',
+                description: 'Rebuilt the reveal to match Apple\'s official iPhone Duo film frame-for-frame: the camera now breathes in sync with the hinge (gentle push-in during the hold, then a final settle zoom-out as the fold completes) instead of a detached post-animation zoom. The phone now defaults to standing closed like the hero shot, the reveal auto-settles on its final open pose, and looping picks up seamlessly from the open state. Also fixed the reveal animation freezing on first load.',
+                type: 'update'
+            }
+        ]
+    },
+    {
+        version: '1.10.0',
+        date: 'Sep 10, 2026',
+        items: [
+            {
+                icon: Box,
+                title: '3D Mockup Studio',
+                description: "New IMAGE tool: drop a screenshot or video onto Apple's official iPhone Duo foldable — the rigged model with the real hinge animation (61-keyframe Slider track), converted via a Blender pipeline. Scrub the fold from closed to open, loop it, orbit from any angle, tune HDRI lighting and screen glow, and export PNGs up to 3× retina or a 4-second WebM fold video — all rendered locally with WebGL.",
+                type: 'feature'
+            }
+        ]
+    },
     {
         version: '1.9.0',
         date: 'Aug 22, 2026',

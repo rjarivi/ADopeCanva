@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ToolItem, ToolCategory } from '../types';
 import {
     Search,
+    Box,
     Scissors, Music, Video, Image as ImageIcon,
     FileText, Code, Layers, Minimize2, Edit3,
     Crop, FileJson, Zap, ArrowRightLeft, Film, ListMusic, Wand2, QrCode, Eraser, Type, RefreshCcw, FileVideo, FileSpreadsheet, Maximize2, PenTool, FileCode2, FileSearch, MonitorDown, Smartphone, AudioWaveform, EyeOff,
@@ -52,6 +53,7 @@ import { SvgConverter } from './tools/SvgConverter';
 import { SvgToCode } from './tools/SvgToCode';
 import { HtmlToImage } from './tools/HtmlToImage';
 import { DeviceMockup } from './tools/DeviceMockup';
+import { Mockup3D } from './tools/Mockup3D';
 import { AudioWaveformExporter } from './tools/AudioWaveformExporter';
 import { TextCompareTool } from './tools/TextCompareTool';
 import { GradientCreator } from './tools/GradientCreator';
@@ -195,6 +197,7 @@ export const TOOLS: ToolItem[] = [
         icon: Smartphone,
         component: <DeviceMockup />,
         popular: true,
+        swapId: 'mockup-3d',
         guideTitle: 'How to create device mockups from screenshots',
         guideContent: 'Upload any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3× resolution — all client-side with no uploads required.',
         faqs: [
@@ -211,6 +214,33 @@ export const TOOLS: ToolItem[] = [
             { label: 'Engine',   value: 'Canvas API (client-side)' },
         ],
         privacyNotes: 'All mockup rendering is performed locally in your browser using the Canvas API. No screenshots or generated images are sent to any server.',
+    },
+    {
+        id: 'mockup-3d',
+        title: '3D Mockup Studio',
+        description: 'Drop a screenshot or video onto Apple\'s animated iPhone Duo foldable — scrub the fold, any angle, export PNG or video.',
+        category: ToolCategory.IMAGE,
+        icon: Box,
+        component: <Mockup3D />,
+        popular: true,
+        swapId: 'mockup-generator',
+        guideTitle: 'How to create animated 3D iPhone mockups from screenshots',
+        guideContent: 'Upload any screenshot or video and watch it play live on the displays of Apple\'s official iPhone Duo foldable 3D model — complete with the real hinge animation. Scrub the fold from closed to fully open, replay the loop from any camera angle, tune studio lighting and screen glow, and export razor-sharp PNGs up to 3× resolution or record a 4-second fold video (WebM) — all rendered locally in your browser with WebGL, no uploads required.',
+        faqs: [
+            { question: 'Which devices are supported?', answer: 'The studio currently ships with Apple\'s official iPhone Duo foldable, animated with the real hinge motion (closed ⇄ open, dictated by the original 61-keyframe Slider track). More 3D devices — MacBooks, iPads, and Android flagships — are on the roadmap.' },
+            { question: 'Can I upload videos as screen content?', answer: 'Yes — MP4/WebM videos play live (looped) on both foldable displays in real time, and are captured in the fold-video export too.' },
+            { question: 'Can I export with a transparent background?', answer: 'Yes — choose the "Transparent" background preset for PNG exports. Video export uses your selected backdrop; transparent video is not supported.' },
+            { question: 'What export resolution do I get?', answer: 'PNG exports at 1× your preview size up to 3× retina. The fold video is recorded at 2× the preview size at 30fps for about 4 seconds (open → closed).' },
+            { question: 'Is my screenshot uploaded anywhere?', answer: 'No — the 3D model is loaded locally and your content is drawn onto the device displays entirely in your browser using WebGL. Nothing ever leaves your device.' },
+        ],
+        specs: [
+            { label: 'Input',    value: 'PNG, JPG, WebP, MP4/WebM' },
+            { label: 'Output',   value: 'PNG (up to 3× retina), WebM/MP4 video' },
+            { label: 'Models',   value: 'Apple iPhone Duo foldable — animated hinge' },
+            { label: 'Engine',   value: 'WebGL / three.js (client-side)' },
+            { label: 'Controls', value: 'Fold scrub, free orbit, presets, turntable' },
+        ],
+        privacyNotes: 'All 3D rendering is performed locally in your browser using WebGL. Screenshots and videos are drawn onto the device displays in-browser and never uploaded to any server.',
     },
     {
         id: 'image-editor',
