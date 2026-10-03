@@ -6,9 +6,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const SITEMAP_PATH = path.join(__dirname, '../public/sitemap.xml');
-const API_KEY = '1a083693849746fd83ff01556704b5b8';
+// NEVER commit this key. Provide it via the environment:
+//   INDEXNOW_KEY=… node scripts/submit-indexnow.js
+// (CI/prod: GitHub Secret or Cloudflare env var. Rotate at Bing Webmaster
+// Tools if it ever touches the repo or logs.)
+const API_KEY = process.env.INDEXNOW_KEY;
 const HOST = 'adopecanva.com';
 const KEY_LOCATION = `https://${HOST}/${API_KEY}.txt`;
+
+if (!API_KEY) {
+    console.error('INDEXNOW_KEY is not set. Refusing to submit (and refusing to use a committed key).');
+    process.exit(1);
+}
 
 async function submitIndexNow() {
     try {

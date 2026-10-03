@@ -1,0 +1,43 @@
+{
+  "id": "file-to-markdown",
+  "title": "File to Markdown",
+  "description": "Convert PDFs, DOCX, CSV, HTML, and more to clean Markdown.",
+  "category": "Docs",
+  "icon": "FileDown",
+  "guideTitle": "How to convert any document to Markdown",
+  "guideContent": "Drop in a PDF, Word document, CSV spreadsheet, HTML page, JSON, YAML, or plain text file and get a clean Markdown version in seconds. Perfect for feeding content into AI tools, static-site generators, or documentation pipelines — all without uploading to any server.",
+  "faqs": [
+    {
+      "question": "Which formats are supported?",
+      "answer": "PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, and MD files are all supported."
+    },
+    {
+      "question": "How are PDFs converted?",
+      "answer": "We use PDF.js to extract text from each page and structure it as Markdown headings and paragraphs."
+    },
+    {
+      "question": "What about Word documents?",
+      "answer": "DOCX files are processed with the Mammoth library, which preserves headings, bold, italic, and links."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input formats",
+      "value": "PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, MD"
+    },
+    {
+      "label": "Output",
+      "value": "Clean .md file"
+    },
+    {
+      "label": "Engine",
+      "value": "PDF.js · Mammoth · PapaParse"
+    }
+  ],
+  "privacyNotes": "All parsing and conversion runs locally in your browser. Your files are never uploaded.",
+  "order": 60,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

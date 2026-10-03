@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { Minimize2, Download, RefreshCcw, Zap, AlertCircle, Loader2 } from 'lucide-react';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import Slider from 'rc-slider';
@@ -12,7 +13,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 
 export const GifCompressor: React.FC = () => {
     const isMobile = useIsMobile();
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [isProcessing, setIsProcessing] = useState(false);
     const [resultUrl, setResultUrl] = useState<string | null>(null);
     const [resultSize, setResultSize] = useState<string | null>(null);
@@ -70,7 +71,6 @@ export const GifCompressor: React.FC = () => {
         setIsProcessing(true);
         setProgress(0);
         const ffmpeg = ffmpegRef.current;
-        const inputName = 'compress_input.gif';
         const outputName = 'compress_output.gif';
         setResultUrl(null);
 
@@ -83,20 +83,22 @@ export const GifCompressor: React.FC = () => {
         ffmpeg.on('progress', onProgress);
 
         try {
-            let inputName = sourceFileName;
+            // Single source name — the preloaded file is reused across
+            // re-compress runs (rewritten on file change, same MEMFS slot).
+            let activeInput = sourceFileName;
 
-            if (!isSourceReady || !inputName) {
-                inputName = 'compress_source.gif';
-                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
-                setSourceFileName(inputName);
+            if (!isSourceReady || !activeInput) {
+                activeInput = 'compress_source.gif';
+                await writeFileToFFmpeg(ffmpeg, activeInput, file.file);
+                setSourceFileName(activeInput);
                 setIsSourceReady(true);
             }
 
             // Final check
             try {
-                await ffmpeg.readFile(inputName);
+                await ffmpeg.readFile(activeInput);
             } catch (e) {
-                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+                await writeFileToFFmpeg(ffmpeg, activeInput, file.file);
             }
 
             // Level 0: 256 colors, 1.0 scale
@@ -121,9 +123,10 @@ export const GifCompressor: React.FC = () => {
 
             await ffmpeg.exec([
                 '-y',
-                '-i', inputName,
+                '-i', activeInput,
                 '-threads', threads,
                 '-vf', filter,
+                '-loop', '0',
                 outputName
             ]);
 
@@ -137,14 +140,15 @@ export const GifCompressor: React.FC = () => {
             setResultUrl(url);
             setResultSize((blob.size / 1024 / 1024).toFixed(2) + ' MB');
 
-            // await ffmpeg.deleteFile(inputName);
-            await ffmpeg.deleteFile(outputName);
-
         } catch (e) {
             console.error(e);
-            alert("Compression failed");
+            setErrorMessage(`Compression failed: ${e instanceof Error ? e.message : 'Unknown error'}`);
         } finally {
             ffmpeg.off('progress', onProgress);
+            // Delete the output only. The preloaded source is intentionally
+            // cached under a constant name for re-compress runs (overwritten
+            // on file change, so MEMFS cannot accumulate).
+            try { await ffmpeg.deleteFile(outputName); } catch (e) {}
             setIsProcessing(false);
             setProgress(0);
         }
@@ -175,50 +179,32 @@ export const GifCompressor: React.FC = () => {
         );
     }
 
+    const handleFileSelect = (f: FileData | FileData[]) => {
+        const selected = Array.isArray(f) ? f[0] : f;
+        if (!selected) return;
+        select(selected);
+    };
+
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Minimize2 size={32} /> GIF Compressor
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Reduce GIF file size efficiently without losing quality.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={setFile}
-                        label="Add GIF"
-                        accept="image/gif"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Minimize2, label: 'Smart Shrink', desc: 'Optimize palette' },
-                        { icon: Zap, label: 'Fast Engine', desc: 'Local processing' },
-                        { icon: Download, label: 'Quick Save', desc: 'Instant download' },
-                        { icon: RefreshCcw, label: 'Adjustable', desc: 'Custom compression' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Minimize2}
+                title="GIF Compressor"
+                description="Reduce GIF file size efficiently without losing quality."
+                features={[
+                    { icon: Minimize2, label: 'Smart Shrink', desc: 'Optimize palette' },
+                    { icon: Zap, label: 'Fast Engine', desc: 'Local processing' },
+                    { icon: Download, label: 'Quick Save', desc: 'Instant download' },
+                    { icon: RefreshCcw, label: 'Adjustable', desc: 'Custom compression' },
+                ]}
+                file={file}
+                accept="image/gif"
+                uploadLabel="Add GIF"
+                onFileSelect={handleFileSelect}
+                error={errorMessage || null}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -231,7 +217,7 @@ export const GifCompressor: React.FC = () => {
                     <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <Zap size={20} /> Optimize
                     </h2>
-                    <Button variant="ghost" size="sm" onClick={() => { setFile(null); setResultUrl(null); }}>
+                    <Button variant="ghost" size="sm" onClick={() => { clear(); setResultUrl(null); }}>
                         <RefreshCcw size={14} />
                     </Button>
                 </div>
@@ -336,7 +322,7 @@ export const GifCompressor: React.FC = () => {
                                     <Download size={18} className="mr-2" /> Download GIF
                                 </Button>
                                 <Button variant="secondary" onClick={() => {
-                                        setFile(null);
+                                        clear();
                                         setResultUrl(null);
                                         setResultSize(null);
                                     }}
@@ -356,7 +342,7 @@ export const GifCompressor: React.FC = () => {
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                 <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-checkerboard flex items-center justify-center">
                         <img src={resultUrl || file.previewUrl} className={`max-w-full max-h-full object-contain transition-opacity duration-500 ${isProcessing ? 'opacity-30' : 'opacity-100'}`} alt="Preview" />
 
                         {isProcessing && (

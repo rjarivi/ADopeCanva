@@ -1,0 +1,32 @@
+{
+  "id": "text-to-pdf",
+  "title": "Text to PDF",
+  "description": "Convert plain text to PDF documents.",
+  "swapId": "pdf-to-text",
+  "category": "Docs",
+  "icon": "FileText",
+  "guideTitle": "How to turn plain text or logs into PDF documents",
+  "guideContent": "Quickly convert technical logs, plain text notes, or code snippets into professional-looking PDF documents. Useful for archiving, sharing, or printing text in a fixed format.",
+  "faqs": [
+    {
+      "question": "Can I change the font?",
+      "answer": "Yes, we provide several clean, professional font choices for your PDF."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input",
+      "value": ".txt, .log, raw text"
+    },
+    {
+      "label": "Page Size",
+      "value": "A4, Letter"
+    }
+  ],
+  "privacyNotes": "Text is rendered into PDF locally.",
+  "order": 50,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

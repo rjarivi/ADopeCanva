@@ -1,0 +1,40 @@
+{
+  "id": "image-converter",
+  "title": "Image Converter",
+  "description": "Batch convert images between PNG, JPG, and WebP.",
+  "category": "Image",
+  "icon": "RefreshCcw",
+  "popular": true,
+  "guideTitle": "How to batch convert images for web optimization",
+  "guideContent": "Converting images to modern formats like WebP can significantly improve your website loading speed. Our batch converter allows you to transform multiple PNGs or JPGs into optimized WebP files instantly, ensuring high quality with smaller file sizes.",
+  "faqs": [
+    {
+      "question": "What formats can I convert?",
+      "answer": "You can convert between PNG, JPG, WebP, and more."
+    },
+    {
+      "question": "Is there a file size limit?",
+      "answer": "The tool handles large files, but browser memory limits apply (typically up to 100MB per file)."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input Formats",
+      "value": "PNG, JPG, WebP, AVIF, BMP"
+    },
+    {
+      "label": "Output Formats",
+      "value": "PNG, JPG, WebP"
+    },
+    {
+      "label": "Batch Support",
+      "value": "Yes, multi-file select"
+    }
+  ],
+  "privacyNotes": "Files are processed locally using your browser. No images are uploaded to any server.",
+  "order": 0,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

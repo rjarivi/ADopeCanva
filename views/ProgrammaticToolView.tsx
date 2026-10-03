@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { TOOLS } from './Dashboard';
+import { ToolCategory } from '../types';
 import { getProgrammaticSubRoute, buildToolSchema, updateHeadTags, SITE_URL, getDefaultSteps, getDefaultComparisonTable } from '../utils/seoHelper';
 import { SEOSections } from '../components/SEOSections';
-import { ArrowLeftRight, ArrowRightLeft, ChevronLeft } from 'lucide-react';
-import { ToolCategory } from '../types';
+import { ChevronLeft, ArrowRightLeft, ArrowLeftRight } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 interface ProgrammaticToolViewProps {

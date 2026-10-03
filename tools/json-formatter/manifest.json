@@ -1,0 +1,26 @@
+{
+  "id": "json-formatter",
+  "title": "JSON Formatter",
+  "description": "Validate, format, and sort JSON with error positions.",
+  "category": "Developer",
+  "icon": "FileJson",
+  "guideTitle": "How to format and validate JSON",
+  "guideContent": "Paste JSON to beautify or minify it, sort object keys, choose your indentation style, and get precise line/column positions when the input is invalid. Everything runs locally in your browser.",
+  "faqs": [
+    {
+      "question": "Does it validate broken JSON?",
+      "answer": "Yes — errors are shown with the exact line and column of the offending character."
+    },
+    {
+      "question": "Can I sort keys?",
+      "answer": "Yes, sort keys alphabetically (arrays keep their order)."
+    }
+  ],
+  "specs": [
+    { "label": "Indent", "value": "2 spaces / 4 spaces / Tab" },
+    { "label": "Modes", "value": "Beautify / Minify / Sort" },
+    { "label": "Errors", "value": "Line & column position" }
+  ],
+  "privacyNotes": "Parses in-memory with native JSON APIs — nothing leaves your machine.",
+  "permissions": { "network": [] }
+}

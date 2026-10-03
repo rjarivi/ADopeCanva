@@ -1,0 +1,39 @@
+{
+  "id": "image-cropper",
+  "title": "Image Cropper",
+  "description": "Resize and crop images for social media.",
+  "category": "Image",
+  "icon": "Crop",
+  "guideTitle": "Crop images for Instagram, TikTok, and YouTube",
+  "guideContent": "Resize your images perfectly for any social platform. Choose from popular aspect ratios (9:16, 1:1, 4:5) or set a custom area to focus on the most important parts of your creative work.",
+  "faqs": [
+    {
+      "question": "What are the best presets?",
+      "answer": "For Instagram posts, use 1:1 or 4:5; for Stories and TikTok, use 9:16."
+    },
+    {
+      "question": "Can I flip images?",
+      "answer": "Yes, the cropper includes horizontal and vertical flip controls."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Aspect Ratios",
+      "value": "1:1, 4:5, 16:9, 9:16, Custom"
+    },
+    {
+      "label": "Engine",
+      "value": "Canvas-based ultra-fast cropping"
+    },
+    {
+      "label": "Rotation",
+      "value": "90-degree increments"
+    }
+  ],
+  "privacyNotes": "Cropping and resizing are done in-browser. Your images are never saved to our servers.",
+  "order": 21,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

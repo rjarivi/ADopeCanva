@@ -24,21 +24,10 @@ const GOOGLE_FONTS = [
     'PT Sans', 'PT Mono', 'Oxygen', 'Dosis', 'Muli',
     'Catamaran', 'Asap', 'Hind', 'Nanum Gothic', 'Almarai',
     'Maven Pro', 'Gothic A1', 'Cantarell', 'Signika', 'Yantramanav',
-    'Unbounded', 'Syne', 'Clash Display', 'Cabinet Grotesk',
+    'Unbounded', 'Syne',
 ];
 
 const SIZE_PRESETS = [14, 18, 24, 36, 48, 64, 96];
-
-const loadedFonts = new Set<string>();
-
-function loadFont(name: string) {
-    if (loadedFonts.has(name)) return;
-    loadedFonts.add(name);
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;700&display=swap`;
-    document.head.appendChild(link);
-}
 
 export const FontPreviewer: React.FC = () => {
     const [query, setQuery] = useState('');
@@ -71,6 +60,27 @@ export const FontPreviewer: React.FC = () => {
             setFontError('Could not load this font file — it may be corrupt or an unsupported format.');
         }
     }, []);
+    
+    const loadedLinks = React.useRef<HTMLLinkElement[]>([]);
+    const loadedFonts = React.useRef<Set<string>>(new Set());
+
+    const loadFont = React.useCallback((name: string) => {
+        if (loadedFonts.current.has(name)) return;
+        loadedFonts.current.add(name);
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400&display=swap`;
+        document.head.appendChild(link);
+        loadedLinks.current.push(link);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            loadedLinks.current.forEach(link => {
+                if (document.head.contains(link)) document.head.removeChild(link);
+            });
+        };
+    }, []);
 
     const filteredFonts = GOOGLE_FONTS.filter(f =>
         f.toLowerCase().includes(query.toLowerCase())
@@ -100,7 +110,7 @@ export const FontPreviewer: React.FC = () => {
 
     const handleCopyImport = (name: string) => {
         navigator.clipboard.writeText(
-            `@import url('https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400;700&display=swap');`
+            `@import url('https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400&display=swap');`
         );
         setCopied(name + '_import');
         setTimeout(() => setCopied(null), 2000);

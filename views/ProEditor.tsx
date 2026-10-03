@@ -104,11 +104,11 @@ interface ProjectSettings {
 }
 
 const FONT_PRESETS = [
-    { name: 'Roboto', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf', family: 'sans-serif' },
-    { name: 'Oswald', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/oswald/Oswald%5Bwght%5D.ttf', family: 'sans-serif' },
-    { name: 'Dancing Script', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf', family: 'cursive' },
-    { name: 'Permanent Marker', url: 'https://raw.githubusercontent.com/google/fonts/main/apache/permanentmarker/PermanentMarker-Regular.ttf', family: 'cursive' },
-    { name: 'Press Start 2P', url: 'https://raw.githubusercontent.com/google/fonts/main/ofl/pressstart2p/PressStart2P-Regular.ttf', family: 'monospace' },
+    { name: 'Roboto', url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/roboto/Roboto-Bold.ttf', family: 'sans-serif' },
+    { name: 'Oswald', url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/oswald/Oswald%5Bwght%5D.ttf', family: 'sans-serif' },
+    { name: 'Dancing Script', url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/dancingscript/DancingScript%5Bwght%5D.ttf', family: 'cursive' },
+    { name: 'Permanent Marker', url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/permanentmarker/PermanentMarker-Regular.ttf', family: 'cursive' },
+    { name: 'Press Start 2P', url: 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/pressstart2p/PressStart2P-Regular.ttf', family: 'monospace' },
 ];
 
 export const ProEditor: React.FC = () => {

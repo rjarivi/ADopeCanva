@@ -8,6 +8,7 @@ interface BeforeAfterProps {
 
 export const BeforeAfter: React.FC<BeforeAfterProps> = ({ before, after, alt }) => {
     const [sliderPos, setSliderPos] = useState(50);
+    const [imgError, setImgError] = useState(false);
 
     const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
         const container = e.currentTarget.getBoundingClientRect();
@@ -16,6 +17,10 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({ before, after, alt }) 
         const position = Math.max(0, Math.min(100, (relativeX / container.width) * 100));
         setSliderPos(position);
     };
+
+    if (imgError || !before || !after) {
+        return null;
+    }
 
     return (
         <div
@@ -27,6 +32,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({ before, after, alt }) 
             <img
                 src={after}
                 alt={`${alt} - After`}
+                onError={() => setImgError(true)}
                 className="absolute inset-0 w-full h-full object-cover"
             />
 
@@ -38,6 +44,7 @@ export const BeforeAfter: React.FC<BeforeAfterProps> = ({ before, after, alt }) 
                 <img
                     src={before}
                     alt={`${alt} - Before`}
+                    onError={() => setImgError(true)}
                     className="absolute inset-0 w-full h-full object-cover"
                 />
             </div>

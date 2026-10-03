@@ -1,0 +1,40 @@
+{
+  "id": "image-resizer",
+  "title": "Image Resizer",
+  "description": "Resize images with precise dimension control.",
+  "category": "Image",
+  "icon": "Maximize2",
+  "popular": true,
+  "guideTitle": "How to resize images without losing aspect ratio",
+  "guideContent": "Quickly change the pixel dimensions of your photos. Lock the aspect ratio to prevent stretching, or set exact widths and heights for specific project requirements.",
+  "faqs": [
+    {
+      "question": "Can I upscale images?",
+      "answer": "Yes, but be aware that upscaling may result in some pixelation depending on the source."
+    },
+    {
+      "question": "What is \"Lock Aspect Ratio\"?",
+      "answer": "It automatically adjusts the height when you change the width to keep the image proportional."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Units",
+      "value": "Pixels, Percentage"
+    },
+    {
+      "label": "Interpolation",
+      "value": "Lanczos (High Quality)"
+    },
+    {
+      "label": "Max Size",
+      "value": "8000 x 8000px"
+    }
+  ],
+  "privacyNotes": "Resizing is handled by your browser canvas engine.",
+  "order": 52,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

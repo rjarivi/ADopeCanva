@@ -77,6 +77,12 @@ export const TextToPdf: React.FC = () => {
         return doc;
     }, [text, fontSize, lineSpacing, marginSize, paperSize, orientation, fontFamily, pageNumbers]);
 
+    useEffect(() => {
+        return () => {
+            if (pdfPreviewUrl) URL.revokeObjectURL(pdfPreviewUrl);
+        };
+    }, [pdfPreviewUrl]);
+
     const generatePdf = useCallback(() => {
         if (!text.trim()) return;
 

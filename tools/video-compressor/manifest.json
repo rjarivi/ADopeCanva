@@ -1,0 +1,40 @@
+{
+  "id": "video-compressor",
+  "title": "Video Compressor",
+  "description": "Reduce video file size efficiently.",
+  "category": "Video",
+  "icon": "Minimize2",
+  "popular": true,
+  "guideTitle": "Reduce video size for web and sharing",
+  "guideContent": "Large video files can be difficult to share or upload. Our video compressor uses advanced H.264 encoding with variable bitrate control to significantly reduce file size while maintaining excellent visual quality. Perfect for Discord, Slack, or email attachments.",
+  "faqs": [
+    {
+      "question": "What is the best compression setting?",
+      "answer": "A CRF value between 23 and 28 usually provides the best balance of size and quality."
+    },
+    {
+      "question": "Will it change my video format?",
+      "answer": "The tool currently exports optimized MP4 (H.264) files for maximum compatibility."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "libx264 (WASM)"
+    },
+    {
+      "label": "Input Formats",
+      "value": "MP4, MOV, WebM, AVI"
+    },
+    {
+      "label": "Output Format",
+      "value": "MP4 (H.264)"
+    }
+  ],
+  "privacyNotes": "Video processing is done locally on your CPU. No video data is ever transmitted to a server.",
+  "order": 17,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

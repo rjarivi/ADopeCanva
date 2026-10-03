@@ -10,6 +10,8 @@ import { Button } from '../../components/ui/Button'
 import { useIsMobile } from '../../hooks/useIsMobile'
 import { FileData } from '../../types'
 import { useFocusedMode } from '../../contexts/FocusedMode'
+import { logToolFailure } from '../../utils/toolHealth'
+import { useToolFile } from '../../hooks/useToolFile'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -233,7 +235,7 @@ export const DeviceMockup: React.FC = () => {
     const previewRef   = useRef<HTMLDivElement>(null)
     const imageWrapRef = useRef<HTMLDivElement>(null)
 
-    const [fileData, setFileData]   = useState<FileData | null>(null)
+    const { file: fileData, select: selectFile, clear: clearFile } = useToolFile()
     const [imageUrl, setImageUrl]   = useState<string | null>(null)
     const [settings, setSettings]   = useState<Settings>(DEFAULTS)
     const [exporting, setExporting] = useState(false)
@@ -248,7 +250,10 @@ export const DeviceMockup: React.FC = () => {
     const [captureError, setCaptureError] = useState('')
     const [isExternalImage, setIsExternalImage] = useState(false)
     const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png')
-    const [exportError, setExportError] = useState<string | null>(null)
+    // If an external screenshot URL rejects CORS-enabled loading, fall back
+    // to plain (non-CORS) display so the preview still renders. Export will
+    // then surface a clear "use local images" message instead of a blank.
+    const [corsFallback, setCorsFallback] = useState(false)
 
     // Drag state tracked in refs to avoid stale closures
     const dragRef = useRef({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 })
@@ -263,14 +268,20 @@ export const DeviceMockup: React.FC = () => {
         setActivePreset(preset.name)
     }
 
-    const handleFile = useCallback((fd: FileData) => {
-        setFileData(fd)
-        setImageUrl(fd.previewUrl ?? URL.createObjectURL(fd.file))
+    const handleFile = useCallback((fd: FileData | FileData[]) => {
+        const selected = Array.isArray(fd) ? fd[0] : fd
+        if (!selected) return
+        selectFile(selected)
+        setImageUrl(prev => {
+            if (prev && prev.startsWith('blob:')) URL.revokeObjectURL(prev);
+            return selected.previewUrl ?? URL.createObjectURL(selected.file);
+        })
         setIsExternalImage(false)
+        setCorsFallback(false)
     }, [])
 
     const handleReset = () => {
-        setFileData(null)
+        clearFile()
         if (imageUrl && !isExternalImage) URL.revokeObjectURL(imageUrl)
         setImageUrl(null)
         setSettings(DEFAULTS)
@@ -306,14 +317,14 @@ export const DeviceMockup: React.FC = () => {
                 // fall through to next service
             }
 
-            // ── Fallback: thum.io (authenticated) ────────────────────────────
-            // Note: can't probe with new Image() under COEP — use directly
-            if (!shotUrl) {
-                shotUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
-            }
-
+            // ── Fallback: none by default ────────────────────────────────────
+            // A previous version used an authenticated thum.io URL with the
+            // account token baked into client code. That credential has been
+            // removed from the repo (see SECURITY.md: no secrets in code).
+            // Microlink above is the only capture service; anything else
+            // falls through to the upload-your-own-screenshot message.
             if (!shotUrl) throw new Error('Could not capture this URL — try adding a screenshot directly instead')
-            setFileData({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
+            selectFile({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
             setImageUrl(shotUrl)
             setIsExternalImage(true)
         } catch (err: unknown) {
@@ -372,8 +383,8 @@ export const DeviceMockup: React.FC = () => {
         if (!el) return
         const onWheel = (e: WheelEvent) => {
             e.preventDefault()
-            const factor = e.deltaY < 0 ? 1.06 : 0.95
-            setSettings(prev => ({ ...prev, zoom: Math.max(0.3, Math.min(5, prev.zoom * factor)) }))
+            const factor = Math.exp(-e.deltaY * 0.002);
+            setSettings(prev => ({ ...prev, zoom: Math.min(3, Math.max(0.25, prev.zoom * factor)) }))
             setActivePreset(null)
         }
         el.addEventListener('wheel', onWheel, { passive: false })
@@ -385,10 +396,17 @@ export const DeviceMockup: React.FC = () => {
 
     // ── Export ────────────────────────────────────────────────────────────────
 
+    const [exportError, setExportError] = useState('')
+
     const handleExport = useCallback(async () => {
         if (!imageUrl || !previewRef.current) return
         setExporting(true)
-        setExportError(null)
+        setExportError('')
+
+        const has3DEffect = settings.tiltX !== 0 || settings.tiltY !== 0 || settings.roll !== 0;
+        if (has3DEffect) {
+            setExportError('Note: 3D tilt effects may not render in exports. The exported image shows the flat layout.');
+        }
 
         // Temporarily disable cross-origin stylesheets so html-to-image
         // doesn't hit SecurityError reading cssRules from Google Fonts etc.
@@ -432,13 +450,14 @@ export const DeviceMockup: React.FC = () => {
             a.click()
             document.body.removeChild(a)
         } catch (err) {
-            setExportError(err instanceof Error ? err.message : 'Export failed — try again.')
+            logToolFailure('device-mockup', err, { stage: 'export', corsFallback });
+            setExportError(err instanceof Error ? err.message : 'Export failed — this may be due to cross-origin images or 3D effects. Try disabling tilt and using local images.');
         } finally {
             // Re-enable stylesheets regardless of success or failure
             for (const sheet of disabledSheets) sheet.disabled = false
             setExporting(false)
         }
-    }, [imageUrl, isExternalImage, settings, exportFormat])
+    }, [imageUrl, isExternalImage, settings, exportFormat, corsFallback])
 
     const { tiltX, tiltY, roll, zoom, posX, posY, perspective,
             dofType, blur, dofDirection, dofFocalX, dofFocalY, canvasBlur, borderRadius, bgId, shadow, bloom, canvasRatio } = settings
@@ -660,7 +679,8 @@ export const DeviceMockup: React.FC = () => {
                                 src={imageUrl}
                                 alt="mockup"
                                 draggable={false}
-                                crossOrigin={isExternalImage ? 'anonymous' : undefined}
+                                crossOrigin={isExternalImage && !corsFallback ? 'anonymous' : undefined}
+                                onError={() => { if (isExternalImage && !corsFallback) setCorsFallback(true); }}
                                 style={{
                                     display: 'block',
                                     maxWidth: isMobile ? '85vw' : '62vw',
@@ -681,7 +701,8 @@ export const DeviceMockup: React.FC = () => {
                                         alt=""
                                         aria-hidden
                                         draggable={false}
-                                        crossOrigin={isExternalImage ? 'anonymous' : undefined}
+                                        crossOrigin={isExternalImage && !corsFallback ? 'anonymous' : undefined}
+                                        onError={() => { if (isExternalImage && !corsFallback) setCorsFallback(true); }}
                                         style={{
                                             position: 'absolute',
                                             inset: 0,
@@ -1038,7 +1059,7 @@ export const DeviceMockup: React.FC = () => {
                                 title={f === 'jpeg' && bgId === 'transparent'
                                     ? 'JPEG has no transparency — pick an opaque background first'
                                     : `Export as ${f.toUpperCase()}`}
-                                onClick={() => { setExportFormat(f); setExportError(null) }}
+                                onClick={() => { setExportFormat(f); setExportError('') }}
                                 disabled={f === 'jpeg' && bgId === 'transparent'}
                                 className={`flex-1 py-1.5 rounded-lg text-[10px] font-jakarta font-bold uppercase tracking-wider border transition-all ${
                                     exportFormat === f

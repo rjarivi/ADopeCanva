@@ -1,0 +1,39 @@
+{
+  "id": "pdf-tools",
+  "title": "PDF Suite",
+  "description": "Merge, split, or compress PDF documents.",
+  "category": "Docs",
+  "icon": "FileText",
+  "guideTitle": "The ultimate toolbox for PDF management",
+  "guideContent": "Merge multiple PDFs into one document, split large files into individual pages, or compress PDFs to meet email size limits. Our suite provides all the essential tools for professional document management without a subscription.",
+  "faqs": [
+    {
+      "question": "Can I rearrange pages?",
+      "answer": "Yes, you can drag and drop pages to change their order before merging."
+    },
+    {
+      "question": "Is it compatible with Adobe Acrobat?",
+      "answer": "Yes, all generated files follow standard PDF specifications."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Key Tools",
+      "value": "Merge, Split, Compress, Rotate"
+    },
+    {
+      "label": "Engine",
+      "value": "pdf-lib & MuPDF"
+    },
+    {
+      "label": "Password Support",
+      "value": "Coming soon"
+    }
+  ],
+  "privacyNotes": "Documents are processed 100% locally. Ideal for sensitive legal or financial files.",
+  "order": 25,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

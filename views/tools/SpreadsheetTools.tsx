@@ -5,6 +5,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { SectionLabel } from '../../components/EditorControls';
+import { useToolFile } from '../../hooks/useToolFile';
 import { Table, FileSpreadsheet, Download, RefreshCw, FileJson, FileCode, CheckCircle, Loader2, AlertCircle, ArrowRightLeft } from 'lucide-react';
 
 type ConversionMode = 'excel-to-other' | 'other-to-excel';
@@ -23,7 +24,7 @@ export const SpreadsheetTools: React.FC = () => {
     const [targetFormat, setTargetFormat] = useState<TargetFormat>('csv');
     const [delimiter, setDelimiter] = useState<CsvDelimiter>(',');
     const [headerRow, setHeaderRow] = useState(true);
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [sheetNames, setSheetNames] = useState<string[]>([]);
     const [activeSheet, setActiveSheet] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -31,9 +32,10 @@ export const SpreadsheetTools: React.FC = () => {
     const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Workbook sheet names for CSV output naming
-    const handleFileSelect = (newFile: FileData) => {
-        setFile(newFile);
+    const handleFileSelect = (newFile: FileData | FileData[]) => {
+        const selected = Array.isArray(newFile) ? newFile[0] : newFile;
+        if (!selected) return;
+        select(selected);
         setResult(null);
         setDownloadUrl(null);
         setError(null);
@@ -41,8 +43,8 @@ export const SpreadsheetTools: React.FC = () => {
         setActiveSheet(0);
 
         // Preload xlsx metadata so the worksheet picker can show sheet names
-        if (newFile.file.name.toLowerCase().endsWith('.xlsx') || newFile.file.name.toLowerCase().endsWith('.xls')) {
-            newFile.file.arrayBuffer()
+        if (selected.file.name.toLowerCase().endsWith('.xlsx') || selected.file.name.toLowerCase().endsWith('.xls')) {
+            selected.file.arrayBuffer()
                 .then(buf => new ExcelJS.Workbook().xlsx.load(buf))
                 .then(wb => {
                     const names = wb.worksheets.map(w => w.name);
@@ -241,13 +243,13 @@ export const SpreadsheetTools: React.FC = () => {
 
                 <div className="flex justify-center gap-4 mt-6">
                     <button
-                        onClick={() => { setMode('excel-to-other'); setFile(null); setResult(null); setSheetNames([]); }}
+                        onClick={() => { setMode('excel-to-other'); clear(); setResult(null); setSheetNames([]); }}
                         className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'excel-to-other' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Excel → Other
                     </button>
                     <button
-                        onClick={() => { setMode('other-to-excel'); setFile(null); setResult(null); setSheetNames([]); }}
+                        onClick={() => { setMode('other-to-excel'); clear(); setResult(null); setSheetNames([]); }}
                         className={`px-6 py-2 rounded-full text-sm font-bold transition-all border ${mode === 'other-to-excel' ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
                     >
                         Other → Excel
@@ -328,6 +330,39 @@ export const SpreadsheetTools: React.FC = () => {
                     </div>
                 )}
             </div>
+            
+            {/* Convert Area */}
+            {file && !result && (
+                <div className="flex flex-col items-center gap-4 mt-6">
+                    {mode === 'excel-to-other' && (
+                        <div className="flex items-center gap-3">
+                            <label className="text-zinc-400 text-sm">Output Format:</label>
+                            <select 
+                                value={targetFormat} 
+                                onChange={e => setTargetFormat(e.target.value as any)}
+                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm"
+                            >
+                                <option value="csv">CSV</option>
+                                <option value="json">JSON</option>
+                                <option value="html">HTML Table</option>
+                                <option value="txt">Plain Text</option>
+                            </select>
+                        </div>
+                    )}
+                    <Button
+                        onClick={() => {
+                            const isExcel = file.file.name.toLowerCase().match(/\.xlsx?$/);
+                            if (isExcel) processFile();
+                            else processOtherToExcel();
+                        }}
+                        isLoading={isProcessing}
+                        disabled={isProcessing}
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-3 rounded-xl font-bold shadow-lg"
+                    >
+                        Convert File
+                    </Button>
+                </div>
+            )}
 
             {/* Feature Highlights (Only show when no result) */}
             {!result && (
@@ -373,7 +408,7 @@ export const SpreadsheetTools: React.FC = () => {
                             {downloadUrl && (
                                 <a
                                     href={downloadUrl}
-                                    download={`converted_${file?.file.name.split('.')[0]}.${mode === 'excel-to-other' ? targetFormat : 'xlsx'}`}
+                                    download={`converted_${(file?.file.name ?? 'spreadsheet').replace(/\.[^/.]+$/, '')}.${mode === 'excel-to-other' ? targetFormat : 'xlsx'}`}
                                     className="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-sm transition-colors"
                                 >
                                     <Download size={16} className="mr-2" />
@@ -392,7 +427,7 @@ export const SpreadsheetTools: React.FC = () => {
                                 <RefreshCw size={12} className="inline mr-1.5" />
                                 Try Other Options
                             </button>
-                            <button onClick={() => { setResult(null); setFile(null); setDownloadUrl(null); }} className="text-zinc-400 hover:text-white">Convert another</button>
+                            <button onClick={() => { setResult(null); clear(); setDownloadUrl(null); }} className="text-zinc-400 hover:text-white">Convert another</button>
                         </div>
                     </div>
                 </div>

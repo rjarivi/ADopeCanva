@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { ArrowRightLeft, FileVideo, Download, CheckCircle, RefreshCcw, Loader2, AlertCircle } from 'lucide-react';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 
@@ -40,19 +42,21 @@ interface VideoConverterProps {
   accept?: string;
   description?: string;
   title?: string;
+  initialTargetFormat?: string;
 }
 
 export const VideoConverter: React.FC<VideoConverterProps> = ({
   accept = "video/*, .mp4, .mov, .avi, .mkv, .webm, .flv, .wmv, .3gp, .mpeg, .mpg, .m4v, .ts, .asf",
   description = "MP4, MOV, AVI, MKV, WEBM, FLV, WMV, 3GP, TS supported",
-  title = "Video Converter"
+  title = "Video Converter",
+  initialTargetFormat = "MP4"
 }) => {
-  const [file, setFile] = useState<FileData | null>(null);
-  const [targetFormat, setTargetFormat] = useState('MP4');
+  const { file, select, clear } = useToolFile();
+  const [targetFormat, setTargetFormat] = useState(initialTargetFormat);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [convertedUrl, setConvertedUrl] = useState<string | null>(null);
+  const [convertedUrl, setConvertedUrl] = useObjectUrlState();
   const [logs, setLogs] = useState<string>('');
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -109,16 +113,12 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
     const inputName = `input.${file.file.name.split('.').pop()}`;
     const outputName = `output.${targetFormat.toLowerCase()}`;
 
-    try {
-      ffmpeg.on('progress', ({ progress }) => {
-        // progress is 0-1, but sometimes ffmpeg gives garbage or >1 if duration logic fails
-        const p = Math.max(0, Math.min(100, Math.round(progress * 100)));
-        setProgress(p);
-      });
+    const onProgress = ({ progress }: { progress: number }) => { setProgress(Math.round(progress * 100)); };
+    const onLog = ({ message }: { message: string }) => { console.log(message); };
 
-      ffmpeg.on('log', ({ message }) => {
-        setLogs(prev => prev + '\n' + message);
-      });
+    try {
+      ffmpeg.on('progress', onProgress);
+      ffmpeg.on('log', onLog);
 
       setLogs(prev => prev + '\nWriting file to memory...');
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
@@ -159,8 +159,11 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         extraVf.push(`scale=iw*${(scalePercent / 100).toFixed(4)}:-1`);
       }
 
-      if (targetFormat === 'MP4' || targetFormat === 'MOV' || targetFormat === 'MKV' || targetFormat === 'AVI') {
-        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
+      if (targetFormat === 'AVI') {
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'libmp3lame');
+        if (extraVf.length) args.push('-vf', extraVf.join(','));
+      } else if (targetFormat === 'MP4' || targetFormat === 'MOV' || targetFormat === 'MKV') {
+        args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:a', 'aac');
         if (extraVf.length) args.push('-vf', extraVf.join(','));
       } else if (targetFormat === 'WEBM') {
         if (extraVf.length) args.push('-vf', extraVf.join(','));
@@ -176,9 +179,11 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         if (extraVf.length) args.push('-vf', extraVf.join(','));
         args.push('-c:v', 'libwebp', '-lossless', '0', '-compression_level', '4', '-q:v', '80', '-loop', '0');
       } else if (targetFormat === 'JPG') {
-        args.push('-update', '1'); // For animated input, keep last frame or just process as static
+        args.splice(args.indexOf('-i'), 0, '-ss', '00:00:01');
+        args.push('-vframes', '1', '-update', '1'); // For animated input, keep last frame or just process as static
       } else if (targetFormat === 'PNG') {
-        args.push('-update', '1');
+        args.splice(args.indexOf('-i'), 0, '-ss', '00:00:01');
+        args.push('-vframes', '1', '-update', '1');
       }
 
       args.push(outputName);
@@ -186,7 +191,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       console.log(`Starting FFmpeg conversion with ${threads} threads...`);
       setLogs(prev => prev + `\nRunning: ffmpeg ${args.join(' ')}`);
       try {
-        await ffmpeg.exec(args);
+        const exitCode = await ffmpeg.exec(args);
+        if (exitCode !== 0) throw new Error(`FFmpeg conversion failed with code ${exitCode}`);
         console.log('FFmpeg exec completed successfully');
       } catch (primaryErr) {
         setLogs(prev => prev + `\nPrimary encode failed: ${(primaryErr as Error).message}`);
@@ -232,6 +238,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       console.error(error);
       setLogs(prev => prev + `\nError: ${(error as Error).message}`);
     } finally {
+      ffmpeg.off('progress', onProgress);
+      ffmpeg.off('log', onLog);
       setIsProcessing(false);
     }
   };
@@ -248,7 +256,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
   };
 
   const handleReset = () => {
-    setFile(null);
+    clear();
     setIsDone(false);
     setProgress(0);
     setIsProcessing(false);
@@ -289,51 +297,32 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
     );
   }
 
+  const handleFileSelect = (f: FileData | FileData[]) => {
+    const selected = Array.isArray(f) ? f[0] : f;
+    if (!selected) return;
+    select(selected);
+  };
+
   if (!file) {
     return (
-      <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-        {/* Header */}
-        <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-            <FileVideo size={32} /> {title}
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Transform videos locally using WebAssembly. No server uploads.
-          </p>
-        </div>
-
-        {/* Upload Area */}
-        <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <FileUploader
-            onFileSelect={setFile}
-            accept={accept}
-            label="Add Video"
-            description={description}
-            className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-          />
-        </div>
-
-        {/* Feature Highlights */}
-        <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-          {[
-            { icon: FileVideo, label: 'All Formats', desc: 'MP4, MOV, MKV & more' },
-            { icon: CheckCircle, label: 'Offline', desc: 'Runs in browser' },
-            { icon: RefreshCcw, label: 'Universal', desc: 'Convert anything' },
-            { icon: Download, label: 'Fast Export', desc: 'Save instantly' }
-          ].map((feat, i) => (
-            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-              <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                <feat.icon size={20} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ToolShell
+        icon={FileVideo}
+        title={title}
+        description="Transform videos locally using WebAssembly. No server uploads."
+        features={[
+          { icon: FileVideo, label: 'All Formats', desc: 'MP4, MOV, MKV & more' },
+          { icon: CheckCircle, label: 'Offline', desc: 'Runs in browser' },
+          { icon: RefreshCcw, label: 'Universal', desc: 'Convert anything' },
+          { icon: Download, label: 'Fast Export', desc: 'Save instantly' },
+        ]}
+        file={file}
+        accept={accept}
+        uploadLabel="Add Video"
+        uploadDescription={description}
+        onFileSelect={handleFileSelect}
+      >
+        <></>
+      </ToolShell>
     );
   }
 

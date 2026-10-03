@@ -19,7 +19,7 @@
 | Styling | TailwindCSS 4 (dark mode only) |
 | Routing | React Router DOM 7 |
 | Media processing | FFmpeg.wasm (`@ffmpeg/ffmpeg` 0.12) |
-| AI integration | Google Gemini (`@google/genai`) |
+| Local Neural Models | Transformers.js (`@huggingface/transformers` 4.x, Apache-2.0) |
 | PDF | jsPDF + pdf-lib + pdfjs-dist |
 | Documents | docx, mammoth, exceljs |
 | Data formats | papaparse (CSV), js-yaml, xml-js |
@@ -65,7 +65,7 @@
 │   └── feedbackApi.ts         # Google Sheets/Apps Script feedback backend
 │
 ├── views/
-│   ├── Dashboard.tsx          # Tool registry & grid (1,231 lines — source of truth for all tools)
+│   ├── Dashboard.tsx          # Core tool grid (reads GENERATED_TOOLS; entries live in tools/)
 │   └── tools/                 # 39 individual tool components
 │
 ├── public/
@@ -114,8 +114,14 @@ Set in `.env.local` for development; set in Cloudflare Dashboard for production.
 /studio       → Coming soon (Pro Editor)
 ```
 
-### Tool Registry (views/Dashboard.tsx)
-Every tool is defined here as a `ToolItem` object. This is the **single source of truth** — adding a tool means registering it here. Key fields:
+### Tool Registry (generated — do not hand-edit)
+New tools live in `tools/<id>/` (`manifest.json` + `index.tsx`) or as JSON in
+`recipes/`. `scripts/build-registry.mjs` (`npm run registry:build`, also on
+`prebuild`) emits `utils/toolRegistry.generated.ts`, which `Dashboard.tsx`
+concatenates after the legacy inline entries. **Never append to `TOOLS` by
+hand.** Manifest permissions (`network`, `npm`) are enforced by
+`npm run audit:permissions`; shell files are enforced by scope-guard.
+`ToolItem` shape (see `types.ts`):
 
 ```typescript
 interface ToolItem {
@@ -185,11 +191,14 @@ Always use **lucide-react** icons. Never use other icon libraries.
 
 Follow `.agents/workflows/Create_New_Tool.md` exactly. Summary:
 
-1. Create `views/tools/YourTool.tsx` using the standard layout
-2. Register it in `views/Dashboard.tsx` with full `ToolItem` metadata
-3. Update `Changelog.tsx` with the new release entry
-4. If using AI features, use `components/ui/ApiKeyInput.tsx` for the Gemini key
-5. Test on both desktop and mobile
+1. Lane 1 (preferred): add a JSON preset in `recipes/`
+2. Lane 2: `npm run new:tool -- --id=… --title=… --category=…`, fill the
+   manifest, build the workspace with `<ToolShell>` + `useToolFile()`
+3. `npm run registry:build && npm run audit:permissions && npm run audit:tools`
+4. Update `Changelog.tsx` with the new release entry
+5. AI features are bring-your-own-key: use `components/ui/ApiKeyInput.tsx`.
+   Never commit keys (see `SECURITY.md`)
+6. Test on both desktop and mobile
 
 ---
 
@@ -230,11 +239,11 @@ const data = await ffmpeg.readFile('output.mp4')
 - Always revoke object URLs with `URL.revokeObjectURL()` when done
 - Support common formats; show clear error messages for unsupported ones
 
-### AI Features (Gemini)
-- Use `@google/genai` SDK
-- API key comes from `VITE_GEMINI_API_KEY` or the `ApiKeyInput` component
-- Features must degrade gracefully when no key is provided
-- Currently used by: BackgroundRemover, MagicImageEditor, UpscaleImage
+### Local Neural Models (Transformers.js)
+- Use `@huggingface/transformers` (Apache-2.0 permissive license)
+- 100% on-device inference via WebGPU / ONNX WASM — no external API keys or server costs
+- Models cached client-side in browser Cache Storage
+- Used by: BackgroundRemover (`Xenova/modnet`)
 
 ---
 

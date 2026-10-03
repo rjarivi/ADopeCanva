@@ -1,0 +1,31 @@
+{
+  "id": "mng-to-apng",
+  "title": "MNG to APNG",
+  "description": "Convert MNG files to APNG.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to convert MNG files to modern APNG",
+  "guideContent": "MNG is an older format that never saw wide adoption. Convert your MNG files to APNG to ensure they can be viewed in all modern web browsers without special plugins.",
+  "faqs": [
+    {
+      "question": "What is MNG?",
+      "answer": "Multiple-image Network Graphics, an extension of PNG for animations that predates APNG."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "MNG -> APNG"
+    },
+    {
+      "label": "Compatibility",
+      "value": "Modern Web standard"
+    }
+  ],
+  "privacyNotes": "MNG parsing is done in your browser.",
+  "order": 36,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

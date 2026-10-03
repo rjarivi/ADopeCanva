@@ -69,6 +69,7 @@ export const JsonFormatter: React.FC = () => {
     };
 
     const handleFormat = () => {
+        if (!input.trim()) return;
         try {
             const parsed = JSON.parse(input);
             setInput(stringify(parsed, false));
@@ -79,6 +80,7 @@ export const JsonFormatter: React.FC = () => {
     };
 
     const handleMinify = () => {
+        if (!input.trim()) return;
         try {
             const parsed = JSON.parse(input);
             setInput(stringify(parsed, true));
@@ -110,10 +112,12 @@ export const JsonFormatter: React.FC = () => {
     return (
         <div className="max-w-6xl mx-auto h-[calc(100vh-140px)] min-h-[600px] flex flex-col animate-slide-up">
             <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-black text-white font-unbounded flex items-center gap-3">
-                    <FileJson size={32} className="text-yellow-500" /> JSON Formatter
-                </h2>
-                <p className="text-xs text-zinc-500 ml-11">Validate, Beautify, and Minify</p>
+                <div>
+                    <h2 className="text-2xl font-black text-white font-unbounded flex items-center gap-3">
+                        <FileJson size={32} className="text-yellow-500" /> JSON Formatter
+                    </h2>
+                    <p className="text-xs text-zinc-500 ml-11">Validate, Beautify, and Minify</p>
+                </div>
 
                 <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => setInput('')} size="sm">

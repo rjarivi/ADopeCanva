@@ -1,0 +1,39 @@
+name: Tool request (recipe first)
+description: Propose a new tool or preset for the suite
+title: "[tool]: "
+labels: ["tool-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most requests are presets, not apps — check `recipes/README.md` first.
+        If your idea is "same engine, different settings", request a **recipe**.
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Which lane?
+      options:
+        - Recipe (FFmpeg / canvas / conversion preset — JSON only)
+        - Code tool (needs custom UI or a new engine)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it do?
+      description: Inputs, outputs, and a concrete example.
+      placeholder: Convert any video to a 720p MP4 under 8MB for Discord uploads.
+    validations:
+      required: true
+  - type: textarea
+    id: engine
+    attributes:
+      label: Which existing engine would power it?
+      description: FFmpeg, canvas, pdf-lib, Transformers.js, or "new dependency" (say which).
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can submit this as a recipe PR myself
+        - label: I can build the component (Lane 2) following CONTRIBUTING.md

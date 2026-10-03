@@ -1,0 +1,39 @@
+{
+  "id": "image-compressor",
+  "title": "Image Compressor",
+  "description": "Reduce file size without losing visible quality.",
+  "category": "Image",
+  "icon": "Minimize2",
+  "guideTitle": "How to reduce image size for Shopify without losing quality",
+  "guideContent": "Shopify stores need fast-loading images for better SEO and conversion. Use our compressor to strip unnecessary metadata and optimize pixel data without any visible loss in quality. We recommend targetting under 200KB for product images.",
+  "faqs": [
+    {
+      "question": "Is there a limit on how many images I can compress?",
+      "answer": "No, you can compress as many images as you need, one by one or in batches (coming soon)."
+    },
+    {
+      "question": "Does it support WebP?",
+      "answer": "Yes, our compressor supports PNG, JPG, and WebP formats."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Max Reduction",
+      "value": "Up to 90%"
+    },
+    {
+      "label": "Supported Formats",
+      "value": "JPG, PNG, WebP"
+    },
+    {
+      "label": "Engine",
+      "value": "In-browser WASM"
+    }
+  ],
+  "privacyNotes": "Images are optimized locally in your browser. Privacy is 100% guaranteed.",
+  "order": 20,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

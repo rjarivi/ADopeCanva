@@ -1,0 +1,47 @@
+{
+  "id": "audio-extractor",
+  "title": "Audio Extractor",
+  "description": "Extract crystal-clear audio, music, and voice from any video file.",
+  "category": "Audio",
+  "icon": "FileAudio",
+  "guideTitle": "How to extract audio tracks from any video file",
+  "guideContent": "Quickly strip audio streams from video files like MP4, MOV, MKV, or WebM and export directly to MP3, WAV, AAC, or FLAC. Perfect for saving podcasts, extracting background tracks, or creating sound bites completely offline.",
+  "faqs": [
+    {
+      "question": "Does it upload my video to a server?",
+      "answer": "No. The extraction happens entirely inside your browser using WebAssembly. Your files remain 100% private."
+    },
+    {
+      "question": "Can I extract only a specific section of the video?",
+      "answer": "Yes, toggle \"Extract Segment\" to set custom start and end timestamps."
+    },
+    {
+      "question": "What audio formats are supported?",
+      "answer": "You can extract to MP3, WAV, AAC, M4A, FLAC, and OGG."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input Formats",
+      "value": "MP4, MOV, MKV, WebM, AVI, FLV, WMV"
+    },
+    {
+      "label": "Output Formats",
+      "value": "MP3, WAV, AAC, M4A, FLAC, OGG"
+    },
+    {
+      "label": "Audio Quality",
+      "value": "Up to 320kbps MP3 / Lossless WAV"
+    },
+    {
+      "label": "Engine",
+      "value": "FFmpeg WASM (Local)"
+    }
+  ],
+  "privacyNotes": "Your video never leaves your browser. All audio demuxing and encoding happens locally on-device.",
+  "order": 24,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

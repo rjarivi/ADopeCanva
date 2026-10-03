@@ -1,0 +1,39 @@
+{
+  "id": "signature-generator",
+  "title": "Sign to Gif",
+  "description": "Create animated signatures and export as GIF/MP4.",
+  "category": "Video",
+  "icon": "PenTool",
+  "guideTitle": "How to create a professional animated signature",
+  "guideContent": "Custom animated signatures add a personal touch to your emails and messages. Draw your signature on the digital canvas, adjust the stroke speed, and export as a smooth GIF or MP4 to use in Outlook, Gmail, or social media.",
+  "faqs": [
+    {
+      "question": "Can I change the signature color?",
+      "answer": "Yes, you can customize the stroke color and background before exporting."
+    },
+    {
+      "question": "Is the signature vector-based?",
+      "answer": "The drawing is captured at high resolution to ensure smooth animation playback."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Export Formats",
+      "value": "GIF, MP4"
+    },
+    {
+      "label": "Canvas Type",
+      "value": "Sensitive Pressure Pad"
+    },
+    {
+      "label": "Speed Control",
+      "value": "Variable playout speed"
+    }
+  ],
+  "privacyNotes": "Your signature remains private. The drawing process happens entirely on your device canvas.",
+  "order": 11,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

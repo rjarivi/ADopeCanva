@@ -1,0 +1,39 @@
+{
+  "id": "image-editor",
+  "title": "Image Editor",
+  "description": "Edit images with layers, filters, and text.",
+  "category": "Image",
+  "icon": "Edit3",
+  "guideTitle": "Master layer-based editing in your browser",
+  "guideContent": "Our Image Editor provides a familiar workspace with layers, filters, and granular controls. Whether you are adding text overlays, applying vintage filters, or compositing multiple images, you can do it all without installing heavy software like Photoshop.",
+  "faqs": [
+    {
+      "question": "Does it support layers?",
+      "answer": "Yes, you can manage multiple layers, toggle visibility, and adjust opacity for each."
+    },
+    {
+      "question": "Are there keyboard shortcuts?",
+      "answer": "Yes, standard shortcuts like Ctrl+Z for undo and Ctrl+S for saving are supported."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Max Layers",
+      "value": "Unlimited (Browser dependent)"
+    },
+    {
+      "label": "Filters",
+      "value": "15+ Professional presets"
+    },
+    {
+      "label": "Export Quality",
+      "value": "Lossless PNG/JPG"
+    }
+  ],
+  "privacyNotes": "We use Canvas API for local processing. No image data is sent to external servers.",
+  "order": 7,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

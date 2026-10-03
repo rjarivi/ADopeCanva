@@ -1,0 +1,48 @@
+{
+  "id": "svg-converter",
+  "title": "SVG Code to SVG",
+  "description": "Paste SVG markup, preview it live, and download as an .svg file.",
+  "swapId": "svg-to-code",
+  "category": "Developer",
+  "icon": "FileCode2",
+  "guideTitle": "How to convert SVG code into a downloadable SVG file",
+  "guideContent": "Write or paste raw SVG markup and instantly see a live rendering. The tool validates your code in real-time, highlights errors, and lets you export a clean .svg file — no server uploads, no design software needed.",
+  "faqs": [
+    {
+      "question": "What is SVG?",
+      "answer": "SVG (Scalable Vector Graphics) is an XML-based format for vector images that can be scaled to any size without losing quality."
+    },
+    {
+      "question": "Is my code safe?",
+      "answer": "Yes — all processing happens entirely in your browser. Your SVG code never leaves your device."
+    },
+    {
+      "question": "Can I use custom fonts or external URLs?",
+      "answer": "Inline fonts work fine. External URL references (like Google Fonts) may be blocked by browser security policies in the preview."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input",
+      "value": "Raw SVG markup (XML)"
+    },
+    {
+      "label": "Output",
+      "value": ".svg file download"
+    },
+    {
+      "label": "Validation",
+      "value": "Real-time DOMParser check"
+    },
+    {
+      "label": "Preview backgrounds",
+      "value": "Dark, Light, Transparent"
+    }
+  ],
+  "privacyNotes": "SVG code is processed entirely in-browser. Nothing is transmitted to any server.",
+  "order": 55,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

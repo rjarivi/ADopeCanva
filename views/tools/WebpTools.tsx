@@ -9,6 +9,7 @@ export const WebpMaker: React.FC = () => {
     return <GifMaker initialOutputFormat="webp" />;
 };
 
+
 // Video to WebP
 export const VideoToWebp: React.FC = () => {
     return <VideoToGif outputFormat="webp" />;
@@ -16,7 +17,7 @@ export const VideoToWebp: React.FC = () => {
 
 // Converters
 export const GifToWebp: React.FC = () => {
-    return <VideoConverter title="GIF to WebP" description="Convert GIF animations to Animated WebP" accept="image/gif" />;
+    return <VideoConverter title="GIF to WebP" description="Convert GIF animations to Animated WebP" accept="image/gif" initialTargetFormat="WEBP" />;
 };
 
 export const JpgToWebp: React.FC = () => {
@@ -32,7 +33,7 @@ export const AvifToWebp: React.FC = () => {
 };
 
 export const WebpToGif: React.FC = () => {
-    return <VideoConverter title="WebP to GIF" description="Convert Animated WebP to GIF" accept="image/webp" />;
+    return <VideoConverter title="WebP to GIF" description="Convert Animated WebP to GIF" accept="image/webp" initialTargetFormat="GIF" />;
 };
 
 export const WebpToJpg: React.FC = () => {
@@ -44,5 +45,5 @@ export const WebpToPng: React.FC = () => {
 };
 
 export const WebpToMp4: React.FC = () => {
-    return <VideoConverter title="WebP to MP4" description="Convert Animated WebP to MP4" accept="image/webp" />;
+    return <VideoConverter title="WebP to MP4" description="Convert Animated WebP to MP4" accept="image/webp" initialTargetFormat="MP4" />;
 };

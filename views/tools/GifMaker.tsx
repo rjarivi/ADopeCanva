@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { FileUploader } from '../../components/FileUploader';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
 import { Image as ImageIcon, Film, Download, Trash2, Settings, RefreshCcw, Play, Loader2, AlertCircle, Plus, Zap, ChevronDown, ChevronRight, ZoomIn, ZoomOut, Maximize, Hand, Undo2, Copy } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -43,7 +44,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   const [frameRange, setFrameRange] = useState<[number, number]>([0, 0]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [resultGif, setResultGif] = useState<string | null>(null);
+  const [resultGif, setResultGif] = useObjectUrlState();
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [outputFormat, setOutputFormat] = useState<'gif' | 'apng' | 'webp'>(initialOutputFormat);
@@ -149,11 +150,12 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
     return () => cancelAnimationFrame(animationFrameId);
   }, [resultGif, files, delay, width, height, fitMode, frameRange]);
 
-  const handleFilesSelect = (newFiles: FileData[]) => {
-    let filesToAdd = newFiles;
-    if (files.length + newFiles.length > MAX_FRAMES) {
+  const handleFilesSelect = (newFiles: FileData | FileData[]) => {
+    const arr = Array.isArray(newFiles) ? newFiles : [newFiles];
+    let filesToAdd = arr;
+    if (files.length + arr.length > MAX_FRAMES) {
       setErrorMessage(`Maximum limit of ${MAX_FRAMES} frames reached to ensure processing stability. Only the first ${MAX_FRAMES - files.length} files were added.`);
-      filesToAdd = newFiles.slice(0, MAX_FRAMES - files.length);
+      filesToAdd = arr.slice(0, MAX_FRAMES - files.length);
     } else {
       setErrorMessage(''); // Clear error if within limits
     }
@@ -186,18 +188,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
         setFrameRange(curr => [curr[0], updated.length - 1]);
       }
 
-      // Early preload to FFmpeg for mobile stability
-      if (engineStatus === 'ready' && ffmpegRef.current) {
-        filesToAdd.forEach(async (f, idx) => {
-          const name = `orig_${Date.now()}_${idx}`;
-          try {
-            await writeFileToFFmpeg(ffmpegRef.current!, name, f.file);
-            (f as any).ffName = name; // Attach for later use
-          } catch (e) {
-            console.warn("Pre-write failed, will retry at render", e);
-          }
-        });
-      }
+
 
       return updated;
     });
@@ -335,7 +326,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       };
 
       const blendImages = (blobA: Blob, blobB: Blob, alpha: number, tW: number, tH: number): Promise<Blob> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           const imgA = new Image();
           const imgB = new Image();
           const urlA = URL.createObjectURL(blobA);
@@ -359,6 +350,8 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
           };
           imgA.onload = check;
           imgB.onload = check;
+          imgA.onerror = () => reject(new Error('Failed to load frame A for blending'));
+          imgB.onerror = () => reject(new Error('Failed to load frame B for blending'));
           imgA.src = urlA;
           imgB.src = urlB;
         });
@@ -423,13 +416,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       await ffmpeg.writeFile('list.txt', concatContent);
       console.log('[GifMaker] list.txt generated with', framesData.length, 'frames');
 
-      const args = [
-        '-f', 'concat',
-        '-safe', '0',
-        '-i', 'list.txt',
-        '-fps_mode', 'vfr'
-      ];
-
+      let args: string[] = ['-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt', '-fps_mode', 'vfr'];
       if (outputFormat === 'gif') {
         // High quality palette generation + force single thread for concat stability
         args.push('-vf', 'split[a][b];[a]palettegen[p];[b][p]paletteuse');
@@ -440,8 +427,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       } else if (outputFormat === 'webp') {
         args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', String(loopCount), '-threads', '1');
       }
-
-      args.push('-y', outputFilename);
+      args.push(outputFilename);
 
       console.log('[GifMaker] Executing FFmpeg with args:', args.join(' '));
       try {
@@ -503,50 +489,26 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
 
   if (files.length === 0) {
     return (
-      <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-        {/* Header */}
-        <div className="flex-none space-y-3 mb-10">
-          <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-            <Film size={32} /> {outputFormat === 'apng' ? 'APNG Maker' : 'GIF Maker'}
-          </h2>
-          <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Create animated {outputFormat.toUpperCase()}s from a series of images.
-          </p>
-        </div>
-
-        {/* Upload Area */}
-        <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <FileUploader
-            onFilesSelect={handleFilesSelect}
-            accept="image/*"
-            label="Add Images"
-            description="Select multiple PNG, JPG files"
-            multiple={true}
-            className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-          />
-        </div>
-
-        {/* Feature Highlights */}
-        <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-          {[
-            { icon: ImageIcon, label: 'Multi-Image', desc: 'Drag & drop sequence' },
-            { icon: Film, label: 'Animation', desc: 'Smooth frame control' },
-            { icon: Settings, label: 'Customize', desc: 'Delay & resize' },
-            { icon: Zap, label: 'Pro Effects', desc: 'Transition modes' }
-          ].map((feat, i) => (
-            <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-              <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                <feat.icon size={20} />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <ToolShell
+        icon={Film}
+        title={outputFormat === 'apng' ? 'APNG Maker' : 'GIF Maker'}
+        description={`Create animated ${outputFormat.toUpperCase()}s from a series of images.`}
+        features={[
+          { icon: ImageIcon, label: 'Multi-Image', desc: 'Drag & drop sequence' },
+          { icon: Film, label: 'Animation', desc: 'Smooth frame control' },
+          { icon: Settings, label: 'Customize', desc: 'Delay & resize' },
+          { icon: Zap, label: 'Pro Effects', desc: 'Transition modes' },
+        ]}
+        file={files}
+        accept="image/*"
+        multiple
+        uploadLabel="Add Images"
+        uploadDescription="Select multiple PNG, JPG files"
+        onFileSelect={handleFilesSelect}
+        error={errorMessage || null}
+      >
+        <></>
+      </ToolShell>
     );
   }
 
@@ -841,7 +803,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
             <div className="flex-1 overflow-x-auto overflow-y-hidden p-4 custom-scrollbar-h flex items-center gap-3">
               {files.map((file, i) => (
                 <div
-                  key={file.previewUrl} // Use previewUrl as unique key to prevent render issues during swap
+                  key={`${i}-${file.previewUrl}`} // Use previewUrl + index to handle duplicates
                   className={`group relative h-24 aspect-square shrink-0 bg-zinc-900 rounded-xl overflow-hidden border transition-all 
                     ${draggedIndex === i ? 'opacity-50 scale-95 border-indigo-500 dashed border-2' : 'border-zinc-800 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/5'}
                     cursor-grab active:cursor-grabbing

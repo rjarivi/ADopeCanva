@@ -2,12 +2,14 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     AudioWaveform, Download, BarChart3, Palette, Ruler,
     Image as ImageIcon, RefreshCcw, Loader2, Zap, Copy, Check,
     Settings, Shuffle, Play, Pause,
 } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 type WaveStyle = 'bars' | 'sharp' | 'smooth' | 'dotted' | 'circular' | 'bubbles' | 'stacked' | 'radiating';
 type ColorMode = 'solid' | 'gradient-h' | 'gradient-v' | 'gradient-r' | 'image';
@@ -153,7 +155,7 @@ export const AudioWaveformExporter: React.FC = () => {
     const isMobile = useIsMobile();
 
     // Core state
-    const [file, setFile]         = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [waveData, setWaveData] = useState<number[]>([]);
     const [rawAudioData, setRawAudioData] = useState<Float32Array | null>(null);
     const [isDecoding, setIsDecoding] = useState(false);
@@ -165,7 +167,7 @@ export const AudioWaveformExporter: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
-    const [audioUrl, setAudioUrl] = useState<string | null>(null);
+    const [audioUrl, setAudioUrl] = useObjectUrlState();
     const audioRef = useRef<HTMLAudioElement>(null);
 
     // Style
@@ -229,16 +231,19 @@ export const AudioWaveformExporter: React.FC = () => {
 
     const decodeAudio = useCallback(async (fileData: FileData, sampleCount = samplesRef.current) => {
         setIsDecoding(true); setError(''); setWaveData([]); setRawAudioData(null);
+        let ctx: AudioContext | null = null;
         try {
-            const ctx = new AudioContext();
+            ctx = new AudioContext();
             const buf = await fileData.file.arrayBuffer();
             const audio = await ctx.decodeAudioData(buf);
             const ch = audio.getChannelData(0);
             setRawAudioData(ch);
             computeWaveData(ch, sampleCount);
-            if (ctx.state !== 'closed') await ctx.close();
         } catch { setError('Could not decode audio. Try MP3, WAV, OGG, or FLAC.'); }
-        finally { setIsDecoding(false); }
+        finally { 
+            if (ctx && ctx.state !== 'closed') await ctx.close();
+            setIsDecoding(false); 
+        }
     }, [computeWaveData]);
 
     React.useEffect(() => {
@@ -247,19 +252,20 @@ export const AudioWaveformExporter: React.FC = () => {
         }
     }, [samples, rawAudioData, computeWaveData]);
 
-    const handleFile  = useCallback((fd: FileData) => { 
-        setFile(fd); decodeAudio(fd); 
-        const url = URL.createObjectURL(fd.file);
+    const handleFile  = useCallback((fd: FileData | FileData[]) => {
+        const selected = Array.isArray(fd) ? fd[0] : fd;
+        if (!selected) return;
+        select(selected); decodeAudio(selected);
+        const url = URL.createObjectURL(selected.file);
         setAudioUrl(url);
-    }, [decodeAudio]);
-    const reset       = useCallback(() => { 
-        setFile(null); setWaveData([]); setRawAudioData(null); setError(''); 
-        if (audioUrl) URL.revokeObjectURL(audioUrl);
-        setAudioUrl(null);
+    }, [decodeAudio, select]);
+    const reset       = useCallback(() => {
+        clear(); setWaveData([]); setRawAudioData(null); setError('');
+        setAudioUrl(null); // useObjectUrlState revokes the previous URL
         setIsPlaying(false);
         setCurrentTime(0);
         setExportError('');
-    }, [audioUrl]);
+    }, []);
 
     // ── SVG generation ────────────────────────────────────────────────────────
     const svgString = useMemo(() => {
@@ -405,7 +411,7 @@ export const AudioWaveformExporter: React.FC = () => {
             if (mirror) {
                 const inner: [number, number][] = data.map((v, i) => {
                     const a = (i / n) * 2 * Math.PI - Math.PI / 2;
-                    const r = baseR * 0.55 + v * maxSpike * 0.55;
+                    const r = Math.max(10, baseR * 0.55 - v * maxSpike * 0.45);
                     return [cx2 + Math.cos(a) * r, cy2 + Math.sin(a) * r];
                 });
                 clipPath = `<path d="${circularPath(outer)} ${circularPath(inner)}" fill-rule="evenodd"/>`;
@@ -456,8 +462,12 @@ export const AudioWaveformExporter: React.FC = () => {
         const blob = new Blob([svgString], { type: 'image/svg+xml' });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
-        a.href = url; a.download = `waveform-${waveStyle}.svg`; a.click();
-        URL.revokeObjectURL(url);
+        a.href = url;
+        a.download = `waveform-${waveStyle}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, [svgString, waveStyle]);
 
     const handleCopy = useCallback(async () => {

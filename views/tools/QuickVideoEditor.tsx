@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
+import { ToolShell } from '../../components/ToolShell';
 import {
     Play, Pause, Scissors, Download, AlertCircle, Loader2,
     Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
@@ -10,6 +11,7 @@ import {
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -253,7 +255,7 @@ export const QuickVideoEditor: React.FC = () => {
     // Export
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [exportUrl, setExportUrl] = useState<string | null>(null);
+    const [exportUrl, setExportUrl] = useObjectUrlState();
 
     // Hidden file input
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -328,6 +330,9 @@ export const QuickVideoEditor: React.FC = () => {
     }, []);
 
     const deleteClip = (id: string) => {
+        const clipToDelete = clips.find(c => c.id === id);
+        if (clipToDelete?.url) URL.revokeObjectURL(clipToDelete.url);
+        
         setClips(prev => {
             const next = prev.filter(c => c.id !== id);
             if (selectedId === id) setSelectedId(next.length ? next[0].id : null);
@@ -445,9 +450,9 @@ export const QuickVideoEditor: React.FC = () => {
                 vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
                 vf.push(`crop=${tw}:${th}`);
             }
-        } else if (zoom !== 1) {
-            // No aspect ratio change — scale up and crop center back to original dimensions
-            vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
+        } else if (zoom > 1) {
+            // only allow zoom-in (crop), not zoom-out which would crop outside bounds
+            vf.push(`scale=trunc(iw*${zoom.toFixed(4)}/2)*2:trunc(ih*${zoom.toFixed(4)}/2)*2`);
             vf.push(`crop=iw/${zoom.toFixed(4)}:ih/${zoom.toFixed(4)}`);
         } else {
             // Crop without a fixed canvas — set SAR so square pixels are preserved
@@ -727,51 +732,25 @@ export const QuickVideoEditor: React.FC = () => {
     // ── Upload screen ──
     if (clips.length === 0) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Video size={32} /> Quick Video Editor
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Trim & merge multiple clips — runs entirely in your browser.
-                    </p>
-                </div>
-
-                {/* Two-level upload box: outer solid card + inner dashed drop zone */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 relative overflow-hidden group hover:border-indigo-500/30 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                    <div
-                        className="relative w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all flex flex-col items-center justify-center cursor-pointer"
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={e => e.preventDefault()}
-                        onDrop={e => { e.preventDefault(); addFiles(Array.from(e.dataTransfer.files)); }}
-                    >
-                        <div className="p-4 rounded-full bg-zinc-800 mb-4 group-hover:bg-zinc-700 transition-colors">
-                            <Film size={36} className="text-zinc-400 group-hover:text-indigo-400 transition-colors" />
-                        </div>
-                        <p className="text-lg font-bold text-white">Add Video</p>
-                        <p className="text-sm text-zinc-500 mt-1">MP4, MOV, WebM, AVI — add one or more clips</p>
-                        <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />
-                    </div>
-                </div>
-
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Scissors, label: 'Trim Clips', desc: 'Precise start & end points' },
-                        { icon: Film, label: 'Merge Videos', desc: 'Combine multiple clips' },
-                        { icon: Monitor, label: 'Aspect Ratio', desc: 'Resize for any platform' },
-                        { icon: Volume2, label: 'Audio Control', desc: 'Per-clip mute support' },
-                    ].map((f, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400"><f.icon size={20} /></div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{f.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{f.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Video}
+                title="Quick Video Editor"
+                description="Trim & merge multiple clips — runs entirely in your browser."
+                features={[
+                    { icon: Scissors, label: 'Trim Clips', desc: 'Precise start & end points' },
+                    { icon: Film, label: 'Merge Videos', desc: 'Combine multiple clips' },
+                    { icon: Monitor, label: 'Aspect Ratio', desc: 'Resize for any platform' },
+                    { icon: Volume2, label: 'Audio Control', desc: 'Per-clip mute support' },
+                ]}
+                file={[]}
+                accept="video/*"
+                multiple
+                uploadLabel="Add Video"
+                uploadDescription="MP4, MOV, WebM, AVI — add one or more clips"
+                onFileSelect={(f) => addFiles((Array.isArray(f) ? f : [f]).map((fd) => fd.file))}
+            >
+                <></>
+            </ToolShell>
         );
     }
 

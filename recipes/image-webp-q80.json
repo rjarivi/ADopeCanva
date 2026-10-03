@@ -1,0 +1,11 @@
+{
+  "id": "image-webp-q80",
+  "title": "WebP at quality 80",
+  "kind": "image",
+  "engine": "canvas",
+  "description": "Convert any image to WebP at quality 80 — the web default.",
+  "params": {
+    "format": "webp",
+    "quality": 80
+  }
+}

@@ -1,0 +1,30 @@
+name: Bug report
+description: A tool is broken or behaves badly
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: Tool (URL or /health toolId)
+      placeholder: /pdf-redactor
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: File type/size helps a lot. Check /health for a logged failure first.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser + OS
+      placeholder: Chrome 126 / macOS 14

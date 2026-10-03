@@ -1,0 +1,32 @@
+{
+  "id": "webp-to-png",
+  "title": "WebP to PNG",
+  "description": "Convert WebP to PNG image.",
+  "swapId": "png-to-webp",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Convert WebP to PNG without losing quality",
+  "guideContent": "Convert your WebP images to lossless PNG format. This is ideal if you need to edit the image further or require the maximum possible quality for professional printing or design work.",
+  "faqs": [
+    {
+      "question": "Is this conversion lossless?",
+      "answer": "Yes, converting to PNG is a lossless process that preserves all pixel data from the source."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "WebP -> PNG"
+    },
+    {
+      "label": "Transparency",
+      "value": "Fully preserved"
+    }
+  ],
+  "privacyNotes": "Local processing ensures your design assets stay private.",
+  "order": 45,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

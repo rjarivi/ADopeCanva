@@ -1,0 +1,44 @@
+{
+  "id": "svg-to-code",
+  "title": "SVG to Code",
+  "description": "Upload an SVG file and extract its raw source markup.",
+  "swapId": "svg-converter",
+  "category": "Developer",
+  "icon": "FileSearch",
+  "guideTitle": "How to extract SVG source code from an SVG file",
+  "guideContent": "Open any SVG file and instantly view, copy, or download its raw XML markup. Perfect for developers who need to inspect icon libraries, tweak SVG paths, or embed inline SVG into HTML.",
+  "faqs": [
+    {
+      "question": "What is SVG source code?",
+      "answer": "SVG files are XML text files. This tool reads that text so you can copy, edit, or embed it directly in your code."
+    },
+    {
+      "question": "Can I edit the code after extracting?",
+      "answer": "Yes — the code panel is fully editable. Make changes and the preview updates live."
+    },
+    {
+      "question": "Is my file safe?",
+      "answer": "All processing is done entirely in your browser. The file never leaves your device."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Input",
+      "value": ".svg file"
+    },
+    {
+      "label": "Output",
+      "value": "Raw SVG markup (editable)"
+    },
+    {
+      "label": "Preview",
+      "value": "Live render in browser"
+    }
+  ],
+  "privacyNotes": "SVG files are read locally in-browser. No data is uploaded.",
+  "order": 56,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

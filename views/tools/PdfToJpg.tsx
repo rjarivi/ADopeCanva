@@ -1,16 +1,19 @@
 /// <reference lib="dom" />
 import React, { useState, useCallback } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { FileImage, Download, RefreshCcw, Zap, Layers, Image as ImageIcon, Archive } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import * as pdfjsLib from 'pdfjs-dist';
 import JSZip from 'jszip';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker - using local file for privacy (no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 interface PageImage {
     pageNum: number;
@@ -21,7 +24,7 @@ interface PageImage {
 
 export const PdfToJpg: React.FC = () => {
     const isMobile = useIsMobile();
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [pageImages, setPageImages] = useState<PageImage[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [pageCount, setPageCount] = useState(0);
@@ -33,12 +36,13 @@ export const PdfToJpg: React.FC = () => {
 
     const handleFileSelect = useCallback((newFile: FileData | FileData[]) => {
         const selectedFile = Array.isArray(newFile) ? newFile[0] : newFile;
-        setFile(selectedFile);
+        if (!selectedFile) return;
+        select(selectedFile);
         setPageImages([]);
         setPageCount(0);
         setError(null);
         setProgress(0);
-    }, []);
+    }, [select]);
 
     const convertToImages = useCallback(async () => {
         if (!file) return;
@@ -49,50 +53,57 @@ export const PdfToJpg: React.FC = () => {
         setProgress(0);
 
         try {
+            const validationError = await validatePdfFile(file.file);
+            if (validationError) { setError(validationError); return; }
             const arrayBuffer = await file.file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            setPageCount(pdf.numPages);
+            const pdf = await getPdfDocument(arrayBuffer, 'pdf-to-jpg');
+            try {
+                setPageCount(pdf.numPages);
 
-            const images: PageImage[] = [];
+                const images: PageImage[] = [];
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-                setProgress(Math.round((i / pdf.numPages) * 100));
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    setProgress(Math.round((i / pdf.numPages) * 100));
 
-                const page = await pdf.getPage(i);
-                const viewport = page.getViewport({ scale: scale });
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: scale });
 
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                const ctx = canvas.getContext('2d');
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    const ctx = canvas.getContext('2d');
 
-                if (!ctx) {
-                    throw new Error('Could not get canvas context');
+                    if (!ctx) {
+                        throw new Error('Could not get canvas context');
+                    }
+
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport,
+                        canvas: canvas
+                    } as any).promise;
+
+                    const dataUrl = format === 'png'
+                        ? canvas.toDataURL('image/png')
+                        : canvas.toDataURL('image/jpeg', quality / 100);
+
+                    images.push({
+                        pageNum: i,
+                        dataUrl: dataUrl,
+                        width: viewport.width,
+                        height: viewport.height
+                    });
+                    
+                    page.cleanup();
                 }
 
-                await page.render({
-                    canvasContext: ctx,
-                    viewport: viewport,
-                    canvas: canvas
-                } as any).promise;
-
-                const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-                const dataUrl = format === 'png'
-                    ? canvas.toDataURL('image/png')
-                    : canvas.toDataURL('image/jpeg', quality / 100);
-
-                images.push({
-                    pageNum: i,
-                    dataUrl: dataUrl,
-                    width: viewport.width,
-                    height: viewport.height
-                });
+                setPageImages(images);
+            } finally {
+                await pdf.destroy();
             }
-
-            setPageImages(images);
         } catch (err) {
-            console.error('PDF conversion error:', err);
-            setError('Failed to convert PDF. The file may be corrupted or password protected.');
+            logToolFailure('pdf-to-jpg', err, { stage: 'pdf-convert' });
+            setError(classifyPdfError(err));
         } finally {
             setIsProcessing(false);
             setProgress(100);
@@ -102,9 +113,10 @@ export const PdfToJpg: React.FC = () => {
     const ext = format === 'png' ? 'png' : 'jpg';
 
     const downloadSingle = useCallback((image: PageImage) => {
+        const baseName = (file?.file.name ?? 'document.pdf').replace(/\.pdf$/i, '');
         const link = document.createElement('a');
         link.href = image.dataUrl;
-        link.download = `${file?.file.name.replace('.pdf', '')}-page-${image.pageNum}.${ext}`;
+        link.download = `${baseName}-page-${image.pageNum}.${ext}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -118,85 +130,60 @@ export const PdfToJpg: React.FC = () => {
             return;
         }
 
-        const zip = new JSZip();
-        const folder = zip.folder('pdf-images');
+        const baseName = (file?.file.name ?? 'document.pdf').replace(/\.pdf$/i, '');
+        try {
+            const zip = new JSZip();
+            const folder = zip.folder('pdf-images');
 
-        for (const image of pageImages) {
-            // Convert data URL to blob
-            const response = await fetch(image.dataUrl);
-            const blob = await response.blob();
-            folder?.file(`page-${image.pageNum}.${ext}`, blob);
+            for (const image of pageImages) {
+                // Convert data URL to blob
+                const response = await fetch(image.dataUrl);
+                const blob = await response.blob();
+                folder?.file(`page-${image.pageNum}.${ext}`, blob);
+            }
+
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${baseName}-images.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (err) {
+            logToolFailure('pdf-to-jpg', err, { stage: 'zip-download' });
+            setError('Failed to package images. Try downloading pages individually.');
         }
-
-        const content = await zip.generateAsync({ type: 'blob' });
-        const url = URL.createObjectURL(content);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${file?.file.name.replace('.pdf', '')}-images.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
     }, [pageImages, file, downloadSingle, ext]);
 
     const handleReset = () => {
-        setFile(null);
+        clear();
         setPageImages([]);
         setPageCount(0);
         setError(null);
         setProgress(0);
     };
 
-    if (!file) {
-        return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <FileImage size={32} /> PDF to JPG
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Convert PDF pages to high-quality JPG images.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept=".pdf"
-                        label="Add PDF"
-                        description="Select a PDF to convert to images"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Zap, label: 'Fast Convert', desc: 'Instant processing' },
-                        { icon: Layers, label: 'All Pages', desc: 'Batch conversion' },
-                        { icon: ImageIcon, label: 'High Quality', desc: 'Adjustable DPI' },
-                        { icon: Archive, label: 'ZIP Download', desc: 'All at once' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <ToolShell
+            icon={FileImage}
+            title="PDF to JPG"
+            description="Convert PDF pages to high-quality JPG images."
+            features={[
+                { icon: Zap, label: 'Fast Convert', desc: 'Instant processing' },
+                { icon: Layers, label: 'All Pages', desc: 'Batch conversion' },
+                { icon: ImageIcon, label: 'High Quality', desc: 'Adjustable DPI' },
+                { icon: Archive, label: 'ZIP Download', desc: 'All at once' },
+            ]}
+            file={file}
+            accept=".pdf"
+            uploadLabel="Add PDF"
+            uploadDescription="Select a PDF to convert to images"
+            onFileSelect={handleFileSelect}
+            error={error}
+        >
+            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
             {/* Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
@@ -321,6 +308,10 @@ export const PdfToJpg: React.FC = () => {
                                         <Archive size={18} className="mr-2" />
                                         {pageImages.length === 1 ? `Download ${ext.toUpperCase()}` : `Download All (${pageImages.length} images)`}
                                     </Button>
+                                    <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
+                                        <FileImage size={18} className="mr-2" />
+                                        {isProcessing ? 'Converting...' : 'Re-convert with New Settings'}
+                                    </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>
                                         <RefreshCcw size={16} className="mr-2" /> Start New
                                     </Button>
@@ -374,6 +365,7 @@ export const PdfToJpg: React.FC = () => {
                     )}
                 </div>
             </main>
-        </div>
+            </div>
+        </ToolShell>
     );
 };

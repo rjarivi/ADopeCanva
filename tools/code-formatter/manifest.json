@@ -1,0 +1,39 @@
+{
+  "id": "code-formatter",
+  "title": "Code Formatter",
+  "description": "Beautify and minify JSON, HTML, CSS, and XML.",
+  "category": "Developer",
+  "icon": "Code",
+  "guideTitle": "Professional code beautifier and minifier",
+  "guideContent": "Clean up messy code or minify files for production. Our formatter supports JSON, HTML, CSS, and XML, providing instant syntax highlighting and indentation fixes.",
+  "faqs": [
+    {
+      "question": "Is it safe for sensitive data?",
+      "answer": "Yes, the formatting is done locally in your browser. We never see or store your code."
+    },
+    {
+      "question": "Does it support nested JSON?",
+      "answer": "Yes, it handles deeply nested JSON structures with ease."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Languages",
+      "value": "JSON, HTML, CSS, JavaScript, XML"
+    },
+    {
+      "label": "Modes",
+      "value": "Beautify / Minify"
+    },
+    {
+      "label": "Theme",
+      "value": "Dark / High Contrast"
+    }
+  ],
+  "privacyNotes": "Code is processed in-memory using Prettier and local scripts.",
+  "order": 47,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

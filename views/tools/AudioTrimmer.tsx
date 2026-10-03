@@ -1,8 +1,9 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     Play, Pause, Scissors, Volume2, RotateCcw, Loader2, AlertCircle,
     Download, Trash2, Undo2, Music, Mic2, Sparkles, Sliders, Keyboard, Check,
@@ -12,6 +13,7 @@ import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ff
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
 type ExportFormat = 'mp3' | 'wav' | 'aac' | 'm4a' | 'ogg' | 'flac';
 type BitrateOption = '128k' | '192k' | '256k' | '320k';
@@ -71,10 +73,11 @@ export const AudioTrimmer: React.FC = () => {
     const isMobile = useIsMobile();
 
     // File & Core Audio
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select } = useToolFile();
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
+    const currentTimeRef = useRef(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [playSelectionOnly, setPlaySelectionOnly] = useState(false);
     const [isLooping, setIsLooping] = useState(false);
@@ -106,7 +109,7 @@ export const AudioTrimmer: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [trimmedUrl, setTrimmedUrl] = useState<string | null>(null);
+    const [trimmedUrl, setTrimmedUrl] = useObjectUrlState();
     const [trimmedSize, setTrimmedSize] = useState<string | null>(null);
 
     // Refs
@@ -137,8 +140,9 @@ export const AudioTrimmer: React.FC = () => {
     // Decode Audio Buffer for Real Waveform Peaks
     const decodeAudioPeaks = useCallback(async (fileBlob: File) => {
         setIsDecodingAudio(true);
+        let ctx: AudioContext | null = null;
         try {
-            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
             const arrayBuffer = await fileBlob.arrayBuffer();
             const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
@@ -172,13 +176,12 @@ export const AudioTrimmer: React.FC = () => {
             setDuration(audioBuffer.duration);
             setStartTime(0);
             setEndTime(audioBuffer.duration);
-
-            if (ctx.state !== 'closed') {
-                await ctx.close();
-            }
         } catch (err) {
             console.error('Error decoding audio buffer:', err);
         } finally {
+            if (ctx && ctx.state !== 'closed') {
+                await ctx.close();
+            }
             setIsDecodingAudio(false);
         }
     }, []);
@@ -186,6 +189,7 @@ export const AudioTrimmer: React.FC = () => {
     // Handle File Selection
     useEffect(() => {
         if (file) {
+            setPeaks(null);
             const url = URL.createObjectURL(file.file);
             setAudioUrl(url);
             setTrimmedUrl(null);
@@ -429,16 +433,19 @@ export const AudioTrimmer: React.FC = () => {
         if (!audioRef.current) return;
         const current = audioRef.current.currentTime;
         setCurrentTime(current);
+        currentTimeRef.current = current;
 
         if (playSelectionOnly || isLooping) {
             if (current >= endTime || current < startTime - 0.05) {
                 if (isLooping) {
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                 } else {
                     audioRef.current.pause();
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                     setIsPlaying(false);
                 }
             }
@@ -455,35 +462,37 @@ export const AudioTrimmer: React.FC = () => {
         } else {
             if (mode === 'selection') {
                 setPlaySelectionOnly(true);
-                if (currentTime < startTime || currentTime >= endTime) {
+                if (currentTimeRef.current < startTime || currentTimeRef.current >= endTime) {
                     audioRef.current.currentTime = startTime;
                     setCurrentTime(startTime);
+                    currentTimeRef.current = startTime;
                 }
             } else {
                 setPlaySelectionOnly(false);
             }
             audioRef.current.play().then(() => setIsPlaying(true)).catch(console.error);
         }
-    }, [isPlaying, duration, currentTime, startTime, endTime]);
+    }, [isPlaying, duration, startTime, endTime]);
 
     const nudgeCurrentTime = useCallback((delta: number) => {
         if (!audioRef.current || !duration) return;
         const newTime = Math.max(0, Math.min(duration, audioRef.current.currentTime + delta));
         audioRef.current.currentTime = newTime;
         setCurrentTime(newTime);
+        currentTimeRef.current = newTime;
     }, [duration]);
 
     const markInPoint = useCallback(() => {
-        const newStart = Math.min(currentTime, endTime - 0.1);
+        const newStart = Math.min(currentTimeRef.current, endTime - 0.1);
         setStartTime(newStart);
         setTrimmedUrl(null);
-    }, [currentTime, endTime]);
+    }, [endTime]);
 
     const markOutPoint = useCallback(() => {
-        const newEnd = Math.max(currentTime, startTime + 0.1);
+        const newEnd = Math.max(currentTimeRef.current, startTime + 0.1);
         setEndTime(newEnd);
         setTrimmedUrl(null);
-    }, [currentTime, startTime]);
+    }, [startTime]);
 
     // Keyboard Shortcuts
     useEffect(() => {
@@ -758,6 +767,7 @@ export const AudioTrimmer: React.FC = () => {
                     break;
             }
 
+            args.push('-vn');
             args.push(outputName);
 
             const ret = await ffmpeg.exec(args);
@@ -812,7 +822,7 @@ export const AudioTrimmer: React.FC = () => {
     const handleReplaceFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (selected) {
-            setFile({
+            select({
                 file: selected,
                 previewUrl: URL.createObjectURL(selected),
                 size: (selected.size / (1024 * 1024)).toFixed(2) + ' MB',
@@ -857,53 +867,34 @@ export const AudioTrimmer: React.FC = () => {
         );
     }
 
+    const handleFileSelect = (f: FileData | FileData[]) => {
+        const selected = Array.isArray(f) ? f[0] : f;
+        if (!selected) return;
+        select(selected);
+    };
+
     // Clean Golden-Standard Upload Landing Page
     if (!file || !audioUrl) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight flex items-center justify-center gap-3 font-unbounded">
-                        <div className="text-indigo-500"><Scissors size={32} /></div>
-                        <span className="text-white">Audio Trimmer</span>
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Trim, cut, and polish audio tracks with waveform precision.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={setFile}
-                        accept="audio/*"
-                        label="Add Audio Track"
-                        description="MP3, WAV, AAC, FLAC, M4A, OGG up to 250MB"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Scissors, label: 'Precise Trim', desc: 'Millisecond cuts' },
-                        { icon: Mic2, label: 'Live Waveform', desc: 'Click & scrub playback' },
-                        { icon: Volume2, label: 'Fades & Gain', desc: 'Fade curves & volume' },
-                        { icon: Download, label: 'Multi-Format', desc: 'WAV, MP3, AAC, OGG' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Scissors}
+                title="Audio Trimmer"
+                description="Trim, cut, and polish audio tracks with waveform precision."
+                features={[
+                    { icon: Scissors, label: 'Precise Trim', desc: 'Millisecond cuts' },
+                    { icon: Mic2, label: 'Live Waveform', desc: 'Click & scrub playback' },
+                    { icon: Volume2, label: 'Fades & Gain', desc: 'Fade curves & volume' },
+                    { icon: Download, label: 'Multi-Format', desc: 'WAV, MP3, AAC, OGG' },
+                ]}
+                file={file}
+                accept="audio/*"
+                uploadLabel="Add Audio Track"
+                uploadDescription="MP3, WAV, AAC, FLAC, M4A, OGG up to 250MB"
+                onFileSelect={handleFileSelect}
+                error={errorMessage || null}
+            >
+                <></>
+            </ToolShell>
         );
     }
 

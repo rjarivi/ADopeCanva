@@ -18,6 +18,49 @@ interface Feature {
     date: string;
 }
 
+const DEFAULT_COMMUNITY_FEATURES: Feature[] = [
+    {
+        id: 'feat-audio-extractor',
+        title: 'Audio Extractor (Video to MP3)',
+        description: 'Extract audio tracks, speech, and sound effects from any video file with custom bitrates.',
+        status: 'completed',
+        votes: 89,
+        date: '2026-03-01'
+    },
+    {
+        id: 'feat-palette-extractor',
+        title: 'Image Color Palette Extractor',
+        description: 'Drop any photo to extract dominant color palettes, HEX swatches, and CSS variables.',
+        status: 'completed',
+        votes: 74,
+        date: '2026-03-02'
+    },
+    {
+        id: 'feat-exif-stripper',
+        title: 'EXIF Metadata Stripper & Inspector',
+        description: 'View and strip hidden GPS coordinates, camera specs, and device metadata from photos before sharing.',
+        status: 'completed',
+        votes: 63,
+        date: '2026-03-05'
+    },
+    {
+        id: 'feat-pdf-watermark',
+        title: 'PDF Watermark & Page Numberer',
+        description: 'Stamp diagonal confidential watermarks or add customized page numbering to PDF pages.',
+        status: 'completed',
+        votes: 52,
+        date: '2026-03-08'
+    },
+    {
+        id: 'feat-video-speed',
+        title: 'Video Speed & Slo-Mo Controller',
+        description: 'Speed up or slow down videos (0.25x to 8x) with pitch-corrected audio for reels and TikTok.',
+        status: 'in-progress',
+        votes: 41,
+        date: '2026-03-10'
+    }
+];
+
 export const FeatureBoard = () => {
     const [features, setFeatures] = useState<Feature[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +68,7 @@ export const FeatureBoard = () => {
     const [newFeature, setNewFeature] = useState({ title: '', description: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Load from API
+    // Load from API or Fallback to curated roadmap
     useEffect(() => {
         const loadFeatures = async () => {
             setIsLoading(true);
@@ -33,26 +76,24 @@ export const FeatureBoard = () => {
 
             // Merge with local voted state
             const votedIds = JSON.parse(localStorage.getItem('omni_voted_features') || '[]');
+            const localCustom: Feature[] = JSON.parse(localStorage.getItem('omni_custom_features') || '[]');
 
-            if (apiData && apiData.length > 0) {
-                const normalizeStatus = (s: string): FeatureStatus => {
-                    const lower = (s || 'requested').toLowerCase().trim();
-                    if (lower === 'completed' || lower === 'done') return 'completed';
-                    if (lower === 'in-progress' || lower === 'in progress') return 'in-progress';
-                    return 'requested';
-                };
+            const normalizeStatus = (s: string): FeatureStatus => {
+                const lower = (s || 'requested').toLowerCase().trim();
+                if (lower === 'completed' || lower === 'done') return 'completed';
+                if (lower === 'in-progress' || lower === 'in progress') return 'in-progress';
+                return 'requested';
+            };
 
-                const merged = apiData.map((f: any) => ({
-                    ...f,
-                    status: normalizeStatus(f.status),
-                    hasVoted: votedIds.includes(f.id)
-                }));
-                // Sort by votes desc
-                setFeatures(merged.sort((a: Feature, b: Feature) => b.votes - a.votes));
-            } else {
-                // No features from API — show empty state (no mock data)
-                setFeatures([]);
-            }
+            const baseList = (apiData && apiData.length > 0) ? apiData : [...localCustom, ...DEFAULT_COMMUNITY_FEATURES];
+
+            const merged = baseList.map((f: any) => ({
+                ...f,
+                status: normalizeStatus(f.status),
+                hasVoted: votedIds.includes(f.id)
+            }));
+            // Sort by votes desc
+            setFeatures(merged.sort((a: Feature, b: Feature) => b.votes - a.votes));
             setIsLoading(false);
         };
         loadFeatures();
@@ -107,6 +148,10 @@ export const FeatureBoard = () => {
         setFeatures([optimisticFeature, ...features]);
         setShowAddForm(false);
         setNewFeature({ title: '', description: '' });
+
+        // Persist locally
+        const localCustom: Feature[] = JSON.parse(localStorage.getItem('omni_custom_features') || '[]');
+        localStorage.setItem('omni_custom_features', JSON.stringify([optimisticFeature, ...localCustom]));
 
         // API Call
         const result = await submitFeature(optimisticFeature.title, optimisticFeature.description);

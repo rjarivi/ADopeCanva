@@ -1,0 +1,32 @@
+{
+  "id": "text-utilities",
+  "title": "Text Utility Suite",
+  "description": "Word count, case converter, slug generator & more.",
+  "category": "Text",
+  "icon": "FileText",
+  "popular": true,
+  "guideTitle": "The swiss-army knife for text processing",
+  "guideContent": "Count words, convert cases, generate slugs, and clean up messy text all in one place. An essential tool for writers, developers, and SEO professionals.",
+  "faqs": [
+    {
+      "question": "What is a slug generator?",
+      "answer": "It turns a title like 'Hello World!' into a URL-friendly 'hello-world'."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Tools",
+      "value": "Word Count, Case, Slugs, Lists"
+    },
+    {
+      "label": "Privacy",
+      "value": "100% Client-side"
+    }
+  ],
+  "privacyNotes": "Processing happens in real-time as you type.",
+  "order": 51,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

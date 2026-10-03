@@ -1,0 +1,40 @@
+{
+  "id": "markdown-creator",
+  "title": "Markdown Creator",
+  "description": "Design UI mockups using ASCII and Unicode characters for AI prompt engineering.",
+  "category": "Developer",
+  "icon": "MarkdownCreatorIcon",
+  "guideTitle": "How to design AI-friendly text UI mockups",
+  "guideContent": "Describe your UI layouts to AI assistants like Claude or ChatGPT using precise text-based mockups. Our Markdown Creator lets you draw buttons, inputs, and layouts using Unicode box-drawing characters, ensuring the AI understands your design intent perfectly in a code-friendly format.",
+  "faqs": [
+    {
+      "question": "Why use text-based mockups?",
+      "answer": "Text mockups can be pasted directly into LLM prompts, helping the AI \"see\" the exact spatial relationship of your design elements."
+    },
+    {
+      "question": "Does it support AI generation?",
+      "answer": "Yes, you can use our Gemini-powered engine to generate ASCII layouts from simple text descriptions."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Grid Size",
+      "value": "80x40 Characters"
+    },
+    {
+      "label": "Characters",
+      "value": "Unicode Box-Drawing (┌, ─, │, etc.)"
+    },
+    {
+      "label": "Export",
+      "value": "Markdown Code Block"
+    }
+  ],
+  "privacyNotes": "Your designs are processed locally. AI generation requires your own Gemini API key.",
+  "order": 28,
+  "permissions": {
+    "network": [],
+    "npm": []
+  },
+  "iconFrom": "components/icons/MarkdownCreatorIcon"
+}

@@ -1,0 +1,39 @@
+{
+  "id": "font-previewer",
+  "title": "Font Previewer",
+  "description": "Browse and preview 100+ Google Fonts with custom text and sizes.",
+  "category": "Developer",
+  "icon": "Type",
+  "guideTitle": "How to find the perfect font for your project",
+  "guideContent": "Type your own sample text, adjust the size, and scroll through a curated library of Google Fonts to find your perfect typeface. Click any font for a deep-dive view showing regular and bold weights, full alphabet, a heading/body mockup, and a ready-to-paste CSS snippet.",
+  "faqs": [
+    {
+      "question": "Are fonts loaded for free?",
+      "answer": "Yes — fonts are loaded directly from Google Fonts at no cost. An internet connection is required to render them."
+    },
+    {
+      "question": "Can I copy the CSS code?",
+      "answer": "Yes — each font card has a one-click \"Copy CSS\" button that copies the font-family declaration. The detail view also provides the full @import URL."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Font library",
+      "value": "100+ curated Google Fonts"
+    },
+    {
+      "label": "Preview",
+      "value": "Custom text, size, regular & bold weights"
+    },
+    {
+      "label": "Export",
+      "value": "CSS @import + font-family snippet"
+    }
+  ],
+  "privacyNotes": "Font requests are made to fonts.googleapis.com. No user data is collected or transmitted.",
+  "order": 61,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

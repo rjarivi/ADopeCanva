@@ -1,0 +1,32 @@
+{
+  "id": "webp-to-jpg",
+  "title": "WebP to JPG",
+  "description": "Convert WebP to JPG image.",
+  "swapId": "jpg-to-webp",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "How to convert WebP images back to JPG",
+  "guideContent": "If you have a WebP image that needs to be compatible with older software or services that don't support the format, converting to JPG is the best solution. Our tool offers high-quality conversion to ensure your photos look great.",
+  "faqs": [
+    {
+      "question": "Why convert to JPG?",
+      "answer": "Better compatibility with old browsers, desktop software, and some social media platforms."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "WebP -> JPG"
+    },
+    {
+      "label": "Quality",
+      "value": "Customizable 0-100"
+    }
+  ],
+  "privacyNotes": "Images are converted in your browser's memory.",
+  "order": 44,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

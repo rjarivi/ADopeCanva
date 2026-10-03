@@ -1,0 +1,32 @@
+{
+  "id": "gif-to-webp",
+  "title": "GIF to WebP",
+  "description": "Convert GIF to animated WebP.",
+  "swapId": "webp-to-gif",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Reduce GIF size by converting to WebP",
+  "guideContent": "Instantly slash your GIF file sizes by up to 50% by converting them to the more efficient WebP format. Perfect for web performance optimization.",
+  "faqs": [
+    {
+      "question": "How much smaller is WebP?",
+      "answer": "On average, converts save 30-60% in file size with no visible loss."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Conversion",
+      "value": "GIF -> Animated WebP"
+    },
+    {
+      "label": "Engine",
+      "value": "libwebp (WASM)"
+    }
+  ],
+  "privacyNotes": "No data is uploaded during conversion.",
+  "order": 39,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

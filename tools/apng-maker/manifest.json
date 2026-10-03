@@ -1,0 +1,39 @@
+{
+  "id": "apng-maker",
+  "title": "APNG Maker",
+  "description": "Create animated PNGs from image sequences.",
+  "category": "Image",
+  "icon": "Film",
+  "guideTitle": "How to make high-quality APNG animations",
+  "guideContent": "Create 24-bit animated PNGs with full alpha transparency. Better than GIF, APNG is perfect for high-quality website UI elements and stickers.",
+  "faqs": [
+    {
+      "question": "Is APNG better than GIF?",
+      "answer": "Yes, it supports 24-bit color and 8-bit alpha channel, whereas GIF only supports 8-bit color."
+    },
+    {
+      "question": "Do all browsers support APNG?",
+      "answer": "Yes, all modern browsers including Chrome, Firefox, and Safari have full APNG support."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Color Depth",
+      "value": "24-bit TrueColor"
+    },
+    {
+      "label": "Transparency",
+      "value": "8-bit Alpha Channel"
+    },
+    {
+      "label": "Compatibility",
+      "value": "Modern Browsers"
+    }
+  ],
+  "privacyNotes": "Animations are rendered in your browser memory.",
+  "order": 29,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { FileUploader } from '../../components/FileUploader';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import { Settings, Download, RefreshCcw, Scissors, Crop, RotateCw, Play, FastForward, Rewind, Type, Grid, AlertCircle, Loader2, ArrowLeft, Check, FlipHorizontal, FlipVertical, Film } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -14,9 +16,9 @@ import 'react-image-crop/dist/ReactCrop.css';
 
 export const GifEditor: React.FC = () => {
     const isMobile = useIsMobile();
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -92,7 +94,7 @@ export const GifEditor: React.FC = () => {
 
     const loadFont = async (ffmpeg: FFmpeg) => {
         try {
-            const fontUrl = 'https://raw.githubusercontent.com/google/fonts/main/apache/roboto/Roboto-Bold.ttf';
+            const fontUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@main/apache/roboto/Roboto-Bold.ttf';
             const fontBlob = await fetch(fontUrl).then(r => r.blob());
             const fontData = await fontBlob.arrayBuffer();
             await ffmpeg.writeFile('font.ttf', new Uint8Array(fontData));
@@ -218,7 +220,10 @@ export const GifEditor: React.FC = () => {
                     const realW = Math.round(crop.width * scaleX);
                     const realH = Math.round(crop.height * scaleY);
 
-                    filters.push(`crop=${realW}:${realH}:${realX}:${realY}`);
+                    const clampedW = Math.min(realW, natW - realX);
+                    const clampedH = Math.min(realH, natH - realY);
+
+                    filters.push(`crop=${clampedW}:${clampedH}:${realX}:${realY}`);
                 }
             }
 
@@ -242,8 +247,13 @@ export const GifEditor: React.FC = () => {
                 const fontLoaded = await loadFont(ffmpeg);
                 if (fontLoaded) {
                     // Escape colons and single quotes
-                    const sanitizedText = text.replace(/:/g, '\\:').replace(/'/g, '');
-                    const yPos = `h-h*${textY}/100`;
+                    const sanitizedText = text
+                        .replace(/\\/g, '\\\\')
+                        .replace(/'/g, "'\\\\\\''")
+                        .replace(/:/g, '\\\\:')
+                        .replace(/,/g, '\\\\,')
+                        .replace(/%/g, '\\\\%');
+                    const yPos = `h-text_h-h*${textY}/100`;
                     // Simple drawtext without shadow for stability
                     filters.push(`drawtext=fontfile=font.ttf:text='${sanitizedText}':fontcolor=${textColor}:fontsize=${textSize}:x=(w-text_w)/2:y=${yPos}`);
                 }
@@ -312,11 +322,10 @@ export const GifEditor: React.FC = () => {
 
             // Build Args
             const args = ['-y'];
-            if (duration > 0 && (trimRange[0] > 0 || trimRange[1] < duration)) {
-                args.push('-ss', trimRange[0].toString());
-                args.push('-to', trimRange[1].toString());
-            }
             args.push('-i', inputName);
+            if (trimRange[0] > 0 || trimRange[1] < (duration || 999)) {
+                args.push('-ss', trimRange[0].toString(), '-to', trimRange[1].toString());
+            }
 
             // CRITICAL FIX: Force single-threading for Sprite Sheet to prevent WASM heap corruption/deadlocks with 'tile' filter
             if (mode === 'sprite') {
@@ -421,50 +430,32 @@ export const GifEditor: React.FC = () => {
         );
     }
 
+    const handleFileSelect = (f: FileData | FileData[]) => {
+        const selected = Array.isArray(f) ? f[0] : f;
+        if (!selected) return;
+        select(selected);
+    };
+
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Film size={32} /> GIF Editor
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Add a GIF or Video to start editing.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={setFile}
-                        label="Add GIF/Video"
-                        accept="image/gif,video/*"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Crop, label: 'Crop & Resize', desc: 'Custom aspect ratios' },
-                        { icon: RotateCw, label: 'Transform', desc: 'Rotate and flip' },
-                        { icon: Type, label: 'Text Overlay', desc: 'Add captions' },
-                        { icon: Grid, label: 'Sprite Sheet', desc: 'Convert to grid' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Film}
+                title="GIF Editor"
+                description="Add a GIF or Video to start editing."
+                features={[
+                    { icon: Crop, label: 'Crop & Resize', desc: 'Custom aspect ratios' },
+                    { icon: RotateCw, label: 'Transform', desc: 'Rotate and flip' },
+                    { icon: Type, label: 'Text Overlay', desc: 'Add captions' },
+                    { icon: Grid, label: 'Sprite Sheet', desc: 'Convert to grid' },
+                ]}
+                file={file}
+                accept="image/gif,video/*"
+                uploadLabel="Add GIF/Video"
+                onFileSelect={handleFileSelect}
+                error={errorMessage || null}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -511,7 +502,7 @@ export const GifEditor: React.FC = () => {
                 {!isMobile && (
                     <div className="mt-auto flex flex-col gap-4 items-center">
                         <button
-                            onClick={() => { setFile(null); setResultUrl(null); }}
+                            onClick={() => { clear(); setResultUrl(null); }}
                             className="p-3 text-zinc-500 hover:text-red-400 transition-colors"
                             title="Reset"
                         >
@@ -784,7 +775,7 @@ export const GifEditor: React.FC = () => {
                         </button>
                         {isMobile && (
                             <button
-                                onClick={() => { setFile(null); setResultUrl(null); }}
+                                onClick={() => { clear(); setResultUrl(null); }}
                                 className="p-4 bg-zinc-900 text-zinc-400 hover:text-red-400 border border-zinc-800 rounded-2xl transition-all flex items-center justify-center"
                                 title="Reset"
                             >
@@ -875,7 +866,7 @@ export const GifEditor: React.FC = () => {
                                 <ArrowLeft size={18} />
                                 Edit More
                             </button>
-                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = 'edited.gif'; a.click(); }}>
+                            <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-extrabold flex items-center gap-2 hover:bg-indigo-500 transition-all shadow-xl shadow-white/5" onClick={() => { const a = document.createElement('a'); a.href = resultUrl; a.download = activeTool === 'sprite' ? 'sprite.png' : 'edited.gif'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }}>
                                 <Download size={18} />
                                 Download Final
                             </button>

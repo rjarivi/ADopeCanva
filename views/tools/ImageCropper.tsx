@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import {
     Crop, RotateCw, RotateCcw, Check, Undo2, Download, Maximize,
     Square, RectangleHorizontal, RectangleVertical, MousePointer2,
@@ -24,16 +25,18 @@ type AspectRatio = 'free' | 'custom' | '1:1' | '16:9' | '4:3' | '3:2' | '9:16' |
 
 export const ImageCropper: React.FC = () => {
     const isMobile = useIsMobile();
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [rotation, setRotation] = useState(0);
     const [flipX, setFlipX] = useState(false);
     const [flipY, setFlipY] = useState(false);
     const [croppedImage, setCroppedImage] = useState<string | null>(null);
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
 
-    const handleFileSelect = async (selectedFile: FileData) => {
-        const processed = await preprocessImageFileData(selectedFile);
-        setFile(processed);
+    const handleFileSelect = async (selectedFile: FileData | FileData[]) => {
+        const first = Array.isArray(selectedFile) ? selectedFile[0] : selectedFile;
+        if (!first) return;
+        const processed = await preprocessImageFileData(first);
+        select(processed);
     };
 
     // Crop state in percentages
@@ -125,7 +128,9 @@ export const ImageCropper: React.FC = () => {
         // Clamp
         if (crop.y + newHeight > 100) {
             newHeight = 100 - crop.y;
-            const newWidth = (newHeight * targetRatio) / imgAspect;
+            let newWidth = (newHeight * targetRatio) / imgAspect;
+            newWidth = Math.min(newWidth, 100 - crop.x);
+            newHeight = Math.min(newHeight, 100 - crop.y);
             setCrop(c => ({ ...c, width: newWidth, height: newHeight }));
         } else {
             setCrop(c => ({ ...c, height: newHeight }));
@@ -404,49 +409,24 @@ export const ImageCropper: React.FC = () => {
 
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Crop size={32} /> Image Cropper
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Resize, crop, and adjust your images with precision anchors.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept="image/*, .heic, .heif, .avif"
-                        label="Add Image"
-                        description="Supports JPG, PNG, WEBP, AVIF, HEIC"
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Crop, label: 'Precision Crop', desc: 'Exact pixel control' },
-                        { icon: RotateCcw, label: 'Rotate', desc: 'Correct orientation' },
-                        { icon: ZoomIn, label: 'Zoom & Pan', desc: 'Focus on details' },
-                        { icon: Download, label: 'HD Export', desc: 'Lossless quality' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Crop}
+                title="Image Cropper"
+                description="Resize, crop, and adjust your images with precision anchors."
+                features={[
+                    { icon: Crop, label: 'Precision Crop', desc: 'Exact pixel control' },
+                    { icon: RotateCcw, label: 'Rotate', desc: 'Correct orientation' },
+                    { icon: ZoomIn, label: 'Zoom & Pan', desc: 'Focus on details' },
+                    { icon: Download, label: 'HD Export', desc: 'Lossless quality' },
+                ]}
+                file={file}
+                accept="image/*, .heic, .heif, .avif"
+                uploadLabel="Add Image"
+                uploadDescription="Supports JPG, PNG, WEBP, AVIF, HEIC"
+                onFileSelect={handleFileSelect}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -457,7 +437,7 @@ export const ImageCropper: React.FC = () => {
                     <Check size={40} />
                 </div>
                 <h2 className="text-3xl font-black text-white font-unbounded">Image Ready!</h2>
-                <div className="bg-surface p-2 rounded-2xl border border-zinc-800 inline-block shadow-2xl relative bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')]">
+                <div className="bg-surface p-2 rounded-2xl border border-zinc-800 inline-block shadow-2xl relative bg-checkerboard">
                     <img
                         src={croppedImage}
                         alt="Result"
@@ -517,7 +497,7 @@ export const ImageCropper: React.FC = () => {
                         >
                             <RefreshCw size={14} /> Replace
                         </button>
-                        <button onClick={() => setFile(null)} className="text-zinc-600 hover:text-red-400 transition-colors" title="Close">
+                        <button onClick={() => clear()} className="text-zinc-600 hover:text-red-400 transition-colors" title="Close">
                             <Trash2 size={14} />
                         </button>
                     </div>
@@ -630,7 +610,7 @@ export const ImageCropper: React.FC = () => {
                         const uploadedFile = e.target.files?.[0];
                         if (uploadedFile) {
                             const processedFile = await preprocessHeic(uploadedFile);
-                            setFile({
+                            select({
                                 file: processedFile,
                                 previewUrl: URL.createObjectURL(processedFile),
                                 size: (processedFile.size / (1024 * 1024)).toFixed(2) + ' MB',
@@ -713,6 +693,7 @@ export const ImageCropper: React.FC = () => {
                                         pointerEvents: isHand ? 'none' : 'auto', borderWidth: `${borderW}px`, borderColor: 'white', borderStyle: 'solid',
                                     }}
                                     onMouseDown={(e) => !isHand && handleMouseDown(e, 'move')}
+                                    onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); !isHand && handleMouseDown(e as any, 'move'); }}
                                 >
                                     {/* Grids */}
                                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-30">
@@ -722,10 +703,10 @@ export const ImageCropper: React.FC = () => {
                                     </div>
                                     {!isHand && (
                                         <>
-                                            <div className="cursor-nw-resize shadow-lg" style={handleStyle({ top: '0%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'nw')} />
-                                            <div className="cursor-ne-resize shadow-lg" style={handleStyle({ top: '0%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'ne')} />
-                                            <div className="cursor-sw-resize shadow-lg" style={handleStyle({ top: '100%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'sw')} />
-                                            <div className="cursor-se-resize shadow-lg" style={handleStyle({ top: '100%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'se')} />
+                                            <div className="cursor-nw-resize shadow-lg" style={handleStyle({ top: '0%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'nw')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'nw'); }} />
+                                            <div className="cursor-ne-resize shadow-lg" style={handleStyle({ top: '0%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'ne')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'ne'); }} />
+                                            <div className="cursor-sw-resize shadow-lg" style={handleStyle({ top: '100%', left: '0%' })} onMouseDown={(e) => handleMouseDown(e, 'sw')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'sw'); }} />
+                                            <div className="cursor-se-resize shadow-lg" style={handleStyle({ top: '100%', left: '100%' })} onMouseDown={(e) => handleMouseDown(e, 'se')} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); handleMouseDown(e as any, 'se'); }} />
                                         </>
                                     )}
                                 </div>

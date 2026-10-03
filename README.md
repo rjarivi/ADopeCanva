@@ -64,10 +64,15 @@ Unlike other online tools, ADopeCanva processes your files **locally in your bro
     npm install
     ```
 
-3.  **Environment Setup**
-    Create a `.env.local` file in the root directory and add your API credentials (optional, only for AI tools):
+3.  **Environment Setup (all optional)**
+    AI features are bring-your-own-key — the app never ships with a shared key.
+    Create a `.env.local` file (gitignored, never commit keys — see `SECURITY.md`):
     ```env
-    VITE_GEMINI_API_KEY=your_google_gemini_api_key_here
+    VITE_GEMINI_API_KEY=your_key_here        # only if you use AI tools locally
+    ```
+    For sitemap submission (`scripts/submit-indexnow.js`):
+    ```env
+    INDEXNOW_KEY=your_indexnow_key_here
     ```
 
 4.  **Run the Development Server**
@@ -87,7 +92,19 @@ Unlike other online tools, ADopeCanva processes your files **locally in your bro
 2. **Manual Setup**
    - Connect your GitHub repository to [Cloudflare Pages](https://dash.cloudflare.com/).
    - Set the build command to `npm run build` and the output directory to `dist`.
-   - Add your `GEMINI_API_KEY` in the Cloudflare Dashboard under **Settings > Environment Variables**.
+   - Add environment variables in the Cloudflare Dashboard under **Settings > Environment Variables** (e.g. `GEMINI_API_KEY`, `INDEXNOW_KEY`) — never in the repo.
+   - Production deploys from `main` only; see `CONTRIBUTING.md` (maintainer checklist).
+
+## 🤝 Contributing
+
+Two lanes: **recipes** (`recipes/*.json`, merge fast) and **code tools**
+(`tools/<id>/`, manifest + review). Start with `CONTRIBUTING.md`. By
+contributing you agree your work is licensed under Apache-2.0 (see `LICENSE`).
+
+## 📄 License
+
+AGPL-3.0 — see [LICENSE](LICENSE). Forks must share their source; the
+AdopeCanva name and logo are trademarks — see [TRADEMARKS.md](TRADEMARKS.md).
 
 ## 🛠️ Built With
 

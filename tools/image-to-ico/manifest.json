@@ -1,0 +1,52 @@
+{
+  "id": "image-to-ico",
+  "title": "Favicon Generator",
+  "description": "Generate a full favicon bundle — ICO, PNG variants, apple-touch-icon, android icons, and webmanifest.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "popular": true,
+  "guideTitle": "How to generate a complete favicon bundle for your website",
+  "guideContent": "Upload any image and instantly generate a complete, production-ready favicon package. The bundle includes a multi-size favicon.ico, PNG variants for every platform (16px, 32px, 48px), an apple-touch-icon for iOS home screens (180px), Android Chrome icons (192px and 512px), and a site.webmanifest for PWA support. Just extract the ZIP into your public folder and add the provided HTML snippet.",
+  "faqs": [
+    {
+      "question": "What is included in the SEO bundle?",
+      "answer": "The bundle contains favicon.ico (multi-size: 16, 32, 48px), favicon-16x16.png, favicon-32x32.png, favicon-48x48.png, apple-touch-icon.png (180px), android-chrome-192x192.png, android-chrome-512x512.png, and site.webmanifest."
+    },
+    {
+      "question": "Does it support transparent backgrounds?",
+      "answer": "Yes. PNG and SVG images with transparency will have their alpha channel preserved in all output files."
+    },
+    {
+      "question": "What image formats can I upload?",
+      "answer": "Any browser-renderable image: PNG, JPG, WebP, SVG, GIF, AVIF, and more."
+    },
+    {
+      "question": "Is my image uploaded anywhere?",
+      "answer": "No. All processing happens locally in your browser using the Canvas API. Nothing is sent to a server."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Supported Inputs",
+      "value": "PNG, SVG, JPG, WebP, AVIF, GIF"
+    },
+    {
+      "label": "ICO Output",
+      "value": "Multi-size (16, 32, 48px)"
+    },
+    {
+      "label": "PNG Outputs",
+      "value": "16, 32, 48, 180, 192, 512px"
+    },
+    {
+      "label": "Extras",
+      "value": "apple-touch-icon + site.webmanifest"
+    }
+  ],
+  "privacyNotes": "All favicon generation happens locally in your browser — no images are uploaded to any server.",
+  "order": 30,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "id": "spreadsheet-tools",
+  "title": "Spreadsheet Converter",
+  "description": "Convert Excel to CSV, JSON, HTML or vice versa.",
+  "category": "Docs",
+  "icon": "FileSpreadsheet",
+  "guideTitle": "How to convert Excel files to JSON or CSV",
+  "guideContent": "Convert your spreadsheets into developer-friendly formats like JSON or universally compatible CSV files. This tool is perfect for importing data into databases, web apps, or other analysis software without expensive corporate tools.",
+  "faqs": [
+    {
+      "question": "Can I convert .xlsx files?",
+      "answer": "Yes, we support both .xls and .xlsx Excel formats."
+    },
+    {
+      "question": "Is my data secure?",
+      "answer": "Yes, your spreadsheet data is parsed locally in the browser; your private table data never touches a server."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Import",
+      "value": "XLS, XLSX, CSV"
+    },
+    {
+      "label": "Export",
+      "value": "CSV, JSON, HTML, SQL"
+    },
+    {
+      "label": "Max Rows",
+      "value": "Up to 10,000 recommended"
+    }
+  ],
+  "privacyNotes": "We prioritize data privacy. Spreadsheets often contain PII; our tool ensures it stays on your machine.",
+  "order": 13,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "id": "color-tool",
+  "title": "Color Tool",
+  "description": "Generate color palettes, verify contrast ratio, scale tints/shades, and convert color formats.",
+  "category": "Image",
+  "icon": "Pipette",
+  "guideTitle": "How to use the color palette and utility dashboard",
+  "guideContent": "Access a complete design workbench. Generate harmonies like complementary or analogous, run real-time contrast checks against WCAG 2.1 standards for accessibility, construct tints & shades, and convert color values seamlessly across HEX, RGB, HSL, and CMYK formats.",
+  "faqs": [
+    {
+      "question": "What harmony rules are supported?",
+      "answer": "We support complementary (2 colors), analogous (3 colors), triadic (3 colors), split-complementary (3 colors), tetradic (4 colors), and monochromatic (5 colors) options."
+    },
+    {
+      "question": "What contrast standards does the checker follow?",
+      "answer": "We use the WCAG 2.1 formula for relative luminance to verify contrast ratios against the AA threshold (4.5:1 for normal text, 3.0:1 for large text) and the AAA threshold (7.0:1 for normal text, 4.5:1 for large text)."
+    },
+    {
+      "question": "Are colors processed locally?",
+      "answer": "Yes, all calculations, color wheel rotations, dynamic palette rendering, and PNG generation happen entirely inside your browser locally."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Harmonies",
+      "value": "Complementary · Analogous · Triadic · Split-Complementary · Tetradic · Monochromatic"
+    },
+    {
+      "label": "WCAG Metrics",
+      "value": "Normal & Large Text (AA & AAA compliance)"
+    },
+    {
+      "label": "Formats",
+      "value": "HEX · RGB · HSL · CMYK (real-time synchronized)"
+    }
+  ],
+  "privacyNotes": "All color data processing and exports are done locally in the browser.",
+  "order": 59,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

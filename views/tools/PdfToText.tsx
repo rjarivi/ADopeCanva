@@ -1,15 +1,18 @@
 /// <reference lib="dom" />
 import React, { useState, useCallback } from 'react';
-import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
 import { FileText, Download, Copy, RefreshCcw, Check, Zap, Layers, FileSearch } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
 import * as pdfjsLib from 'pdfjs-dist';
+import { setupPdfWorker, getPdfDocument, validatePdfFile, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
 
-// Set up PDF.js worker - using local file for privacy (no CDN)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 interface ExtractResult {
     fileName: string;
@@ -43,7 +46,7 @@ const RANGE_PLACEHOLDER = 'e.g. 1-3, 5, 8-10 (blank = all pages)';
 
 export const PdfToText: React.FC = () => {
     const isMobile = useIsMobile();
-    const [files, setFiles] = useState<FileData[]>([]);
+    const { files, file, select, clear } = useToolFile({ multiple: true });
     const [results, setResults] = useState<ExtractResult[]>([]);
     const [extractedText, setExtractedText] = useState<string>('');
     const [rangeInput, setRangeInput] = useState('');
@@ -55,14 +58,14 @@ export const PdfToText: React.FC = () => {
 
     const handleFileSelect = useCallback((newFiles: FileData | FileData[]) => {
         const arr = Array.isArray(newFiles) ? newFiles : [newFiles];
-        setFiles(arr);
+        select(arr);
         setResults([]);
         setExtractedText('');
         setPageCount(0);
         setRangeInput('');
         setRangeError('');
         setError(null);
-    }, []);
+    }, [select]);
 
     const extractText = useCallback(async () => {
         if (files.length === 0) return;
@@ -76,8 +79,11 @@ export const PdfToText: React.FC = () => {
         try {
             const out: ExtractResult[] = [];
             for (const file of files) {
+                const validationError = await validatePdfFile(file.file);
+                if (validationError) { setError(validationError); continue; }
                 const arrayBuffer = await file.file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const pdf = await getPdfDocument(arrayBuffer, 'pdf-to-text');
+                try {
                 if (files.length === 1) setPageCount(pdf.numPages);
 
                 // Resolve the range against this file's page count
@@ -99,13 +105,24 @@ export const PdfToText: React.FC = () => {
                     const page = await pdf.getPage(idx + 1);
                     const textContent = await page.getTextContent();
                     const pageText = textContent.items
-                        .map((item: any) => item.str)
-                        .join(' ');
+                        .filter((item: any) => 'str' in item && typeof item.str === 'string')
+                        .map((item: any) => {
+                            const text = item.str;
+                            return item.hasEOL ? text + '\n' : text + ' ';
+                        })
+                        .join('');
 
                     fullText += `--- Page ${idx + 1} ---\n${pageText}\n\n`;
                 }
 
-                out.push({ fileName: file.file.name, text: fullText.trim(), pages: pdf.numPages });
+                if (!fullText.trim()) {
+                    out.push({ fileName: file.file.name, text: '', pages: pdf.numPages });
+                } else {
+                    out.push({ fileName: file.file.name, text: fullText.trim(), pages: pdf.numPages });
+                }
+                } finally {
+                    await pdf.destroy();
+                }
             }
 
             if (files.length === 1) {
@@ -119,18 +136,27 @@ export const PdfToText: React.FC = () => {
                 setResults(out);
                 setExtractedText(combined);
             }
+            const noText = out.length > 0 && out.every(r => !r.text);
+            if (noText) {
+                setError('No selectable text found in the document(s). They may be scanned or image-based — try an OCR tool instead.');
+            }
         } catch (err) {
-            console.error('PDF extraction error:', err);
-            setError('Failed to extract text. The PDF may be corrupted or password protected.');
+            logToolFailure('pdf-to-text', err, { stage: 'pdf-extract' });
+            setError(classifyPdfError(err));
         } finally {
             setIsProcessing(false);
         }
     }, [files, rangeInput]);
 
     const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(extractedText);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (!navigator.clipboard) { setError('Clipboard unavailable in this browser context.'); return; }
+        navigator.clipboard.writeText(extractedText).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }).catch((err) => {
+            logToolFailure('pdf-to-text', err, { stage: 'clipboard-copy' });
+            setError('Copy failed — your browser blocked clipboard access.');
+        });
     }, [extractedText]);
 
     const handleDownload = useCallback(() => {
@@ -140,17 +166,17 @@ export const PdfToText: React.FC = () => {
         const a = document.createElement('a');
         a.href = url;
         const base = files.length === 1
-            ? files[0].file.name.replace('.pdf', '') + '-text'
+            ? (files[0].file.name ?? 'document.pdf').replace(/\.pdf$/i, '') + '-text'
             : 'batch-text';
         a.download = `${base}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }, [extractedText, files]);
 
     const handleReset = () => {
-        setFiles([]);
+        clear();
         setResults([]);
         setExtractedText('');
         setPageCount(0);
@@ -159,57 +185,26 @@ export const PdfToText: React.FC = () => {
         setError(null);
     };
 
-    if (files.length === 0) {
-        return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <FileText size={32} /> PDF to Text
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Extract text content from PDF documents instantly — single file or batch.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept=".pdf"
-                        label="Add PDF"
-                        description="Select one PDF, or several for batch extraction"
-                        multiple={true}
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: Zap, label: 'Instant Extract', desc: 'Fast processing' },
-                        { icon: Layers, label: 'Batch Mode', desc: 'Multi-file support' },
-                        { icon: FileText, label: 'Page Ranges', desc: 'e.g. 1-3, 5' },
-                        { icon: FileSearch, label: 'Searchable', desc: 'Full text output' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+        <ToolShell
+            icon={FileText}
+            title="PDF to Text"
+            description="Extract text content from PDF documents instantly."
+            features={[
+                { icon: Zap, label: 'Instant Extract', desc: 'Fast processing' },
+                { icon: Layers, label: 'Multi-Page', desc: 'All pages at once' },
+                { icon: Copy, label: 'Copy & Paste', desc: 'One-click copy' },
+                { icon: FileSearch, label: 'Searchable', desc: 'Full text output' },
+            ]}
+            file={files}
+            multiple={true}
+            accept=".pdf"
+            uploadLabel="Add PDF"
+            uploadDescription="Select one PDF, or several for batch extraction"
+            onFileSelect={handleFileSelect}
+            error={error}
+        >
+            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
             {/* Settings Panel */}
             <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
@@ -341,6 +336,7 @@ export const PdfToText: React.FC = () => {
                     </div>
                 )}
             </main>
-        </div>
+            </div>
+        </ToolShell>
     );
 };

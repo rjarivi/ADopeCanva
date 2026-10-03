@@ -129,16 +129,31 @@ export const UniversalConverter: React.FC = () => {
         }
     };
 
+    const flattenObj = (obj: any, prefix = ''): Record<string, any> => {
+        return Object.keys(obj).reduce((acc, key) => {
+            const val = obj[key];
+            const newKey = prefix ? `${prefix}.${key}` : key;
+            if (val && typeof val === 'object' && !Array.isArray(val) && val._text === undefined) {
+                Object.assign(acc, flattenObj(val, newKey));
+            } else {
+                acc[newKey] = val?._text ?? val;
+            }
+            return acc;
+        }, {} as Record<string, any>);
+    };
+
     const stringifyOutput = (data: any, format: Format): string => {
         try {
             switch (format) {
                 case 'json':
                     return JSON.stringify(data, null, 2);
                 case 'xml':
-                    return js2xml(data, { compact: true, spaces: 2 });
+                    const xmlData = Array.isArray(data) ? { root: { item: data } } : data;
+                    return js2xml(xmlData, { compact: true, spaces: 2 });
                 case 'csv': {
                     // Respect the delimiter option; unparse takes the configured delimiter
-                    const csvInput = Array.isArray(data) ? data : [data];
+                    let csvInput = Array.isArray(data) ? data : [data];
+                    csvInput = (csvInput as any[]).map(row => flattenObj(row));
                     return Papa.unparse(csvInput, { delimiter: csvDelimiter });
                 }
                 case 'yaml':
@@ -192,7 +207,10 @@ export const UniversalConverter: React.FC = () => {
         const a = document.createElement('a');
         a.href = url;
         a.download = `converted.${outputFormat}`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
 
     return (
@@ -289,8 +307,7 @@ export const UniversalConverter: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="secondary" size="sm" onClick={copyToClipboard} disabled={!output}>
-                                {copied ? <Check size={16} className="mr-2 text-green-500" /> : <Copy size={16} className="mr-2" />}
-                                {copied ? 'Copied' : 'Copy'}
+                                {copied ? <><Check size={16} className="mr-2 text-green-500" /> Copied</> : <><Copy size={16} className="mr-2" /> Copy</>}
                             </Button>
                             <Button size="sm" onClick={downloadOutput} disabled={!output}>
                                 <Download size={16} className="mr-2" /> Download

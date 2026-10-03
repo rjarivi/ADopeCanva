@@ -1,0 +1,11 @@
+{
+  "id": "video-720p-h264",
+  "title": "720p H.264 video",
+  "kind": "ffmpeg",
+  "engine": "ffmpeg",
+  "description": "Downscale any video to 720p H.264 + AAC — the universal shareable MP4.",
+  "params": {
+    "args": ["-vf", "scale=-2:720", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-c:a", "aac", "-b:a", "128k"],
+    "ext": "mp4"
+  }
+}

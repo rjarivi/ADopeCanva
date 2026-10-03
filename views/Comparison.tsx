@@ -131,8 +131,48 @@ const COMPETITORS: Record<string, CompetitorData> = {
         faqs: [
             { question: 'Is AdopeCanva faster than Ezgif?', answer: 'Yes! Because AdopeCanva does not upload your files to remote servers, conversion starts the millisecond you drop your file without waiting for network transfers.' }
         ]
+    },
+    'remove-bg': {
+        name: 'Remove.bg',
+        title: 'Free Remove.bg Alternative: 100% In-Browser & Private BG Remover',
+        h1: 'AdopeCanva vs Remove.bg: The 100% Private, Zero-Cost In-Browser Alternative',
+        metaDesc: 'Looking for a free Remove.bg alternative? AdopeCanva provides instant on-device AI background removal with 0 server uploads, no credit paywalls, and unlimited full-resolution transparent PNG downloads.',
+        tagline: 'Skip the expensive credit packs, low-res preview traps, and server uploads. Remove image backgrounds locally in your browser with 100% privacy.',
+        price: 'From $0.20 – $1.99 per image or subscription (Free tier limited to 0.25MP)',
+        cloudUpload: 'Yes (Mandatory upload to third-party cloud servers)',
+        accountRequired: 'Mandatory account & paid credits for full-res downloads',
+        watermarks: 'Free tier downscales to 612×408 px thumbnail',
+        weaknesses: [
+            'Expensive pay-per-credit system charging up to $1.99 per high-res cutout',
+            'Severe quality downgrade on free tier (limited to 0.25MP preview)',
+            'Mandatory cloud upload that exposes private photos and client assets to remote servers',
+            'Service shutdowns, changing terms of service, and strict rate limits'
+        ],
+        strengths: [
+            '100% Free Forever with unlimited full-resolution transparent PNG exports',
+            'Runs locally on your device via ONNX WebAssembly (Transformers.js MODNet)',
+            'Absolute zero-upload privacy — your photos never leave your device RAM',
+            'No account, signup, credit card, or API key required'
+        ],
+        comparisonRows: [
+            { feature: 'Price / High-Res Cutout', competitor: '$0.20 – $1.99 per image', adopecanva: '$0 Free Forever (Unlimited)' },
+            { feature: 'Free Tier Resolution', competitor: 'Low-res 0.25MP preview (612×408)', adopecanva: 'Full Source Resolution (Up to 4K+)' },
+            { feature: 'Processing Architecture', competitor: 'Remote Cloud Servers (Uploads required)', adopecanva: '100% On-Device Neural Matting (WASM)' },
+            { feature: 'Data Privacy & GDPR', competitor: 'Photos processed & stored on third-party cloud', adopecanva: 'Zero-Knowledge (Never leaves your browser)' },
+            { feature: 'Account / Sign-in Required', competitor: 'Mandatory for HD downloads', adopecanva: 'None (Instant 1-click execution)' },
+            { feature: 'Offline Support', competitor: 'No (Fails without internet)', adopecanva: 'Yes (Cached locally via browser cache)' },
+            { feature: 'Commercial Usage', competitor: 'Restricted without commercial plan', adopecanva: '100% Royalty-Free for commercial use' },
+            { feature: 'Integrated Suite', competitor: 'Single-purpose background removal only', adopecanva: '60+ Integrated Image, Video & Audio Tools' }
+        ],
+        faqs: [
+            { question: 'Why is AdopeCanva the best alternative to Remove.bg?', answer: 'Remove.bg charges expensive fees for high-resolution images and forces you to upload your sensitive photos to remote servers. AdopeCanva gives you the same high-precision neural matting directly inside your browser via WebAssembly — 100% free, unlimited, and totally private.' },
+            { question: 'Does AdopeCanva compress or downscale my images like Remove.bg does?', answer: 'No. While Remove.bg caps free users at tiny 0.25-megapixel previews, AdopeCanva exports your cutout at full source resolution with a crystal-clear 32-bit alpha channel transparent PNG.' },
+            { question: 'How can AdopeCanva run neural background removal for free without an API key?', answer: 'We compile modern computer vision neural networks (MODNet) into ONNX WebAssembly and run inference locally on your device hardware (CPU/GPU). Because no expensive cloud servers are needed to process your pixels, we can offer it 100% free with no subscriptions.' }
+        ]
     }
 };
+
+COMPETITORS.removebg = COMPETITORS['remove-bg'];
 
 export const Comparison: React.FC = () => {
     const { competitor } = useParams();
@@ -305,6 +345,7 @@ export const Comparison: React.FC = () => {
                     <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest text-center">Compare With Other Tools</h3>
                     <div className="flex flex-wrap items-center justify-center gap-3">
                         {[
+                            { slug: 'remove-bg', label: 'vs Remove.bg' },
                             { slug: 'adobe', label: 'vs Adobe Creative Cloud' },
                             { slug: 'canva', label: 'vs Canva Pro' },
                             { slug: 'ezgif', label: 'vs Ezgif' }

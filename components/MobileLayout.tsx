@@ -5,6 +5,7 @@ import { ToolCategory } from '../types';
 import { Dashboard } from '../views/Dashboard';
 import { Search, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useFocusedMode } from '../contexts/FocusedMode';
 
 interface MobileLayoutProps {
     children: React.ReactNode;
@@ -20,6 +21,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
     const [activeTab, setActiveTab] = useState<'home' | 'search' | 'media'>('home');
     const navigate = useNavigate();
     const location = useLocation();
+    const { focused } = useFocusedMode();
 
     const categories = ['All', ...Object.values(ToolCategory)];
     const isDashboard = location.pathname === '/';
@@ -47,7 +49,8 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-background dot-grid">
-            {/* Small Mobile Header */}
+            {/* Small Mobile Header — hidden in fullscreen focus mode */}
+            {!focused && (
             <header className="h-16 border-b border-zinc-800 flex items-center justify-center px-4 bg-background/95 backdrop-blur-md z-40 shrink-0">
                 <div
                     className="flex items-center gap-3 cursor-pointer"
@@ -59,6 +62,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                     </span>
                 </div>
             </header>
+            )}
 
             {/* Main Scroll Area */}
             <main className="flex-1 overflow-y-auto pb-32 no-scrollbar">
@@ -81,6 +85,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
             <MobileNavbar
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
+                hidden={focused}
             />
         </div>
     );

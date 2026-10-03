@@ -1,0 +1,32 @@
+{
+  "id": "webp-to-gif",
+  "title": "WebP to GIF",
+  "description": "Convert WebP to GIF animation.",
+  "swapId": "gif-to-webp",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Easily convert WebP animations back to GIF",
+  "guideContent": "Need to share a WebP animation in an app that only supports GIFs? Our converter lets you transform modern WebP files back into the classic GIF format in seconds.",
+  "faqs": [
+    {
+      "question": "Why convert back to GIF?",
+      "answer": "Compatibility with some older email clients and social media platforms that haven't fully adopted WebP yet."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "Gif.js & libwebp"
+    },
+    {
+      "label": "Colors",
+      "value": "Dithered 256-color palette"
+    }
+  ],
+  "privacyNotes": "Data is handled in your browser's private session.",
+  "order": 43,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

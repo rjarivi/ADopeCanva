@@ -1,0 +1,40 @@
+{
+  "id": "quick-video-editor",
+  "title": "Quick Video Editor",
+  "description": "Edit videos with trim, speed, and aspect ratio controls.",
+  "category": "Video",
+  "icon": "Film",
+  "popular": true,
+  "guideTitle": "How to quickly edit videos without complex software",
+  "guideContent": "Our Quick Video Editor is designed for rapid tasks like trimming, adjusting speed, or changing aspect ratios. Perfect for social media creators who need to polish a clip in seconds without waiting for cloud uploads.",
+  "faqs": [
+    {
+      "question": "Can I speed up videos?",
+      "answer": "Yes, you can speed up or slow down your clips (0.5x to 2x speed)."
+    },
+    {
+      "question": "Does it support cropping?",
+      "answer": "Yes, you can crop to social media dimensions like 9:16 or 1:1."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Tools",
+      "value": "Trim, Speed, Crop, Rotate"
+    },
+    {
+      "label": "Engine",
+      "value": "FFmpeg WASM"
+    },
+    {
+      "label": "Resolution",
+      "value": "Supports up to 4K"
+    }
+  ],
+  "privacyNotes": "Your creative content is processed locally and never uploaded.",
+  "order": 1,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

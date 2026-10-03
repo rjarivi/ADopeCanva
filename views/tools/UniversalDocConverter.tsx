@@ -19,43 +19,51 @@ import JSZip from 'jszip';
 import heic2any from 'heic2any';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import ePub from 'epubjs';
+import { setupPdfWorker, getPdfDocument, classifyPdfError } from '../../utils/pdfWorker';
+import { logToolFailure } from '../../utils/toolHealth';
+import { ToolShell } from '../../components/ToolShell';
+import { useToolFile } from '../../hooks/useToolFile';
+import { useObjectUrlState } from '../../hooks/useObjectUrl';
 
-// Set worker source — use local copy to satisfy worker-src CSP ('self' blob: only)
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+// Shared PDF.js worker (local-first with CDN fallback) — see utils/pdfWorker.ts
+setupPdfWorker();
 
 type ConversionType =
     'docx-to-html' | 'docx-to-pdf' |
     'md-to-html' | 'md-to-pdf' |
     'html-to-pdf' | 'img-to-pdf' |
     'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt' |
-    'pdf-to-img' | 'pdf-to-txt' | 'pdf-to-docx' |
+    'pdf-to-img' | 'pdf-to-txt' | 'pdf-to-docx' | 'pdf-to-epub' |
     'epub-to-pdf' | 'heic-to-pdf' | 'heic-to-jpg' |
     'ebook-txt-extract' | 'fb2-to-pdf' | 'epub-to-docx';
-// NOTE: 'azw-to-*', 'mobi-to-*' and all '-to-epub' conversions were removed on purpose:
-// AZW/MOBI are binary containers (text-stripping them yields garbage), and the old
-// "EPUB" output was actually plain HTML renamed with an .epub extension. Neither
-// produces a real, usable file in a browser, so they are not offered anymore.
+// NOTE: 'azw-to-*' and 'mobi-to-*' conversions were removed on purpose:
+// AZW/MOBI are binary containers (text-stripping them yields garbage). The
+// '-to-epub' output IS real now (zip-structured EPUB 2.0 — see below), so PDF
+// sources can convert to EPUB, but the ebook inputs still can't be decoded
+// by a browser, so no AZW/MOBI targets are offered.
 
 export const UniversalDocConverter: React.FC = () => {
-    const [file, setFile] = useState<FileData | null>(null);
+    const { file, select, clear } = useToolFile();
     const [conversionType, setConversionType] = useState<ConversionType>('docx-to-pdf');
     const [isProcessing, setIsProcessing] = useState(false);
     const [progress, setProgress] = useState(0);
-    const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [resultUrl, setResultUrl] = useObjectUrlState();
     const [resultName, setResultName] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
 
     // Hidden preview container for HTML-to-PDF rendering
     const previewRef = useRef<HTMLDivElement>(null);
 
-    const handleFileSelect = (newFile: FileData) => {
-        setFile(newFile);
+    const handleFileSelect = (newFile: FileData | FileData[]) => {
+        const selected = Array.isArray(newFile) ? newFile[0] : newFile;
+        if (!selected) return;
+        select(selected);
         setResultUrl(null);
         setError(null);
         setProgress(0);
 
         // Auto-detect best conversion
-        const ext = newFile.file.name.split('.').pop()?.toLowerCase();
+        const ext = selected.file.name.split('.').pop()?.toLowerCase();
         if (ext === 'docx') setConversionType('docx-to-pdf');
         else if (ext === 'md') setConversionType('md-to-pdf');
         else if (ext === 'html') setConversionType('html-to-pdf');
@@ -160,7 +168,9 @@ export const UniversalDocConverter: React.FC = () => {
                 } else {
                     const arrayBuffer = await file.file.arrayBuffer();
                     await workbook.xlsx.load(arrayBuffer);
-                    mainWorksheet = workbook.worksheets[0];
+                    const first = workbook.worksheets[0];
+                    if (!first) throw new Error('No worksheets found — the file may be empty or corrupted.');
+                    mainWorksheet = first;
                 }
                 const worksheet = mainWorksheet;
 
@@ -218,9 +228,11 @@ export const UniversalDocConverter: React.FC = () => {
                 }
             }
             else if (conversionType === 'img-to-pdf') {
-                const imgDataUrl = await new Promise<string>((resolve) => {
+                const imgDataUrl = await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = (e) => resolve(e.target?.result as string);
+                    reader.onerror = () => reject(new Error('Could not read the image file.'));
+                    reader.onabort = () => reject(new Error('Image reading was aborted.'));
                     reader.readAsDataURL(file.file);
                 });
 
@@ -244,8 +256,7 @@ export const UniversalDocConverter: React.FC = () => {
             else if (conversionType === 'pdf-to-img') {
                 try {
                     const arrayBuffer = await file.file.arrayBuffer();
-                    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                    const pdf = await loadingTask.promise;
+                    const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
 
                     if (pdf.numPages > 1) {
                         const zip = new JSZip();
@@ -281,13 +292,13 @@ export const UniversalDocConverter: React.FC = () => {
                         }
                     }
                 } catch (e) {
-                    console.error("PDF to Img Error:", e);
-                    throw new Error("Failed to convert PDF to Image.");
+                    logToolFailure('doc-converter', e, { stage: 'pdf-to-img' });
+                    throw new Error(classifyPdfError(e));
                 }
             }
             else if (conversionType === 'pdf-to-txt' || conversionType === 'pdf-to-docx') {
                 const arrayBuffer = await file.file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
                 let fullText = '';
                 const paragraphs: Paragraph[] = [];
 
@@ -295,7 +306,7 @@ export const UniversalDocConverter: React.FC = () => {
                     setProgress(Math.round((i / pdf.numPages) * 100));
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+                    const pageText = textContent.items.filter((item: any) => 'str' in item && typeof item.str === 'string').map((item: any) => item.str).join(' ');
                     fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
 
                     if (conversionType === 'pdf-to-docx') {
@@ -329,9 +340,11 @@ export const UniversalDocConverter: React.FC = () => {
                 const jpgBlob = Array.isArray(results) ? results[0] : results;
 
                 if (conversionType === 'heic-to-pdf') {
-                    const imgDataUrl = await new Promise<string>((resolve) => {
+                    const imgDataUrl = await new Promise<string>((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = (e) => resolve(e.target?.result as string);
+                        reader.onerror = () => reject(new Error('Could not read the converted image.'));
+                        reader.onabort = () => reject(new Error('Image reading was aborted.'));
                         reader.readAsDataURL(jpgBlob);
                     });
                     const pdf = new jsPDF();
@@ -347,7 +360,7 @@ export const UniversalDocConverter: React.FC = () => {
                     downloadExt = 'jpg';
                 }
             }
-            else if (conversionType.startsWith('epub-') || conversionType.startsWith('fb2-') || conversionType === 'ebook-txt-extract') {
+            else if (conversionType.startsWith('epub-') || conversionType.startsWith('fb2-') || conversionType === 'ebook-txt-extract' || conversionType === 'pdf-to-epub') {
                 let fullText = '';
                 let title = 'Document';
 
@@ -368,17 +381,25 @@ export const UniversalDocConverter: React.FC = () => {
                     }
                 } else if (file.file.name.endsWith('.pdf')) {
                     const arrayBuffer = await file.file.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const pdf = await getPdfDocument(arrayBuffer, 'doc-converter');
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
+                        fullText += textContent.items.filter((item: any) => 'str' in item).map((item: any) => item.str).join(' ') + '\n';
                     }
+                    try { await pdf.destroy(); } catch { /* ignore */ }
                 } else {
                     // FB2 is XML — strip tags. Binary ebook containers (AZW/MOBI) never reach
                     // this branch via the UI because those conversions are unsupported.
                     const text = await file.file.text();
-                    fullText = text.replace(/<[^>]*>?/gm, ' ');
+                    if (file.file.name.endsWith('.fb2')) {
+                        fullText = text.replace(/<[^>]*>?/gm, ' ');
+                    } else {
+                        // Preserve Unicode (accents, CJK): strip only control
+                        // characters, not everything outside ASCII.
+                        // eslint-disable-next-line no-control-regex
+                        fullText = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+                    }
                 }
 
                 if (conversionType.endsWith('-pdf')) {
@@ -408,6 +429,27 @@ export const UniversalDocConverter: React.FC = () => {
                     });
                     blob = await Packer.toBlob(doc);
                     downloadExt = 'docx';
+                } else if (conversionType.endsWith('-epub')) {
+                    // Minimal valid EPUB 2.0 (zip with mimetype first +
+                    // container + OPF + one XHTML chapter) — readers reject
+                    // the raw-HTML blob this used to emit.
+                    const esc = (s: string) => s
+                        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                    const paras = fullText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+                    const body = paras.length
+                        ? paras.map((p) => `    <p>${esc(p).replace(/\n/g, '<br/>')}</p>`).join('\n')
+                        : `    <p>${esc(fullText.slice(0, 4000))}</p>`;
+                    const opf = `<?xml version="1.0" encoding="UTF-8"?>\n<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="bookid" version="2.0">\n  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">\n    <dc:title>${esc(title)}</dc:title>\n    <dc:language>en</dc:language>\n    <dc:identifier id="bookid">adopecanva-${Date.now()}</dc:identifier>\n  </metadata>\n  <manifest>\n    <item id="ch1" href="chapter1.xhtml" media-type="application/xhtml+xml"/>\n  </manifest>\n  <spine toc="ncx">\n    <itemref idref="ch1"/>\n  </spine>\n</package>`;
+                    const xhtml = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n<html xmlns="http://www.w3.org/1999/xhtml">\n<head><title>${esc(title)}</title></head>\n<body>\n  <h1>${esc(title)}</h1>\n${body}\n</body>\n</html>`;
+                    const container = `<?xml version="1.0" encoding="UTF-8"?>\n<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">\n  <rootfiles>\n    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>\n  </rootfiles>\n</container>`;
+                    const epub = new JSZip();
+                    epub.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+                    epub.file('META-INF/container.xml', container);
+                    epub.file('OEBPS/content.opf', opf);
+                    epub.file('OEBPS/chapter1.xhtml', xhtml);
+                    blob = await epub.generateAsync({ type: 'blob', mimeType: 'application/epub+zip' });
+                    downloadExt = 'epub';
                 } else {
                     blob = new Blob([fullText], { type: 'text/plain' });
                     downloadExt = 'txt';
@@ -422,8 +464,8 @@ export const UniversalDocConverter: React.FC = () => {
             }
 
         } catch (err) {
-            console.error(err);
-            setError("Conversion failed. Please check the file content and try again.");
+            logToolFailure('doc-converter', err, { stage: 'convert', conversionType });
+            setError(err instanceof Error ? err.message : 'Conversion failed. Please check the file content and try again.');
         } finally {
             setIsProcessing(false);
             setProgress(0);
@@ -448,49 +490,25 @@ export const UniversalDocConverter: React.FC = () => {
 
     if (!file) {
         return (
-            <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
-                {/* Header */}
-                <div className="flex-none space-y-3 mb-10">
-                    <h2 className="text-4xl font-black tracking-tight text-white flex items-center justify-center gap-3 font-unbounded">
-                        <Layers size={32} /> Universal Doc Converter
-                    </h2>
-                    <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Convert Ebooks, PDFs, Docs, and Images locally.
-                    </p>
-                </div>
-
-                {/* Upload Area */}
-                <div className="flex-1 w-full max-w-4xl mx-auto bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <FileUploader
-                        onFileSelect={handleFileSelect}
-                        accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
-                        label="Add Document"
-                        description="DOCX, PDF, EPUB, HEIC, and more..."
-                        className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-                    />
-                </div>
-
-                {/* Feature Highlights */}
-                <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
-                    {[
-                        { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW' },
-                        { icon: FileText, label: 'Documents', desc: 'Word, PDF, MD' },
-                        { icon: ImageIcon, label: 'Images', desc: 'HEIC, PNG, JPG' },
-                        { icon: Layers, label: 'Batch Ready', desc: 'Client-side Only' }
-                    ].map((feat, i) => (
-                        <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
-                            <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
-                                <feat.icon size={20} />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold text-zinc-200">{feat.label}</h3>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wide font-bold mt-1">{feat.desc}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <ToolShell
+                icon={Layers}
+                title="Universal Doc Converter"
+                description="Convert Ebooks, PDFs, Docs, and Images locally."
+                features={[
+                    { icon: BookOpen, label: 'Ebooks', desc: 'EPUB, MOBI, AZW' },
+                    { icon: FileText, label: 'Documents', desc: 'Word, PDF, MD' },
+                    { icon: ImageIcon, label: 'Images', desc: 'HEIC, PNG, JPG' },
+                    { icon: Layers, label: 'Batch Ready', desc: 'Client-side Only' },
+                ]}
+                file={file}
+                accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
+                uploadLabel="Add Document"
+                uploadDescription="DOCX, PDF, EPUB, HEIC, and more..."
+                onFileSelect={handleFileSelect}
+                error={error}
+            >
+                <></>
+            </ToolShell>
         );
     }
 
@@ -504,7 +522,7 @@ export const UniversalDocConverter: React.FC = () => {
                     <Layers size={32} /> Universal Doc Converter
                 </h2>
                 <button
-                    onClick={() => setFile(null)}
+                    onClick={() => clear()}
                     className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full uppercase font-bold tracking-widest text-[10px]"
                 >
                     Add Another File
@@ -552,6 +570,7 @@ export const UniversalDocConverter: React.FC = () => {
                                                 {renderOption('pdf-to-img', ImageIcon, 'Images (ZIP)')}
                                                 {renderOption('pdf-to-docx', FileText, 'Word Doc')}
                                                 {renderOption('pdf-to-txt', FileText, 'Plain Text')}
+                                                {renderOption('pdf-to-epub', BookOpen, 'EPUB')}
                                             </>
                                         )}
                                         {file.file.name.toLowerCase().endsWith('.docx') && (
@@ -647,7 +666,7 @@ export const UniversalDocConverter: React.FC = () => {
                                 <Download size={24} className="mr-3" /> Download Result
                             </a>
                             <button
-                                onClick={() => { setFile(null); setResultUrl(null); }}
+                                onClick={() => { clear(); setResultUrl(null); }}
                                 className="text-zinc-500 hover:text-white text-base py-4 font-bold transition-colors"
                             >
                                 Convert Another File

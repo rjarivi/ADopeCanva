@@ -1,0 +1,39 @@
+{
+  "id": "gif-compressor",
+  "title": "GIF Compressor",
+  "description": "Reduce GIF file size efficiently.",
+  "category": "Image",
+  "icon": "Minimize2",
+  "guideTitle": "Reduce GIF size for faster loading",
+  "guideContent": "GIFs can be large and slow down your website. Our compressor uses advanced lossy and lossless algorithms to strip metadata and optimize colors, drastically reducing file size while keeping your animation looking great.",
+  "faqs": [
+    {
+      "question": "How much can I compress?",
+      "answer": "Most GIFs can be reduced by 30-70% depending on the color complexity."
+    },
+    {
+      "question": "Will it remain animated?",
+      "answer": "Yes, the compression is specifically designed for multi-frame animated GIFs."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Engine",
+      "value": "Libimagequant (WASM)"
+    },
+    {
+      "label": "Optimization",
+      "value": "Lossy Dithering & Palette Reduction"
+    },
+    {
+      "label": "Max Intensity",
+      "value": "9/10 compression ratio"
+    }
+  ],
+  "privacyNotes": "GIF re-encoding is performed locally using your device resources.",
+  "order": 14,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Box, Crop as CropIconChangelog } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Smartphone, Eraser, FileAudio, Stamp, EyeOff, Cpu, ShieldCheck, Maximize2, RotateCw, Scale, Users, Crop } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -14,7 +14,7 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
-        version: '1.12.0',
+        version: '1.21.0',
         date: 'Oct 3, 2026',
         items: [
             {
@@ -66,7 +66,7 @@ const CHANGES: ChangeEntry[] = [
                 type: 'update'
             },
             {
-                icon: CropIconChangelog,
+                icon: Crop,
                 title: 'Quick Editor: Crop On-Canvas, Cleaner Player & Export',
                 description: 'Crop is now done directly on the video: toggle Crop on the preview and drag any of the 8 handles (4 corners + 4 edges) or grab the frame center to move it — with rule-of-thirds guides, dark windowing and Reset. The Playback Speed slider was removed (pills only), and Audio moved into the player itself as a mute pill with a volume slider. The export panel was redesigned to house style: grouped Export Format / Frame Rate / Quality with labeled pill groups replacing the default dropdowns, and the mysterious "mp3" tile is now a labeled "MP3 Audio" extract button next to "PNG Frame".',
                 type: 'update'
@@ -79,27 +79,244 @@ const CHANGES: ChangeEntry[] = [
             }
         ]
     },
+
     {
-        version: '1.11.0',
-        date: 'Sep 10, 2026',
+        version: '1.20.0',
+        date: 'Sep 23, 2026',
         items: [
             {
-                icon: Box,
-                title: '3D Mockup Studio — Cinematic Reveal',
-                description: 'Rebuilt the reveal to match Apple\'s official iPhone Duo film frame-for-frame: the camera now breathes in sync with the hinge (gentle push-in during the hold, then a final settle zoom-out as the fold completes) instead of a detached post-animation zoom. The phone now defaults to standing closed like the hero shot, the reveal auto-settles on its final open pose, and looping picks up seamlessly from the open state. Also fixed the reveal animation freezing on first load.',
+                icon: Bug,
+                title: 'Backlog Blitz: Silent Data Loss & Memory Leaks Fixed',
+                description: 'Doc Converter now writes real multi-chapter EPUBs (readers rejected the old HTML-as-EPUB), preserves Unicode text, guards empty spreadsheets, and never deadlocks on unreadable files. Fixed render-per-frame URL leaks, the GIF MEMFS leak, and rolled leak-proof URL state out to all 12 media tools.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
+        version: '1.19.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Lock,
+                title: 'Sandboxed Execution for Community Tools (Experimental)',
+                description: 'Tools can now opt into opaque-origin iframe isolation via "sandbox": true — no parent DOM, cookies, or storage access, narrower CSP, failures still reported to /health. Recipe Runner pilots it.',
+                type: 'security'
+            },
+        ]
+    },
+    {
+        version: '1.18.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'Unified Tool Framework Rollout',
+                description: 'All 34 file-based tools now share the standard ToolShell upload view and leak-free useToolFile state — consistent headers, feature grids, error display, and automatic preview-URL cleanup everywhere, plus footer/header slots for credits and model pickers.',
                 type: 'update'
+            },
+        ]
+    },
+    {
+        version: '1.17.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Zap,
+                title: 'Faster First Paint: Deterministic Vendor Chunks',
+                description: 'First-paint JS dropped from ~1.1MB to ~75KB gzip. Heavy engines (PDF, docs, capture, AI) now load only when their tool opens, vendor files keep stable URLs across deploys for long-term caching, and the embedded blog remover lazy-loads below the fold.',
+                type: 'feature'
+            },
+        ]
+    },
+    {
+        version: '1.16.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Zap,
+                title: 'Recipe Runner: Community Presets That Execute',
+                description: 'Lane 1 is now end-to-end: pick a JSON preset, drop a file, download. FFmpeg and image recipes run locally with the args shown upfront; document recipes explain they need a code tool instead of failing obscurely.',
+                type: 'feature'
+            },
+        ]
+    },
+    {
+        version: '1.15.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Lock,
+                title: 'CSP Now Enforced by CI',
+                description: 'Every network/image host in code and manifests must be covered by the Content-Security-Policy or CI fails. Cleanup removed dead avatar/thumbnail hosts, fixed silently-blocked GIF captions and transparency grids, and declared per-tool network permissions.',
+                type: 'security'
+            },
+        ]
+    },
+    {
+        version: '1.14.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'All 67 Tools Migrated to Manifest Registry',
+                description: 'Every tool now lives in tools/<id>/ with a manifest (metadata, permissions) and lazy-loaded component. The Dashboard registry is fully generated, new tools load on demand, and the sitemap regenerates automatically.',
+                type: 'update'
+            },
+        ]
+    },
+    {
+        version: '1.13.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Scale,
+                title: 'Open Source Under AGPL-3.0',
+                description: 'The codebase is now open for contributions: manifest-based tool registry with lazy loading, recipes lane for presets, ToolShell + useToolFile SDK, scaffold CLI, and CI gates (typecheck, permission lint, scope guard, secret scan, bundle budget). See CONTRIBUTING.md and the open-source footer link.',
+                type: 'feature'
+            },
+            {
+                icon: Users,
+                title: 'Two Contribution Lanes',
+                description: 'Recipes (JSON presets, merge fast) and code tools (tools/<id>/ with manifest permissions + human review). Tool PRs can no longer touch the shell, lockfile, CSP, or analytics — enforced by CI.',
+                type: 'update'
+            },
+        ]
+    },
+    {
+        version: '1.12.0',
+        date: 'Sep 23, 2026',
+        items: [
+            {
+                icon: Maximize2,
+                title: 'Fullscreen Focus Mode for Every Tool',
+                description: 'New fullscreen toggle in each tool toolbar (or press F): hides the header, breadcrumbs, and guide sections and stretches the workspace edge-to-edge, using the native Fullscreen API with graceful fallback. ESC exits. Mobile gets a floating button plus hidden nav chrome.',
+                type: 'feature'
+            },
+            {
+                icon: Layers,
+                title: 'Adobe-Style Page Rail in PDF Preview',
+                description: 'The full-page preview now has a left thumbnail rail for one-click page jumping, and the grid expand button moved to the top-left so it never covers the selection checkmark again.',
+                type: 'fix'
+            },
+            {
+                icon: RotateCw,
+                title: 'Single-Page Rotate Without the Friction',
+                description: 'Hover (or tap) any page for instant ⟲ ⟳ quick-rotate with a live angle badge — no selection needed. After Process, thumbnails and preview render the actual output so the workspace always matches the download, and rotating again keeps stacking on the last result.',
+                type: 'feature'
+            },
+        ]
+    },
+    {
+        version: '1.11.2',
+        date: 'Sep 22, 2026',
+        items: [
+            {
+                icon: ShieldCheck,
+                title: 'Tool Health Monitoring (Self-Reporting Failures)',
+                description: 'Every tool is now wrapped in a crash boundary that logs failures automatically. A new /health dashboard shows the failure log with per-tool counts, and a global hook captures unhandled errors (also sent to analytics as tool_failure events). Run npm run audit:tools before deploy for the static pre-flight check (PDF worker version match, CORS-loop patterns, null-crash guards).',
+                type: 'feature'
+            },
+            {
+                icon: Bug,
+                title: 'PDF Engine Hardening (All 7 PDF Tools)',
+                description: 'Centralized PDF.js worker setup with local-first + version-pinned CDN fallback, PDF magic-byte validation, password/encrypted/corrupt specific error messages, and worker memory cleanup (destroy/page cleanup) on every tool. Fixed silent export failures in Watermark and Suite, and null-filename crashes in converters.',
+                type: 'fix'
+            },
+            {
+                icon: Zap,
+                title: 'Avatar CORS Loop Eliminated (Production Sync)',
+                description: 'Removed crossOrigin="anonymous" from sponsor avatars and replaced dead external avatar URLs (404ing profile image + ui-avatars fallback returning duplicate ACAO headers) with local data-URI initials. This stops the hundreds-strong CORS error spam seen on adopecanva.com. DeviceMockup external screenshots now fall back to plain display instead of blanking.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
+        version: '1.11.1',
+        date: 'Sep 22, 2026',
+        items: [
+            {
+                icon: Bug,
+                title: 'PDF Redactor "Could not open PDF" Fix',
+                description: 'Resolved a PDF.js worker version mismatch that caused all PDF tools (Redactor, PDF to JPG, PDF to Text, Doc Converter) to fail with "Could not open PDF — make sure it is valid or unencrypted" on any PDF upload. The issue was the bundled pdf.worker.min.mjs was outdated (v3.x) while the app was using pdfjs-dist v5.7.284. Updated the worker file to match.',
+                type: 'fix'
+            },
+            {
+                icon: Cpu,
+                title: 'BiRefNet Model Updated to BG0 Engine (studioludens/birefnet-lite-512)',
+                description: 'Fixed a 404 error where BiRefNet background removal failed with "Could not locate model_quantized.onnx". Root cause: Transformers.js defaulted to quantized dtype in browsers. Updated to the exact model powering bg0.dev (studioludens/birefnet-lite-512) with explicit dtype: fp16 → fp32 fallback chain. Browser memory usage reduced from ~183MB to ~94MB.',
+                type: 'fix'
+            },
+        ]
+    },
+    {
+        version: '1.11.0',
+        date: 'Sep 16, 2026',
+        items: [
+            {
+                icon: Eraser,
+                title: 'Remove.bg Alternative & Smart Background Remover 2.0',
+                description: 'Supercharged on-device AI background removal with full-resolution 4K+ export, 100% private in-browser WebAssembly execution, zero server uploads, and comprehensive FAQ & How-To schemas for zero-bounce SERP dominance.',
+                type: 'feature'
+            },
+            {
+                icon: Cpu,
+                title: 'Multi-Model AI Selector (BiRefNet BG0 & MODNet)',
+                description: 'Users can now choose between multiple browser-native, 100% open-source (Apache-2.0) neural networks: BiRefNet (the ultra-HD bilateral reference network behind bg0.dev) and MODNet (fast 25MB portrait specialist). Compare cutouts in real-time with full commercial usage rights and zero server uploads.',
+                type: 'feature'
+            },
+            {
+                icon: GitCompare,
+                title: 'Remove.bg Head-to-Head Comparison Matrix',
+                description: 'Launched dedicated /vs/remove-bg comparison hub detailing resolution limits, privacy tradeoffs, per-image credit costs ($0 vs $0.20–$1.99), and offline browser capabilities.',
+                type: 'feature'
+            },
+            {
+                icon: Layers,
+                title: 'Cornerstone Blog Guide with Live Embedded Remover',
+                description: 'Published interactive pillar guide (/remove-bg-alternative) featuring an embedded, instant-run background remover widget, technical architecture breakdown, and copyable embed codes for creators and webmasters.',
+                type: 'feature'
             }
         ]
     },
     {
         version: '1.10.0',
-        date: 'Sep 10, 2026',
+        date: 'Sep 14, 2026',
         items: [
             {
-                icon: Box,
-                title: '3D Mockup Studio',
-                description: "New IMAGE tool: drop a screenshot or video onto Apple's official iPhone Duo foldable — the rigged model with the real hinge animation (61-keyframe Slider track), converted via a Blender pipeline. Scrub the fold from closed to open, loop it, orbit from any angle, tune HDRI lighting and screen glow, and export PNGs up to 3× retina or a 4-second WebM fold video — all rendered locally with WebGL.",
+                icon: FileAudio,
+                title: 'Audio Extractor (Video to MP3)',
+                description: 'New AUDIO & VIDEO tool: Extract crystal-clear audio tracks, background music, or dialogue from any video file (MP4, MOV, MKV, WebM, AVI, etc.) directly in your browser. Supports MP3 (up to 320kbps studio quality), WAV, AAC, M4A, FLAC, and OGG formats with stereo/mono channel options, custom segment extraction, and zero server uploads.',
                 type: 'feature'
+            },
+            {
+                icon: Palette,
+                title: 'Image Color Palette Extractor',
+                description: 'New IMAGE tool: Drop any image to extract dominant color palettes using spatial 3D color quantization. Generate mood variations (Vibrant, Muted, Pastel, Dark, Light), sample custom points with the interactive eyedropper, copy CSS Variables and Tailwind snippets, or export high-res PNG swatch cards.',
+                type: 'feature'
+            },
+            {
+                icon: EyeOff,
+                title: 'EXIF Metadata Stripper & Inspector',
+                description: 'New IMAGE & PRIVACY tool: Deep audit and eradication of private metadata from photos before sharing. Inspect embedded GPS geo-coordinates with interactive map links, camera specs, and lens models. Features 100% lossless binary segment stripping that leaves original image quality untouched.',
+                type: 'feature'
+            },
+            {
+                icon: Stamp,
+                title: 'PDF Watermark & Page Numberer',
+                description: 'New DOCS tool: Stamp diagonal or horizontal confidential watermarks (CONFIDENTIAL, DRAFT, SAMPLE, custom text) with adjustable opacity, angle, and page ranges. Also add customized headers and footers with flexible page numbering templates and live multi-page PDF canvas previews.',
+                type: 'feature'
+            },
+            {
+                icon: Rocket,
+                title: 'Feature Roadmap & Community Voting',
+                description: 'Seeded community-requested candidate tools into the interactive Roadmap with local persistence for submitting and upvoting features.',
+                type: 'update'
+            },
+            {
+                icon: Lock,
+                title: '100% Free & Private On-Device Suite',
+                description: 'Completed migration of all AI and media tooling to 100% client-side WebAssembly and Transformers.js models. Zero API keys, zero cloud fees, and complete data privacy.',
+                type: 'update'
             }
         ]
     },
@@ -107,6 +324,18 @@ const CHANGES: ChangeEntry[] = [
         version: '1.9.0',
         date: 'Aug 22, 2026',
         items: [
+            {
+                icon: Eraser,
+                title: 'Local In-Browser Background Remover',
+                description: 'Private, 100% on-device neural background matting powered by Transformers.js and Xenova/modnet under Apache-2.0. Requires zero API keys and zero server uploads with live model download progress and clean alpha transparency.',
+                type: 'feature'
+            },
+            {
+                icon: Smartphone,
+                title: 'Social Mockup Checker',
+                description: 'New IMAGE tool: preview Instagram & Meta Stories, Reels, Feed Posts (1:1 and 4:5), Carousels, and Ads inside an interactive 3D phone mockup. Features official Meta safe zone guides (top/bottom obstruction zones & 1:1 profile grid crop), Instagram UI overlays, multi-slide carousel support, 3D tilt/finish controls, and high-res PNG export.',
+                type: 'feature'
+            },
             {
                 icon: Music,
                 title: 'Audio Trimmer 2.0',

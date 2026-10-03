@@ -1,0 +1,39 @@
+{
+  "id": "audio-replace",
+  "title": "Audio Replacer",
+  "description": "Swap audio tracks in videos with volume mixing.",
+  "category": "Video",
+  "icon": "Layers",
+  "guideTitle": "How to replace audio in a video file",
+  "guideContent": "Easily swap background music or voiceovers in your videos. Upload your video and a new audio track, adjust the volume mixing to keep some background noise or replace it completely, and export the new video.",
+  "faqs": [
+    {
+      "question": "Will I lose video quality?",
+      "answer": "No, we only re-encode the audio track; the video stream is \"copied\" to ensure original quality."
+    },
+    {
+      "question": "Can I mix multiple audio tracks?",
+      "answer": "Currently, it supports one primary replacement track."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Syncing",
+      "value": "Precise audio/video alignment"
+    },
+    {
+      "label": "Mixing",
+      "value": "Volume sliders for both tracks"
+    },
+    {
+      "label": "Formats",
+      "value": "MP4, WAV, MP3, MOV"
+    }
+  ],
+  "privacyNotes": "Audio/Video merging is done locally via FFmpeg. No data is uploaded.",
+  "order": 19,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

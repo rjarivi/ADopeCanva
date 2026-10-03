@@ -11,6 +11,11 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+
+# Generated (regenerate with `npm run registry:build`)
+utils/toolRegistry.generated.ts
 
 # Editor directories and files
 .vscode/*

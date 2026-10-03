@@ -1,0 +1,39 @@
+{
+  "id": "audio-trimmer",
+  "title": "Audio Trimmer",
+  "description": "Trim and cut audio with waveform visualization.",
+  "category": "Audio",
+  "icon": "Scissors",
+  "guideTitle": "How to create custom ringtones and loops",
+  "guideContent": "Easily cut any audio file to create short clips. Use our visual waveform editor to select the exact start and end points, apply fade-ins or fade-outs, and export your new clip in seconds.",
+  "faqs": [
+    {
+      "question": "Can I zoom into the waveform?",
+      "answer": "Yes, the editor supports zooming for precise millisecond-level trimming."
+    },
+    {
+      "question": "What is the maximum file length?",
+      "answer": "We recommend files under 30 minutes for optimal browser performance."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Waveform View",
+      "value": "High-resolution Audio Canvas"
+    },
+    {
+      "label": "Fade Effects",
+      "value": "Automatic Fade-in/out support"
+    },
+    {
+      "label": "Precision",
+      "value": "0.01 seconds"
+    }
+  ],
+  "privacyNotes": "Waveform rendering and cutting happen entirely on your device.",
+  "order": 10,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "image-splitter",
+  "title": "Image Splitter",
+  "description": "Split wide or tall images into equal slices for seamless Instagram carousels & stories.",
+  "category": "Image",
+  "icon": "SplitSquareHorizontal",
+  "guideTitle": "How to split images for Instagram carousel seamless effect",
+  "guideContent": "Upload a wide or tall image, choose your split preset (1080×1350 for portrait carousels, 1080×1080 for square), and hit Split. The tool slices the image into perfectly-sized panels and lets you download them all in a ZIP. For a seamless panoramic carousel on Instagram, use a single wide image and let this tool divide it — upload slides right-to-left so they appear left-to-right in the carousel.",
+  "faqs": [
+    {
+      "question": "What is the Instagram carousel dimension?",
+      "answer": "For portrait carousels the recommended size per slide is 1080×1350 px (4:5 ratio). For square carousels it is 1080×1080 px. This tool creates slices at exactly those dimensions."
+    },
+    {
+      "question": "How do I get the seamless panoramic effect?",
+      "answer": "Create one single wide image (e.g. 5400×1350 px for 5 slides), upload it here, choose the IG Carousel preset, and split. Upload the resulting slices to Instagram in right-to-left order — Instagram will display them left to right, creating the illusion of one continuous image."
+    },
+    {
+      "question": "Does this upload my image anywhere?",
+      "answer": "No — all splitting is done locally in your browser using the Canvas API. Nothing is ever sent to a server."
+    },
+    {
+      "question": "Can I split vertically for stories?",
+      "answer": "Yes — choose the IG Story preset or Custom and select Vertical split direction to divide a tall image into story-sized panels."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Presets",
+      "value": "IG Carousel (1080×1350), Square (1080×1080), Story (1080×1920)"
+    },
+    {
+      "label": "Custom",
+      "value": "Any pixel width/height + horizontal or vertical split"
+    },
+    {
+      "label": "Export",
+      "value": "Individual PNG or bulk ZIP download"
+    },
+    {
+      "label": "Engine",
+      "value": "Canvas API — fully client-side"
+    }
+  ],
+  "privacyNotes": "All image processing is performed locally in your browser using the Canvas API. No images or data are uploaded to any server.",
+  "order": 62,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

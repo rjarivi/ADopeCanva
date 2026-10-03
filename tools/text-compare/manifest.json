@@ -1,0 +1,39 @@
+{
+  "id": "text-compare",
+  "title": "Text Compare",
+  "description": "Compare two text blocks side-by-side with highlighted diff.",
+  "category": "Text",
+  "icon": "GitCompare",
+  "guideTitle": "How to compare and diff two text documents",
+  "guideContent": "Paste two versions of any text into the left and right panels, then click Compare to see a colour-coded diff. Added lines appear in green, removed lines in red, and unchanged lines stay neutral — making code reviews, document revisions, and data reconciliation fast and visual.",
+  "faqs": [
+    {
+      "question": "What algorithm is used for diffing?",
+      "answer": "We use a line-by-line LCS (Longest Common Subsequence) algorithm — the same underlying approach as the Unix diff utility."
+    },
+    {
+      "question": "Is my text sent to a server?",
+      "answer": "No — the entire comparison runs in your browser. Your text never leaves your device."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Algorithm",
+      "value": "LCS line-by-line diff"
+    },
+    {
+      "label": "Output",
+      "value": "Side-by-side colour diff"
+    },
+    {
+      "label": "Stats",
+      "value": "Added / removed / unchanged counts"
+    }
+  ],
+  "privacyNotes": "All text comparison happens entirely in your browser. Nothing is sent to any server.",
+  "order": 57,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

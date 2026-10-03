@@ -1,0 +1,27 @@
+{
+  "id": "avif-to-webp",
+  "title": "AVIF to WebP",
+  "description": "Convert AVIF images to WebP.",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Convert AVIF to WebP for better compatibility",
+  "guideContent": "While AVIF offers excellent compression, it isn't supported in all environments yet. Converting to WebP provides a widely compatible modern alternative that still keeps file sizes tiny.",
+  "faqs": [
+    {
+      "question": "Is AVIF smaller than WebP?",
+      "answer": "Usually yes, but WebP has much broader support across older browsers and apps."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Format",
+      "value": "AVIF -> WebP"
+    }
+  ],
+  "privacyNotes": "Local decoding/encoding via WebAssembly.",
+  "order": 42,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}

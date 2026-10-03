@@ -1,0 +1,32 @@
+{
+  "id": "gif-to-apng",
+  "title": "GIF to APNG",
+  "description": "Convert GIF animations to APNG.",
+  "swapId": "apng-to-gif",
+  "category": "Image",
+  "icon": "ImageIcon",
+  "guideTitle": "Upgrade your GIFs to APNG format",
+  "guideContent": "Convert existing GIFs to the modern APNG format. While it won't add lost colors, it allows for better integration into modern web apps.",
+  "faqs": [
+    {
+      "question": "Will the file size change?",
+      "answer": "Usually, APNG files are slightly larger than GIFs because they use better compression but store more color data."
+    }
+  ],
+  "specs": [
+    {
+      "label": "Optimization",
+      "value": "LZ77/Deflate"
+    },
+    {
+      "label": "Bit Depth",
+      "value": "8-bit to 24-bit upgrade"
+    }
+  ],
+  "privacyNotes": "Handled locally in-browser.",
+  "order": 32,
+  "permissions": {
+    "network": [],
+    "npm": []
+  }
+}
