@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Box } from 'lucide-react';
+import { Sparkles, Bug, Zap, Layers, Lock, Rocket, GitBranch, Music, GitCompare, Palette, FileDown, Type, Scissors, Box, Crop as CropIconChangelog } from 'lucide-react';
 
 interface ChangeEntry {
     version: string;
@@ -63,6 +63,12 @@ const CHANGES: ChangeEntry[] = [
                 icon: Type,
                 title: 'Honest, Privacy-First Wording',
                 description: 'Repo-wide wording sweep: "Add" replaces "Upload" as the action verb across all 53 tools (Add Files, Add Video, Add Music) — files are processed in your browser, never sent to a server, and negative privacy claims like "never uploaded" were deliberately kept. New tools must follow the wording rule now codified in the design guidelines. The Quick Editor CROP section also moved up beside Layout so the Crop toggle is visible without scrolling.',
+                type: 'update'
+            },
+            {
+                icon: CropIconChangelog,
+                title: 'Quick Editor: Crop On-Canvas, Cleaner Player & Export',
+                description: 'Crop is now done directly on the video: toggle Crop on the preview and drag any of the 8 handles (4 corners + 4 edges) or grab the frame center to move it — with rule-of-thirds guides, dark windowing and Reset. The Playback Speed slider was removed (pills only), and Audio moved into the player itself as a mute pill with a volume slider. The export panel was redesigned to house style: grouped Export Format / Frame Rate / Quality with labeled pill groups replacing the default dropdowns, and the mysterious "mp3" tile is now a labeled "MP3 Audio" extract button next to "PNG Frame".',
                 type: 'update'
             },
             {

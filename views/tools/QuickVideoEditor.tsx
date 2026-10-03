@@ -5,7 +5,7 @@ import {
     Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
-    ZoomIn, Gauge, Music, Camera, Speaker, Crop as CropIcon,
+    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -34,7 +34,8 @@ const fmtTimecode = (s: number): string => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     const sec = Math.floor(s % 60);
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    const ms = Math.round((s - Math.floor(s)) * 1000);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
 };
 
 /** Format seconds → M:SS (for progress display) */
@@ -141,6 +142,60 @@ export const QuickVideoEditor: React.FC = () => {
     // Crop (inset percentages — real `crop=w:h:x:y` in export, overlay in preview)
     const [cropEnabled, setCropEnabled] = useState(false);
     const [cropInset, setCropInset] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+    const cropDragRef = useRef<{ type: string; startX: number; startY: number; boxW: number; boxH: number; insets: { left: number; right: number; top: number; bottom: number } } | null>(null);
+    const MIN_CROP_PCT = 15; // keep at least 15% of each axis on screen when windowing
+
+    const clampIns = (v: number) => Math.max(0, Math.min(90, Math.round(v)));
+
+    const handleCropPointerDown = (type: string) => (e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const overlay = (e.currentTarget as HTMLElement).closest('[data-crop-overlay]');
+        const box = overlay ? overlay.getBoundingClientRect() : null;
+        cropDragRef.current = { type, startX: e.clientX, startY: e.clientY, boxW: box?.width ?? 1, boxH: box?.height ?? 1, insets: { ...cropInset } };
+        setExportUrl(null);
+    };
+
+    const handleCropPointerMove = (e: React.PointerEvent) => {
+        const d = cropDragRef.current;
+        if (!d) return;
+        e.stopPropagation();
+        const dx = ((e.clientX - d.startX) / d.boxW) * 100;
+        const dy = ((e.clientY - d.startY) / d.boxH) * 100;
+        const i = d.insets;
+        let next = { ...i };
+        switch (d.type) {
+            case 'w': case 'nw': case 'sw':
+                next.left = clampIns(Math.min(i.left + dx, 90 - i.right - MIN_CROP_PCT));
+                break;
+            case 'e': case 'ne': case 'se':
+                next.right = clampIns(Math.min(i.right - dx, 90 - i.left - MIN_CROP_PCT));
+                break;
+        }
+        switch (d.type) {
+            case 'n': case 'nw': case 'ne':
+                next.top = clampIns(Math.min(i.top + dy, 90 - i.bottom - MIN_CROP_PCT));
+                break;
+            case 's': case 'sw': case 'se':
+                next.bottom = clampIns(Math.min(i.bottom - dy, 90 - i.top - MIN_CROP_PCT));
+                break;
+            case 'move': {
+                next.left = clampIns(i.left + dx);
+                next.top = clampIns(i.top + dy);
+                const hShift = Math.min(Math.max(i.left + dx - next.left, 0), i.right); // preserve width by shifting the opposite inset
+                next.right = clampIns(i.right - hShift);
+                const vShift = Math.min(Math.max(i.top + dy - next.top, 0), i.bottom); // preserve height
+                next.bottom = clampIns(i.bottom - vShift);
+                break;
+            }
+        }
+        setCropInset(next);
+    };
+
+    const handleCropPointerUp = (e: React.PointerEvent) => {
+        e.stopPropagation();
+        cropDragRef.current = null;
+    };
 
     // Export options
     const [exportFormat, setExportFormat] = useState<'mp4' | 'webm'>('mp4');
@@ -816,56 +871,12 @@ export const QuickVideoEditor: React.FC = () => {
 
                             <div className="h-px bg-zinc-800/60" />
 
-                            {/* ── CROP ── */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2.5">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <CropIcon size={10} /> Crop
-                                    </p>
-                                    <button
-                                        onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
-                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${cropEnabled ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                    >
-                                        {cropEnabled ? 'On' : 'Off'}
-                                    </button>
-                                </div>
-                                {cropEnabled && (
-                                    <div className="space-y-2 mb-2">
-                                        {([
-                                            { key: 'left', label: 'Left' },
-                                            { key: 'right', label: 'Right' },
-                                            { key: 'top', label: 'Top' },
-                                            { key: 'bottom', label: 'Bottom' },
-                                        ] as const).map(c => (
-                                            <div key={c.key} className="flex items-center gap-2">
-                                                <span className="w-10 text-[10px] text-zinc-500 font-bold uppercase">{c.label}</span>
-                                                <input
-                                                    type="range" min="0" max="45" step="1"
-                                                    value={cropInset[c.key]}
-                                                    onChange={e => { setCropInset(prev => ({ ...prev, [c.key]: parseInt(e.target.value) })); setExportUrl(null); }}
-                                                    className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
-                                                />
-                                                <span className="w-8 text-right text-[10px] font-mono text-indigo-400">{cropInset[c.key]}%</span>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
-                                            className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase font-bold tracking-wider transition-colors"
-                                        >
-                                            Reset insets
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="h-px bg-zinc-800/60" />
-
                             {/* ── PLAYBACK SPEED ── */}
                             <div>
                                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                                     <Gauge size={10} /> Playback Speed
                                 </p>
-                                <div className="flex gap-1.5 mb-3">
+                                <div className="flex gap-1.5">
                                     {[0.5, 1, 1.5, 2].map(s => (
                                         <button
                                             key={s}
@@ -875,38 +886,6 @@ export const QuickVideoEditor: React.FC = () => {
                                             {s}x
                                         </button>
                                     ))}
-                                </div>
-                                <input
-                                    type="range" min="0.25" max="2" step="0.05"
-                                    value={speed}
-                                    onChange={e => setSpeed(parseFloat(e.target.value))}
-                                    className="w-full h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
-                                />
-                            </div>
-
-                            <div className="h-px bg-zinc-800/60" />
-
-                            {/* ── AUDIO ── */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2.5">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Music size={10} /> Audio
-                                    </p>
-                                    <span className="text-[11px] font-bold text-indigo-400">{volume}%</span>
-                                </div>
-                                <div className="flex items-center gap-2.5">
-                                    <button
-                                        onClick={() => setGlobalMuted(m => !m)}
-                                        className={`shrink-0 p-2 rounded-lg border transition-all ${globalMuted ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
-                                    >
-                                        {globalMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                                    </button>
-                                    <input
-                                        type="range" min="0" max="100" step="1"
-                                        value={globalMuted ? 0 : volume}
-                                        onChange={e => { setVolume(parseInt(e.target.value)); setGlobalMuted(false); }}
-                                        className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
-                                    />
                                 </div>
                             </div>
 
@@ -921,55 +900,76 @@ export const QuickVideoEditor: React.FC = () => {
                         </div>
 
                         {/* Export / Download */}
-                        <div className="p-4 border-t border-zinc-800 space-y-2.5 shrink-0">
+                        <div className="p-4 border-t border-zinc-800 space-y-3 shrink-0">
                             {!exportUrl && (
                                 <>
-                                    {/* Format / FPS / Quality */}
-                                    <div className="grid grid-cols-3 gap-1.5">
-                                        <button
-                                            onClick={() => { setExportFormat('mp4'); setExportUrl(null); }}
-                                            className={`py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === 'mp4' ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                        >
-                                            mp4
-                                        </button>
-                                        <button
-                                            onClick={() => { setExportFormat('webm'); setExportUrl(null); }}
-                                            className={`py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === 'webm' ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                        >
-                                            webm
-                                        </button>
+                                    {/* Format */}
+                                    <div>
+                                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                                            <span>Export Format</span>
+                                            <span className="text-zinc-700 normal-case tracking-normal">video</span>
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-1.5">
+                                            {(['mp4', 'webm'] as const).map(f => (
+                                                <button
+                                                    key={f}
+                                                    onClick={() => { setExportFormat(f); setExportUrl(null); }}
+                                                    className={`py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
+                                                >
+                                                    {f}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Frame rate + Quality */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Frame Rate</p>
+                                            <div className="grid grid-cols-3 gap-1">
+                                                {[24, 30, 60].map(f => (
+                                                    <button
+                                                        key={f}
+                                                        onClick={() => { setFps(f); setExportUrl(null); }}
+                                                        className={`py-1.5 rounded-lg text-[10px] font-bold font-mono border transition-all ${fps === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                                    >
+                                                        {f}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Quality</p>
+                                            <div className="grid grid-cols-3 gap-1">
+                                                {(['high', 'medium', 'low'] as const).map(q => (
+                                                    <button
+                                                        key={q}
+                                                        onClick={() => { setQuality(q); setExportUrl(null); }}
+                                                        className={`py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all ${quality === q ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                                    >
+                                                        {q}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Secondary captures */}
+                                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                                         <button
                                             onClick={handleScreenshot}
-                                            className="py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all flex items-center justify-center gap-1"
-                                            title="Capture current preview frame as PNG"
+                                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all"
+                                            title="Save the current preview frame as a PNG image"
                                         >
-                                            <Camera size={11} /> png
+                                            <Camera size={11} /> PNG Frame
                                         </button>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-1.5">
-                                        <select
-                                            value={fps}
-                                            onChange={e => { setFps(Number(e.target.value)); setExportUrl(null); }}
-                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-1.5 py-1.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                                            title="Output frame rate (mp4/webm)"
-                                        >
-                                            {[24, 30, 60].map(f => <option key={f} value={f}>{f} fps</option>)}
-                                        </select>
-                                        <select
-                                            value={quality}
-                                            onChange={e => { setQuality(e.target.value as 'low' | 'medium' | 'high'); setExportUrl(null); }}
-                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-1.5 py-1.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
-                                            title="MP4 quality (CRF-based) — applies to mp4 export"
-                                        >
-                                            {(['high', 'medium', 'low'] as const).map(q => <option key={q} value={q}>{q}</option>)}
-                                        </select>
                                         <button
                                             onClick={handleExtractAudio}
                                             disabled={isProcessing || !selectedClip}
-                                            className="py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all flex items-center justify-center gap-1 disabled:opacity-30"
-                                            title="Extract selected clip's audio as MP3"
+                                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all disabled:opacity-30"
+                                            title="Extract the selected clip's audio as an MP3 file"
                                         >
-                                            <Speaker size={11} /> mp3
+                                            <Speaker size={11} /> MP3 Audio
                                         </button>
                                     </div>
                                 </>
@@ -1052,17 +1052,79 @@ export const QuickVideoEditor: React.FC = () => {
                             }}
                         />
 
-                        {/* Crop region overlay */}
-                        {cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
+                        {/* Crop toggle (on-canvas) */}
+                        {selectedClip && !isProcessing && !isPlaying && (
+                            <div className="absolute top-3 left-3 z-30 flex gap-1.5 group/pill">
+                                <button
+                                    onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md transition-all ${cropEnabled ? 'bg-indigo-600/80 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-black/60 border-white/10 text-zinc-300 hover:text-white hover:bg-black/80'}`}
+                                    title="Crop the video by dragging the frame corners and edges"
+                                >
+                                    <CropIcon size={11} /> Crop
+                                </button>
+                                {cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
+                                    <button
+                                        onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
+                                        className="px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 border border-white/10 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all"
+                                        title="Remove the crop"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Interactive crop overlay */}
+                        {cropEnabled && !isProcessing && (
                             <div
-                                className="absolute border-2 border-dashed border-indigo-400/80 bg-indigo-500/5 pointer-events-none z-20"
-                                style={{
-                                    left: `${cropInset.left}%`,
-                                    top: `${cropInset.top}%`,
-                                    right: `${cropInset.right}%`,
-                                    bottom: `${cropInset.bottom}%`,
-                                }}
-                            />
+                                data-crop-overlay
+                                className="absolute inset-0 z-20"
+                                onPointerMove={handleCropPointerMove}
+                                onPointerUp={handleCropPointerUp}
+                                onPointerLeave={handleCropPointerUp}
+                            >
+                                {/* Dimmed surroundings */}
+                                <div className="absolute inset-0 pointer-events-none" style={{
+                                    background: `linear-gradient(to right, rgba(0,0,0,0.55) ${cropInset.left}%, transparent ${cropInset.left}%, transparent ${100 - cropInset.right}%, rgba(0,0,0,0.55) ${100 - cropInset.right}%)`,
+                                }} />
+                                <div className="absolute inset-0 pointer-events-none" style={{
+                                    background: `linear-gradient(to bottom, transparent ${cropInset.top}%, rgba(0,0,0,0.55) ${cropInset.top}%, rgba(0,0,0,0.55) ${100 - cropInset.bottom}%, transparent ${100 - cropInset.bottom}%)`,
+                                }} />
+                                {/* Crop window */}
+                                <div
+                                    className="absolute border-2 border-indigo-400/90 bg-indigo-500/5"
+                                    style={{
+                                        left: `${cropInset.left}%`, top: `${cropInset.top}%`,
+                                        right: `${cropInset.right}%`, bottom: `${cropInset.bottom}%`,
+                                        cursor: 'move',
+                                    }}
+                                    onPointerDown={handleCropPointerDown('move')}
+                                >
+                                    <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
+                                        {Array.from({ length: 9 }).map((_, i) => (
+                                            <div key={i} className={i === 4 ? '' : 'border border-dashed border-indigo-300/60 ' + (i % 3 === 0 ? 'border-l-0 ' : '') + (i % 3 === 2 ? 'border-r-0 ' : '') + (i < 3 ? 'border-t-0 ' : '') + (i >= 6 ? 'border-b-0 ' : '')} />
+                                        ))}
+                                    </div>
+                                </div>
+                                {/* 8 drag handles: 4 corners + 4 edges */}
+                                {([
+                                    { type: 'nw', style: { left: `${cropInset.left}%`, top: `${cropInset.top}%` }, cursor: 'nwse-resize' },
+                                    { type: 'n', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${cropInset.top}%` }, cursor: 'ns-resize' },
+                                    { type: 'ne', style: { left: `${100 - cropInset.right}%`, top: `${cropInset.top}%` }, cursor: 'nesw-resize' },
+                                    { type: 'w', style: { left: `${cropInset.left}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, cursor: 'ew-resize' },
+                                    { type: 'e', style: { left: `${100 - cropInset.right}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, cursor: 'ew-resize' },
+                                    { type: 'sw', style: { left: `${cropInset.left}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'nesw-resize' },
+                                    { type: 's', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'ns-resize' },
+                                    { type: 'se', style: { left: `${100 - cropInset.right}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'nwse-resize' },
+                                ] as const).map(h => (
+                                    <div
+                                        key={h.type}
+                                        onPointerDown={handleCropPointerDown(h.type)}
+                                        className="absolute w-3.5 h-3.5 rounded-full bg-indigo-400 border-2 border-zinc-950 shadow-md hover:scale-125 transition-transform touch-none"
+                                        style={{ ...h.style, cursor: h.cursor, marginLeft: '-7px', marginTop: '-7px' }}
+                                    />
+                                ))}
+                            </div>
                         )}
 
                         {/* Processing overlay */}
@@ -1099,6 +1161,30 @@ export const QuickVideoEditor: React.FC = () => {
                                 <div className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center">
                                     <Pause size={14} fill="white" className="text-white" />
                                 </div>
+                            </div>
+                        )}
+
+                        {/* In-player audio control */}
+                        {selectedClip && !isProcessing && (
+                            <div
+                                className="absolute bottom-3 left-3 z-30 flex items-center gap-2.5 pl-1.5 pr-3 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md"
+                                onPointerDown={e => e.stopPropagation()}
+                            >
+                                <button
+                                    onClick={() => setGlobalMuted(m => !m)}
+                                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center border transition-all ${globalMuted ? 'bg-red-500/15 border-red-500/30 text-red-400' : 'bg-white/5 border-transparent text-white hover:bg-white/10'}`}
+                                    title={globalMuted ? 'Unmute preview' : 'Mute preview'}
+                                >
+                                    {globalMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+                                </button>
+                                <input
+                                    type="range" min="0" max="100" step="1"
+                                    value={globalMuted ? 0 : volume}
+                                    onChange={e => { setVolume(parseInt(e.target.value)); setGlobalMuted(false); }}
+                                    className="w-20 h-1.5 rounded-full appearance-none bg-white/20 accent-indigo-500 cursor-pointer"
+                                    title={`Preview volume ${globalMuted ? '(muted)' : volume + '%'}`}
+                                />
+                                <span className="text-[9px] font-bold text-zinc-400 w-7 tabular-nums">{globalMuted ? 'Mute' : `${volume}%`}</span>
                             </div>
                         )}
                     </div>
@@ -1143,13 +1229,13 @@ export const QuickVideoEditor: React.FC = () => {
 
                                             {/* Draggable range inputs */}
                                             <input
-                                                type="range" min="0" max={selectedClip.duration} step="0.1"
+                                                type="range" min="0" max={selectedClip.duration || 3600} step="0.02"
                                                 value={parseTimecode(pendingStart)}
                                                 onChange={e => setPendingStart(fmtTimecode(parseFloat(e.target.value)))}
                                                 className="absolute inset-0 w-full h-full opacity-0 z-30 appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-16 [&::-webkit-slider-thumb]:cursor-col-resize [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-16 [&::-moz-range-thumb]:cursor-col-resize"
                                             />
                                             <input
-                                                type="range" min="0" max={selectedClip.duration} step="0.1"
+                                                type="range" min="0" max={selectedClip.duration || 3600} step="0.02"
                                                 value={parseTimecode(pendingEnd)}
                                                 onChange={e => setPendingEnd(fmtTimecode(parseFloat(e.target.value)))}
                                                 className="absolute inset-0 w-full h-full opacity-0 z-30 appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-16 [&::-webkit-slider-thumb]:cursor-col-resize [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-16 [&::-moz-range-thumb]:cursor-col-resize"
