@@ -20,6 +20,7 @@ import { AudioTrimmer } from './tools/AudioTrimmer';
 import { ImageCropper } from './tools/ImageCropper';
 import { PdfSuite } from './tools/DocSuite';
 import { CodeFormatter } from './tools/CodeFormatter';
+import { JsonFormatter } from './tools/JsonFormatter';
 import { MagicImageEditor } from './tools/MagicImageEditor';
 import { GifSuite } from './tools/GifSuite';
 import { GifMaker } from './tools/GifMaker';
@@ -1093,6 +1094,26 @@ export const TOOLS: ToolItem[] = [
             { label: 'Theme', value: 'Dark / High Contrast' }
         ],
         privacyNotes: 'Code is processed in-memory using Prettier and local scripts.'
+    },
+    {
+        id: 'json-formatter',
+        title: 'JSON Formatter',
+        description: 'Validate, format, and sort JSON with error positions.',
+        category: ToolCategory.DEV,
+        icon: FileJson,
+        component: <JsonFormatter />,
+        guideTitle: 'How to format and validate JSON',
+        guideContent: 'Paste JSON to beautify or minify it, sort object keys, choose your indentation style, and get precise line/column positions when the input is invalid. Everything runs locally in your browser.',
+        faqs: [
+            { question: 'Does it validate broken JSON?', answer: 'Yes — errors are shown with the exact line and column of the offending character.' },
+            { question: 'Can I sort keys?', answer: 'Yes, sort keys alphabetically (arrays keep their order).' }
+        ],
+        specs: [
+            { label: 'Indent', value: '2 spaces / 4 spaces / Tab' },
+            { label: 'Modes', value: 'Beautify / Minify / Sort' },
+            { label: 'Errors', value: 'Line & column position' }
+        ],
+        privacyNotes: 'Parses in-memory with native JSON APIs — nothing leaves your machine.'
     },
     {
         id: 'text-cleaner',

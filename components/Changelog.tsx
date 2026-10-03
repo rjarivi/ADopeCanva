@@ -58,6 +58,12 @@ const CHANGES: ChangeEntry[] = [
                 title: 'Paste Anywhere',
                 description: "The shared uploader now accepts Ctrl+V clipboard images across every tool, keeping drag-and-drop and multi-file intact.",
                 type: 'feature'
+            },
+            {
+                icon: GitBranch,
+                title: 'JSON Formatter Released + Live Smoke Tests',
+                description: "The previously unreleased JSON Formatter tool is now registered under Developer tools (indent 2/4/tab, sort keys, line/column error positions). All headline fixes verified in-browser with real files: crop export (640\u00d7360 \u2192 384\u00d7216), frame screenshots & MP3 extraction, merger crossfade ffprobe-verified at 4.5s, batch resizer ZIP with WebP 400\u00d7300\u00d73, video-trimmer middle-cut export at 2.5s, and audio replacement with keep-video-length padding.",
+                type: 'update'
             }
         ]
     },
