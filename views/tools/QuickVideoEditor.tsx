@@ -144,8 +144,9 @@ export const QuickVideoEditor: React.FC = () => {
     const [cropInset, setCropInset] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
     const cropDragRef = useRef<{ type: string; startX: number; startY: number; boxW: number; boxH: number; insets: { left: number; right: number; top: number; bottom: number } } | null>(null);
     const MIN_CROP_PCT = 15; // keep at least 15% of each axis on screen when windowing
+    const MAX_CROP_SUM = 100 - MIN_CROP_PCT; // left+right (or top+bottom) may not exceed this
 
-    const clampIns = (v: number) => Math.max(0, Math.min(90, Math.round(v)));
+    const clampIns = (v: number, max: number) => Math.max(0, Math.min(max, Math.round(v)));
 
     const handleCropPointerDown = (type: string) => (e: React.PointerEvent) => {
         e.preventDefault();
@@ -153,6 +154,12 @@ export const QuickVideoEditor: React.FC = () => {
         const overlay = (e.currentTarget as HTMLElement).closest('[data-crop-overlay]');
         const box = overlay ? overlay.getBoundingClientRect() : null;
         cropDragRef.current = { type, startX: e.clientX, startY: e.clientY, boxW: box?.width ?? 1, boxH: box?.height ?? 1, insets: { ...cropInset } };
+        // Capture the pointer on the overlay so the drag keeps tracking even when
+        // the cursor slips past the handles or off the preview entirely.
+        if (overlay) {
+            (overlay as HTMLElement).dataset.cropActive = '1';
+            (overlay as HTMLElement).setPointerCapture(e.pointerId);
+        }
         setExportUrl(null);
     };
 
@@ -166,26 +173,29 @@ export const QuickVideoEditor: React.FC = () => {
         let next = { ...i };
         switch (d.type) {
             case 'w': case 'nw': case 'sw':
-                next.left = clampIns(Math.min(i.left + dx, 90 - i.right - MIN_CROP_PCT));
+                next.left = clampIns(i.left + dx, MAX_CROP_SUM - i.right);
                 break;
             case 'e': case 'ne': case 'se':
-                next.right = clampIns(Math.min(i.right - dx, 90 - i.left - MIN_CROP_PCT));
+                next.right = clampIns(i.right - dx, MAX_CROP_SUM - i.left);
                 break;
         }
         switch (d.type) {
             case 'n': case 'nw': case 'ne':
-                next.top = clampIns(Math.min(i.top + dy, 90 - i.bottom - MIN_CROP_PCT));
+                next.top = clampIns(i.top + dy, MAX_CROP_SUM - i.bottom);
                 break;
             case 's': case 'sw': case 'se':
-                next.bottom = clampIns(Math.min(i.bottom - dy, 90 - i.top - MIN_CROP_PCT));
+                next.bottom = clampIns(i.bottom - dy, MAX_CROP_SUM - i.top);
                 break;
             case 'move': {
-                next.left = clampIns(i.left + dx);
-                next.top = clampIns(i.top + dy);
-                const hShift = Math.min(Math.max(i.left + dx - next.left, 0), i.right); // preserve width by shifting the opposite inset
-                next.right = clampIns(i.right - hShift);
-                const vShift = Math.min(Math.max(i.top + dy - next.top, 0), i.bottom); // preserve height
-                next.bottom = clampIns(i.bottom - vShift);
+                // Translate the whole window without changing its size:
+                // dx is bounded by the room available on either side
+                // (right edge has `i.right` slack, left edge has `i.left`).
+                const translatedDx = Math.max(-i.left, Math.min(dx, i.right));
+                const translatedDy = Math.max(-i.top, Math.min(dy, i.bottom));
+                next.left = clampIns(i.left + translatedDx, MAX_CROP_SUM - i.right);
+                next.right = clampIns(i.right - translatedDx, MAX_CROP_SUM - next.left);
+                next.top = clampIns(i.top + translatedDy, MAX_CROP_SUM - i.bottom);
+                next.bottom = clampIns(i.bottom - translatedDy, MAX_CROP_SUM - next.top);
                 break;
             }
         }
@@ -194,6 +204,8 @@ export const QuickVideoEditor: React.FC = () => {
 
     const handleCropPointerUp = (e: React.PointerEvent) => {
         e.stopPropagation();
+        const overlay = (e.currentTarget as HTMLElement).closest('[data-crop-overlay]');
+        if (overlay) delete (overlay as HTMLElement).dataset.cropActive;
         cropDragRef.current = null;
     };
 
@@ -1112,24 +1124,29 @@ export const QuickVideoEditor: React.FC = () => {
                                         ))}
                                     </div>
                                 </div>
-                                {/* 8 drag handles: 4 corners + 4 edges */}
+                                {/* 8 drag handles: 4 corners + 4 edges — large invisible hit zones, visible dot centered */}
                                 {([
-                                    { type: 'nw', style: { left: `${cropInset.left}%`, top: `${cropInset.top}%` }, cursor: 'nwse-resize' },
-                                    { type: 'n', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${cropInset.top}%` }, cursor: 'ns-resize' },
-                                    { type: 'ne', style: { left: `${100 - cropInset.right}%`, top: `${cropInset.top}%` }, cursor: 'nesw-resize' },
-                                    { type: 'w', style: { left: `${cropInset.left}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, cursor: 'ew-resize' },
-                                    { type: 'e', style: { left: `${100 - cropInset.right}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, cursor: 'ew-resize' },
-                                    { type: 'sw', style: { left: `${cropInset.left}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'nesw-resize' },
-                                    { type: 's', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'ns-resize' },
-                                    { type: 'se', style: { left: `${100 - cropInset.right}%`, top: `${100 - cropInset.bottom}%` }, cursor: 'nwse-resize' },
-                                ] as const).map(h => (
-                                    <div
-                                        key={h.type}
-                                        onPointerDown={handleCropPointerDown(h.type)}
-                                        className="absolute w-3.5 h-3.5 rounded-full bg-indigo-400 border-2 border-zinc-950 shadow-md hover:scale-125 transition-transform touch-none"
-                                        style={{ ...h.style, cursor: h.cursor, marginLeft: '-7px', marginTop: '-7px' }}
-                                    />
-                                ))}
+                                    { type: 'nw', style: { left: `${cropInset.left}%`, top: `${cropInset.top}%` }, dot: 'nw' },
+                                    { type: 'n', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${cropInset.top}%` }, dot: 'n' },
+                                    { type: 'ne', style: { left: `${100 - cropInset.right}%`, top: `${cropInset.top}%` }, dot: 'ne' },
+                                    { type: 'w', style: { left: `${cropInset.left}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, dot: 'w' },
+                                    { type: 'e', style: { left: `${100 - cropInset.right}%`, top: `${(cropInset.top + (100 - cropInset.bottom)) / 2}%` }, dot: 'e' },
+                                    { type: 'sw', style: { left: `${cropInset.left}%`, top: `${100 - cropInset.bottom}%` }, dot: 'sw' },
+                                    { type: 's', style: { left: `${(cropInset.left + (100 - cropInset.right)) / 2}%`, top: `${100 - cropInset.bottom}%` }, dot: 's' },
+                                    { type: 'se', style: { left: `${100 - cropInset.right}%`, top: `${100 - cropInset.bottom}%` }, dot: 'se' },
+                                ] as const).map(h => {
+                                    const cursors: Record<string, string> = { n: 'ns-resize', s: 'ns-resize', w: 'ew-resize', e: 'ew-resize', nw: 'nwse-resize', ne: 'nesw-resize', sw: 'nesw-resize', se: 'nwse-resize' };
+                                    return (
+                                        <div
+                                            key={h.type}
+                                            onPointerDown={handleCropPointerDown(h.type)}
+                                            className="absolute w-7 h-7 flex items-center justify-center rounded-md touch-none"
+                                            style={{ left: h.style.left, top: h.style.top, marginLeft: '-14px', marginTop: '-14px', cursor: cursors[h.dot] }}
+                                        >
+                                            <div className="w-3 h-3 rounded-full bg-indigo-400 border-2 border-zinc-950 shadow-md group-hover:scale-110 transition-transform" />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 
