@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import {
     Type, Copy, Check, Sparkles, Zap, Flame, Ghost, Menu, AlignLeft,
     Bold, Italic, Hash, Skull, PenTool, Instagram, Twitter,
-    MessageCircle, ArrowUpDown, RefreshCcw, Syringe, BoxSelect, Circle, Globe, Terminal, Heart, Cross
+    MessageCircle, ArrowUpDown, RefreshCcw, Syringe, BoxSelect, Circle, Globe, Terminal, Heart, Cross, Download
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -209,7 +209,6 @@ const STYLES: TextStyle[] = [
     // --- Social specific ---
     { name: 'Instagram', category: 'instagram', map: '𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣01𝟸345678𝟿' },
     { name: 'Twitter Bold', category: 'twitter', map: '𝗕𝗼𝗹𝗱 𝗳𝗼𝗿 𝗧𝘄𝗶𝘁𝘁𝗲𝗿 𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇' },
-    { name: 'Discord Block', category: 'discord', generator: (t) => t.split('').map(c => c === ' ' ? '   ' : /[a-zA-Z]/.test(c) ? `:regional_indicator_${c.toLowerCase()}: ` : c).join('') },
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 
@@ -236,6 +235,7 @@ export const TextTools: React.FC = () => {
     const [text, setText] = useState('Type something...');
     const [activeCategory, setActiveCategory] = useState('all');
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+    const [copiedAll, setCopiedAll] = useState(false);
 
     const getConverted = (input: string, style: TextStyle) => {
         if (!input) input = 'Type something...';
@@ -261,6 +261,29 @@ export const TextTools: React.FC = () => {
         navigator.clipboard.writeText(text);
         setCopiedIndex(index);
         setTimeout(() => setCopiedIndex(null), 2000);
+    };
+
+    const allStylesText = () =>
+        displayStyles
+            .map(style => `${style.name}\n${getConverted(text, style)}`)
+            .join('\n\n');
+
+    const handleCopyAll = () => {
+        navigator.clipboard.writeText(allStylesText());
+        setCopiedAll(true);
+        setTimeout(() => setCopiedAll(false), 2000);
+    };
+
+    const handleDownloadTxt = () => {
+        const blob = new Blob([allStylesText()], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fancy-text-styles.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     const displayStyles = useMemo(() => activeCategory === 'all'
@@ -305,6 +328,15 @@ export const TextTools: React.FC = () => {
                                 Clear
                             </button>
                         )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button variant="secondary" size="sm" onClick={handleCopyAll}>
+                            {copiedAll ? <Check size={14} className="mr-1.5 text-green-400" /> : <Copy size={14} className="mr-1.5" />}
+                            {copiedAll ? 'Copied!' : 'Copy all'}
+                        </Button>
+                        <Button variant="secondary" size="sm" onClick={handleDownloadTxt}>
+                            <Download size={14} className="mr-1.5" /> .txt
+                        </Button>
                     </div>
                 </div>
             )}
@@ -356,6 +388,16 @@ export const TextTools: React.FC = () => {
                                         Clear
                                     </button>
                                 )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-3">
+                                <Button variant="secondary" size="sm" onClick={handleCopyAll}>
+                                    {copiedAll ? <Check size={14} className="mr-2 text-green-400" /> : <Copy size={14} className="mr-2" />}
+                                    {copiedAll ? 'Copied!' : 'Copy all styles'}
+                                </Button>
+                                <Button variant="secondary" size="sm" onClick={handleDownloadTxt}>
+                                    <Download size={14} className="mr-2" /> Download .txt
+                                </Button>
+                                <span className="text-[10px] text-zinc-600 font-mono">{displayStyles.length} styles</span>
                             </div>
                         </div>
                     )}

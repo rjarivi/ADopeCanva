@@ -49,6 +49,12 @@ export const AudioMerger: React.FC = () => {
     const [exportFormat, setExportFormat] = useState<ExportFormat>('mp3');
     const [exportBitrate, setExportBitrate] = useState<BitrateOption>('256k');
     const [masterVolume, setMasterVolume] = useState(100);
+    const [channelLayout, setChannelLayout] = useState<'stereo' | 'mono'>('stereo');
+    const [sampleRate, setSampleRate] = useState<'44100' | '48000' | '22050'>('44100');
+
+    // Drag reorder
+    const dragIndexRef = useRef<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     // Processing & Output
     const [isProcessing, setIsProcessing] = useState(false);
@@ -168,6 +174,21 @@ export const AudioMerger: React.FC = () => {
         setMergedUrl(null);
     };
 
+    const updateTrackTrim = (index: number, field: 'trimStart' | 'trimEnd', value: number) => {
+        setTracks(prev => prev.map((t, i) => {
+            if (i !== index) return t;
+            const dur = t.duration || 0;
+            let v = value;
+            if (field === 'trimStart') {
+                v = Math.max(0, Math.min(v, t.trimEnd - 0.1, dur - 0.1));
+            } else {
+                v = Math.min(dur, Math.max(v, t.trimStart + 0.1));
+            }
+            return { ...t, [field]: v };
+        }));
+        setMergedUrl(null);
+    };
+
     const togglePreview = (track: TrackItem) => {
         if (activePreviewId === track.id) {
             if (previewAudioRef.current) {
@@ -184,9 +205,9 @@ export const AudioMerger: React.FC = () => {
         }
     };
 
-    const estimatedTotalDuration = tracks.reduce((acc, t) => acc + (t.trimEnd - t.trimStart), 0) +
-        Math.max(0, tracks.length - 1) * gapDuration -
-        Math.max(0, tracks.length - 1) * crossfade;
+    const estimatedTotalDuration = crossfade > 0
+        ? Math.max(0.05, tracks.reduce((acc, t) => acc + (t.trimEnd - t.trimStart), 0) - (Math.max(0, tracks.length - 1) * crossfade))
+        : tracks.reduce((acc, t) => acc + (t.trimEnd - t.trimStart), 0) + Math.max(0, tracks.length - 1) * gapDuration;
 
     const handleMerge = async () => {
         if (tracks.length < 2) {
@@ -218,6 +239,9 @@ export const AudioMerger: React.FC = () => {
         const outputName = `merged_${Date.now()}.${exportFormat}`;
 
         try {
+            // Effective trimmed duration of each track (clamped by decode duration fallback)
+            const trackDur = (t: TrackItem) => Math.max(0.05, t.trimEnd - t.trimStart);
+
             for (let i = 0; i < tracks.length; i++) {
                 const trk = tracks[i];
                 const ext = trk.fileData.file.name.substring(trk.fileData.file.name.lastIndexOf('.')) || '.mp3';
@@ -234,18 +258,43 @@ export const AudioMerger: React.FC = () => {
 
             const args: string[] = ['-y'];
 
-            for (const input of tempInputFiles) {
-                args.push('-i', input);
+            // Per-input trim (-ss/-t), clamped to track duration
+            for (let i = 0; i < tracks.length; i++) {
+                const trk = tracks[i];
+                const ts = Math.max(0, Math.min(trk.trimStart, trk.duration || 0));
+                args.push('-ss', ts.toFixed(3), '-t', trackDur(trk).toFixed(3));
+                args.push('-i', tempInputFiles[i]);
             }
 
+            let filterText = `sample_rates=${sampleRate}:channel_layouts=${channelLayout}`;
             const filterChains: string[] = [];
             for (let i = 0; i < tracks.length; i++) {
                 const vol = (tracks[i].volume / 100) * (masterVolume / 100);
-                filterChains.push(`[${i}:a]aformat=sample_rates=44100:channel_layouts=stereo,volume=${vol.toFixed(2)}[a${i}]`);
+                filterChains.push(`[${i}:a]aformat=${filterText},volume=${vol.toFixed(2)}[a${i}]`);
             }
 
-            const streamInputs = tracks.map((_, i) => `[a${i}]`).join('');
-            filterChains.push(`${streamInputs}concat=n=${tracks.length}:v=0:a=1[aout]`);
+            if (crossfade > 0) {
+                // Chain acrossfade between consecutive track pairs with exact offset math
+                let prev = `[a0]`;
+                let leftLen = trackDur(tracks[0]);
+                for (let i = 1; i < tracks.length; i++) {
+                    const rightLen = trackDur(tracks[i]);
+                    const d = Math.min(crossfade, leftLen, rightLen, (leftLen + rightLen) / 2);
+                    const outLabel = i === tracks.length - 1 ? 'aout' : `xf${i}`;
+                    filterChains.push(`${prev}[a${i}]acrossfade=d=${d.toFixed(2)}:c1=tri:c2=tri[${outLabel}]`);
+                    prev = `[${outLabel}]`;
+                    leftLen = leftLen + rightLen - d;
+                }
+            } else {
+                // Honest gap: real silence padding between segments via apad
+                for (let i = 0; i < tracks.length; i++) {
+                    if (gapDuration > 0 && i < tracks.length - 1) {
+                        filterChains.push(`[a${i}]apad=pad_dur=${gapDuration.toFixed(2)}[p${i}]`);
+                    }
+                }
+                const streamInputs = tracks.map((_, i) => (gapDuration > 0 && i < tracks.length - 1) ? `[p${i}]` : `[a${i}]`).join('');
+                filterChains.push(`${streamInputs}concat=n=${tracks.length}:v=0:a=1[aout]`);
+            }
 
             args.push('-filter_complex', filterChains.join(';'));
             args.push('-map', '[aout]');
@@ -427,7 +476,7 @@ export const AudioMerger: React.FC = () => {
                                 Est. Total: {formatDuration(estimatedTotalDuration)}
                             </span>
                         </div>
-                        <span className="text-[11px] text-zinc-500 hidden sm:inline">Use arrows to reorder playback</span>
+                        <span className="text-[11px] text-zinc-500 hidden sm:inline">Drag rows or use arrows to reorder</span>
                     </div>
 
                     {/* Interactive Track Cards */}
@@ -435,7 +484,25 @@ export const AudioMerger: React.FC = () => {
                         {tracks.map((track, index) => (
                             <div
                                 key={track.id}
-                                className={`p-4 rounded-2xl border transition-all ${activePreviewId === track.id ? 'bg-indigo-950/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10' : 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'}`}
+                                draggable
+                                onDragStart={(e) => {
+                                    dragIndexRef.current = index;
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    try { e.dataTransfer.setData('text/plain', String(index)); } catch { /* IE */ }
+                                }}
+                                onDragEnd={() => { dragIndexRef.current = null; setDragOverIndex(null); }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    if (dragOverIndex !== index) setDragOverIndex(index);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const from = dragIndexRef.current;
+                                    if (from !== null && from !== index) moveTrack(from, index);
+                                    dragIndexRef.current = null;
+                                    setDragOverIndex(null);
+                                }}
+                                className={`p-4 rounded-2xl border transition-all cursor-grab active:cursor-grabbing ${activePreviewId === track.id ? 'bg-indigo-950/20 border-indigo-500/50 shadow-lg shadow-indigo-500/10' : dragOverIndex === index && dragIndexRef.current !== null ? 'border-indigo-500/60 bg-indigo-500/5' : 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'}`}
                             >
                                 <div className="flex items-center gap-3">
                                     
@@ -496,6 +563,37 @@ export const AudioMerger: React.FC = () => {
                                                 <div className="w-full h-0.5 bg-zinc-800" />
                                             )}
                                         </div>
+
+                                        {/* Per-track trim (start / end seconds) */}
+                                        <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-500 pt-0.5">
+                                            <span className="uppercase tracking-wider font-bold shrink-0">Trim</span>
+                                            <label className="flex items-center gap-1">
+                                                <span className="text-indigo-400">IN</span>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    min="0"
+                                                    max={Math.max(0, track.trimEnd - 0.1)}
+                                                    value={track.trimStart.toFixed(1)}
+                                                    onChange={(e) => updateTrackTrim(index, 'trimStart', Number(e.target.value))}
+                                                    className="w-14 bg-zinc-950 border border-zinc-700/70 rounded px-1 py-0.5 text-right text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                                                    disabled={track.duration <= 0}
+                                                />
+                                            </label>
+                                            <label className="flex items-center gap-1">
+                                                <span className="text-indigo-400">OUT</span>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    min={track.trimStart + 0.1}
+                                                    max={track.duration || 999}
+                                                    value={track.trimEnd.toFixed(1)}
+                                                    onChange={(e) => updateTrackTrim(index, 'trimEnd', Number(e.target.value))}
+                                                    className="w-14 bg-zinc-950 border border-zinc-700/70 rounded px-1 py-0.5 text-right text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50"
+                                                    disabled={track.duration <= 0}
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
 
                                     {/* Track Volume */}
@@ -555,6 +653,35 @@ export const AudioMerger: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Transitions & Sequencing */}
+                    <section className="space-y-4">
+                        <SectionLabel>Transitions</SectionLabel>
+                        <SliderControl
+                            label="Crossfade"
+                            value={crossfade}
+                            min={0}
+                            max={10}
+                            step={0.5}
+                            onChange={(v) => { setCrossfade(v); setMergedUrl(null); }}
+                            unit="s"
+                        />
+                        {crossfade > 0 ? (
+                            <p className="text-[10px] text-zinc-500 border border-zinc-800 bg-zinc-900/40 rounded-xl px-2.5 py-2">
+                                Track gap is disabled while crossfade is active (crossfade blends the two tracks instead of separating them).
+                            </p>
+                        ) : (
+                            <SliderControl
+                                label="Track Gap"
+                                value={gapDuration}
+                                min={0}
+                                max={5}
+                                step={0.25}
+                                onChange={(v) => { setGapDuration(v); setMergedUrl(null); }}
+                                unit="s"
+                            />
+                        )}
+                    </section>
+
                     {/* Master Volume */}
                     <section className="space-y-4">
                         <SliderControl
@@ -586,7 +713,7 @@ export const AudioMerger: React.FC = () => {
                             ))}
                         </div>
 
-                        {exportFormat !== 'wav' && (
+                        {(exportFormat !== 'wav') && (
                             <div className="space-y-1.5 pt-2">
                                 <span className="text-xs text-zinc-400 block">Bitrate</span>
                                 <div className="grid grid-cols-4 gap-1">
@@ -605,6 +732,34 @@ export const AudioMerger: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        <div className="grid grid-cols-2 gap-2 pt-2">
+                            <div className="space-y-1">
+                                <span className="text-xs text-zinc-400 block">Channels</span>
+                                <select
+                                    value={channelLayout}
+                                    onChange={(e) => { setChannelLayout(e.target.value as typeof channelLayout); setMergedUrl(null); }}
+                                    disabled={isProcessing}
+                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-2 py-2 text-xs appearance-none cursor-pointer disabled:opacity-50"
+                                >
+                                    <option value="stereo">Stereo (2 ch)</option>
+                                    <option value="mono">Mono (1 ch)</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs text-zinc-400 block">Sample Rate</span>
+                                <select
+                                    value={sampleRate}
+                                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setMergedUrl(null); }}
+                                    disabled={isProcessing}
+                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-2 py-2 text-xs appearance-none cursor-pointer disabled:opacity-50"
+                                >
+                                    <option value="44100">44100 Hz</option>
+                                    <option value="48000">48000 Hz</option>
+                                    <option value="22050">22050 Hz</option>
+                                </select>
+                            </div>
+                        </div>
                     </section>
 
                     {/* Summary Box */}
@@ -615,7 +770,7 @@ export const AudioMerger: React.FC = () => {
                         </div>
                         <div className="flex justify-between text-zinc-400">
                             <span>Channels:</span>
-                            <span className="text-indigo-300 font-mono">Stereo (2 Ch)</span>
+                            <span className="text-indigo-300 font-mono">{channelLayout === 'stereo' ? 'Stereo (2 Ch)' : 'Mono (1 Ch)'} • {sampleRate} Hz</span>
                         </div>
                         <div className="flex justify-between text-zinc-400">
                             <span>Est. Duration:</span>

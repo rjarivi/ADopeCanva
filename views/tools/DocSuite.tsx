@@ -23,7 +23,9 @@ function formatBytes(bytes: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'secure' | 'compress';
+// Note: 'secure' (password) mode was removed deliberately — pdf-lib cannot encrypt
+// PDFs in the browser, so any password field here was silently discarded (placebo).
+type Mode = 'merge' | 'split' | 'rotate' | 'reorder' | 'remove' | 'compress';
 
 // Renders a PDF page to a canvas data URL
 async function renderPageToDataUrl(file: File, pageIndex: number, scale = 0.4): Promise<string> {
@@ -74,7 +76,6 @@ export const PdfSuite: React.FC = () => {
     const [pageCount, setPageCount] = useState<number>(0);
     const [selectedPages, setSelectedPages] = useState<number[]>([]);
     const [rotation, setRotation] = useState<number>(0);
-    const [password, setPassword] = useState<string>('');
     const [reorderOrder, setReorderOrder] = useState<number[]>([]);
 
     // Thumbnails: array of data URLs indexed by page
@@ -143,7 +144,6 @@ export const PdfSuite: React.FC = () => {
         setIsProcessing(false);
         setResultBytes(null);
         setRotation(0);
-        setPassword('');
         setRangeInput('');
         setRangeError('');
         if (newMode !== 'merge' && files.length > 1) {
@@ -427,15 +427,6 @@ export const PdfSuite: React.FC = () => {
                     setResultBytes(compressed.length < original.length ? compressed : original);
                 }
                 setCompressionProgress(null);
-                setIsDone(true);
-                setIsProcessing(false);
-                return;
-            } else if (mode === 'secure') {
-                const srcFile = files[0].file;
-                const arrayBuffer = await srcFile.arrayBuffer();
-                const srcDoc = await PDFDocument.load(arrayBuffer);
-                const bytes = await srcDoc.save();
-                setResultBytes(bytes);
                 setIsDone(true);
                 setIsProcessing(false);
                 return;
@@ -762,24 +753,6 @@ export const PdfSuite: React.FC = () => {
                                 </>
                             )}
 
-                            {mode === 'secure' && (
-                                <>
-                                    <SectionLabel>Document Permissions</SectionLabel>
-                                    <div className="bg-[#121214] border border-zinc-800/50 p-4 rounded-2xl space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black text-zinc-500 uppercase tracking-widest font-unbounded">Owner Password</label>
-                                            <input
-                                                type="password"
-                                                placeholder="••••••••"
-                                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none text-zinc-300"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                            />
-                                        </div>
-                                        <p className="text-[9px] text-zinc-600 italic">Security features processed in your browser. Your password never leaves your device.</p>
-                                    </div>
-                                </>
-                            )}
 
                             {mode === 'reorder' && (
                                 <>

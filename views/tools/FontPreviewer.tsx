@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Type, Sliders, Copy, Check, Download } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Type, Sliders, Copy, Check, Download, Upload, HardDrive } from 'lucide-react';
+import { FileUploader } from '../../components/FileUploader';
+import { FileData } from '../../types';
 
 const GOOGLE_FONTS = [
     'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Raleway', 'Oswald',
@@ -45,9 +47,37 @@ export const FontPreviewer: React.FC = () => {
     const [selectedFont, setSelectedFont] = useState<string | null>(null);
     const [copied, setCopied] = useState<string | null>(null);
     const [visibleCount, setVisibleCount] = useState(40);
+    const [customFonts, setCustomFonts] = useState<Array<{ name: string; file: File; format: string }>>([]);
+    const [fontError, setFontError] = useState<string | null>(null);
+
+    const handleCustomFont = useCallback(async (fileData: FileData) => {
+        const file = fileData.file;
+        const ext = (file.name.match(/\.(ttf|otf|woff2?)$/i)?.[1] ?? 'woff2').toLowerCase();
+        if (!/\.(ttf|otf|woff2?)$/i.test(file.name)) {
+            setFontError('Only .ttf, .otf, .woff and .woff2 files are supported.');
+            return;
+        }
+        setFontError(null);
+        try {
+            const buffer = await file.arrayBuffer();
+            const family = file.name.replace(/\.[^.]+$/, '').replace(/[^\w\s-]/g, ' ').trim() || 'Custom Font';
+            const face = new FontFace(family, buffer);
+            await face.load();
+            document.fonts.add(face);
+            setCustomFonts(prev => prev.some(f => f.name === family)
+                ? prev
+                : [...prev, { name: family, file, format: ext }]);
+        } catch {
+            setFontError('Could not load this font file — it may be corrupt or an unsupported format.');
+        }
+    }, []);
 
     const filteredFonts = GOOGLE_FONTS.filter(f =>
         f.toLowerCase().includes(query.toLowerCase())
+    );
+
+    const visibleCustomFonts = customFonts.filter(f =>
+        f.name.toLowerCase().includes(query.toLowerCase())
     );
 
     const visibleFonts = filteredFonts.slice(0, visibleCount);
@@ -76,6 +106,28 @@ export const FontPreviewer: React.FC = () => {
         setTimeout(() => setCopied(null), 2000);
     };
 
+    const cssSnippetFor = (name: string): string => {
+        const custom = customFonts.find(f => f.name === name);
+        if (custom) {
+            return `@font-face {\n  font-family: '${name}';\n  src: url('./${custom.file.name}') format('${custom.format}');\n}`;
+        }
+        return `@import url('https://fonts.googleapis.com/css2?family=${name.replace(/ /g, '+')}:wght@400;700&display=swap');\n\nbody {\n  font-family: '${name}', sans-serif;\n}`;
+    };
+
+    const handleDownloadCss = (name: string) => {
+        const blob = new Blob([cssSnippetFor(name)], { type: 'text/css' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${name.replace(/\s+/g, '-')}.css`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const isCustomFont = selectedFont !== null && customFonts.some(f => f.name === selectedFont);
+
     if (selectedFont) {
         return (
             <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] min-h-[600px] flex flex-col gap-4 animate-slide-up">
@@ -85,10 +137,17 @@ export const FontPreviewer: React.FC = () => {
                         <button onClick={() => setSelectedFont(null)} className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors text-xs font-bold">← Back</button>
                         <div>
                             <h2 className="text-2xl font-black text-white" style={{ fontFamily: `'${selectedFont}', sans-serif` }}>{selectedFont}</h2>
-                            <p className="text-xs text-zinc-500">Google Fonts</p>
+                            <p className="text-xs text-zinc-500">{isCustomFont ? 'Your uploaded font' : 'Google Fonts'}</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => handleDownloadCss(selectedFont)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-xs font-bold text-indigo-300 hover:bg-indigo-500/20 transition-colors"
+                        >
+                            <Download size={12} />
+                            Download CSS
+                        </button>
                         <button
                             onClick={() => handleCopyCSS(selectedFont)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-colors"
@@ -96,13 +155,15 @@ export const FontPreviewer: React.FC = () => {
                             {copied === selectedFont ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
                             Copy CSS
                         </button>
-                        <button
-                            onClick={() => handleCopyImport(selectedFont)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-colors"
-                        >
-                            {copied === selectedFont + '_import' ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
-                            Copy @import
-                        </button>
+                        {!isCustomFont && (
+                            <button
+                                onClick={() => handleCopyImport(selectedFont)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 hover:text-white transition-colors"
+                            >
+                                {copied === selectedFont + '_import' ? <Check size={12} className="text-green-400" /> : <Copy size={12} />}
+                                Copy @import
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -161,11 +222,7 @@ export const FontPreviewer: React.FC = () => {
                     <div className="border-t border-zinc-800 pt-6">
                         <p className="text-[10px] text-zinc-600 font-mono uppercase tracking-widest mb-3">CSS Snippet</p>
                         <pre className="bg-zinc-950 rounded-xl p-4 text-xs font-mono text-zinc-300 overflow-x-auto custom-scrollbar border border-zinc-800">
-{`@import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/ /g, '+')}:wght@400;700&display=swap');
-
-body {
-  font-family: '${selectedFont}', sans-serif;
-}`}
+{cssSnippetFor(selectedFont)}
                         </pre>
                     </div>
                 </div>
@@ -181,7 +238,9 @@ body {
                     <div className="p-2 bg-indigo-500/10 rounded-xl text-indigo-400"><Type size={26} /></div>
                     <div>
                         <h2 className="text-2xl font-black text-white font-unbounded">Font Previewer</h2>
-                        <p className="text-xs text-zinc-500">{GOOGLE_FONTS.length} Google Fonts · click any to inspect</p>
+                        <p className="text-xs text-zinc-500">
+                            {GOOGLE_FONTS.length} Google Fonts{customFonts.length > 0 ? ` · ${customFonts.length} uploaded` : ''} · click any to inspect
+                        </p>
                     </div>
                 </div>
 
@@ -209,6 +268,41 @@ body {
                 </div>
             </div>
 
+            {/* Custom font upload */}
+            <div className="shrink-0 bg-zinc-900/50 border border-zinc-800/50 rounded-2xl flex items-center gap-4 p-3">
+                <FileUploader
+                    onFileSelect={handleCustomFont}
+                    accept=".ttf,.otf,.woff,.woff2"
+                    label="Upload Font"
+                    description=".ttf · .otf · .woff · .woff2"
+                    icon={Upload}
+                    compact
+                    className="shrink-0"
+                />
+                {customFonts.length > 0 ? (
+                    <div className="flex-1 flex items-center gap-2 overflow-x-auto custom-scrollbar">
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest shrink-0 flex items-center gap-1.5">
+                            <HardDrive size={11} className="text-indigo-400" /> Your fonts
+                        </span>
+                        {customFonts.map(f => (
+                            <span key={f.name} className="text-[10px] text-zinc-400 bg-zinc-800/60 border border-zinc-800 rounded-lg px-2 py-1 whitespace-nowrap">
+                                {f.name}
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="flex-1 text-[10px] text-zinc-600 leading-relaxed">
+                        Drop in a font file to preview it alongside the Google catalog — nothing is uploaded to a server.
+                    </p>
+                )}
+            </div>
+
+            {fontError && (
+                <div className="shrink-0 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-xl text-xs font-mono">
+                    {fontError}
+                </div>
+            )}
+
             {/* Preview text input */}
             <div className="shrink-0">
                 <input
@@ -226,10 +320,28 @@ body {
                     setVisibleCount(c => c + 20);
                 }
             }}>
-                {filteredFonts.length === 0 ? (
+                {filteredFonts.length === 0 && visibleCustomFonts.length === 0 ? (
                     <div className="flex items-center justify-center h-32 text-zinc-600 text-sm">No fonts match "{query}"</div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4">
+                        {visibleCustomFonts.map(({ name }) => (
+                            <button
+                                key={name}
+                                onClick={() => setSelectedFont(name)}
+                                className="group text-left bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-indigo-500/30 rounded-2xl p-5 transition-all"
+                            >
+                                <div className="flex items-start justify-between mb-3">
+                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest group-hover:text-indigo-400 transition-colors">{name}</span>
+                                    <span className="text-[9px] font-mono text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded">Yours</span>
+                                </div>
+                                <p
+                                    style={{ fontFamily: `'${name}', sans-serif`, fontSize: `${fontSize}px` }}
+                                    className="text-zinc-200 leading-snug truncate"
+                                >
+                                    {previewText || 'The quick brown fox'}
+                                </p>
+                            </button>
+                        ))}
                         {visibleFonts.map(name => (
                             <button
                                 key={name}

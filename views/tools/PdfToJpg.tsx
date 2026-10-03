@@ -25,6 +25,7 @@ export const PdfToJpg: React.FC = () => {
     const [pageImages, setPageImages] = useState<PageImage[]>([]);
     const [isProcessing, setIsProcessing] = useState(false);
     const [pageCount, setPageCount] = useState(0);
+    const [format, setFormat] = useState<'jpeg' | 'png'>('jpeg');
     const [quality, setQuality] = useState(90);
     const [scale, setScale] = useState(2); // 2x for better quality
     const [error, setError] = useState<string | null>(null);
@@ -75,7 +76,10 @@ export const PdfToJpg: React.FC = () => {
                     canvas: canvas
                 } as any).promise;
 
-                const dataUrl = canvas.toDataURL('image/jpeg', quality / 100);
+                const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+                const dataUrl = format === 'png'
+                    ? canvas.toDataURL('image/png')
+                    : canvas.toDataURL('image/jpeg', quality / 100);
 
                 images.push({
                     pageNum: i,
@@ -93,16 +97,18 @@ export const PdfToJpg: React.FC = () => {
             setIsProcessing(false);
             setProgress(100);
         }
-    }, [file, quality, scale]);
+    }, [file, quality, scale, format]);
+
+    const ext = format === 'png' ? 'png' : 'jpg';
 
     const downloadSingle = useCallback((image: PageImage) => {
         const link = document.createElement('a');
         link.href = image.dataUrl;
-        link.download = `${file?.file.name.replace('.pdf', '')}-page-${image.pageNum}.jpg`;
+        link.download = `${file?.file.name.replace('.pdf', '')}-page-${image.pageNum}.${ext}`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }, [file]);
+    }, [file, ext]);
 
     const downloadAll = useCallback(async () => {
         if (pageImages.length === 0) return;
@@ -119,7 +125,7 @@ export const PdfToJpg: React.FC = () => {
             // Convert data URL to blob
             const response = await fetch(image.dataUrl);
             const blob = await response.blob();
-            folder?.file(`page-${image.pageNum}.jpg`, blob);
+            folder?.file(`page-${image.pageNum}.${ext}`, blob);
         }
 
         const content = await zip.generateAsync({ type: 'blob' });
@@ -131,7 +137,7 @@ export const PdfToJpg: React.FC = () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-    }, [pageImages, file, downloadSingle]);
+    }, [pageImages, file, downloadSingle, ext]);
 
     const handleReset = () => {
         setFile(null);
@@ -226,14 +232,40 @@ export const PdfToJpg: React.FC = () => {
                         <section className="space-y-4">
                             <SectionLabel>Output Settings</SectionLabel>
 
-                            <SliderControl
-                                label="Quality"
-                                value={quality}
-                                min={50}
-                                max={100}
-                                onChange={setQuality}
-                                unit="%"
-                            />
+                            {/* Format toggle */}
+                            <div>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-zinc-400">Image Format</span>
+                                </div>
+                                <div className="flex rounded-lg overflow-hidden border border-zinc-800 text-xs font-bold">
+                                    <button
+                                        onClick={() => setFormat('jpeg')}
+                                        className={`flex-1 py-2 transition-colors ${format === 'jpeg' ? 'bg-indigo-500/15 text-indigo-400' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        JPG
+                                    </button>
+                                    <button
+                                        onClick={() => setFormat('png')}
+                                        className={`flex-1 py-2 transition-colors ${format === 'png' ? 'bg-indigo-500/15 text-indigo-400' : 'bg-zinc-900 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        PNG
+                                    </button>
+                                </div>
+                                {format === 'png' && (
+                                    <p className="text-[10px] text-zinc-500 mt-1.5">PNG is lossless — quality slider does not apply.</p>
+                                )}
+                            </div>
+
+                            {format === 'jpeg' && (
+                                <SliderControl
+                                    label="Quality"
+                                    value={quality}
+                                    min={50}
+                                    max={100}
+                                    onChange={setQuality}
+                                    unit="%"
+                                />
+                            )}
 
                             <div className="group">
                                 <div className="flex justify-between items-center mb-2">
@@ -281,13 +313,13 @@ export const PdfToJpg: React.FC = () => {
                             {pageImages.length === 0 ? (
                                 <Button className="w-full h-12 border-none shadow-lg shadow-indigo-900/20" onClick={convertToImages} isLoading={isProcessing} disabled={isProcessing} >
                                     <FileImage size={18} className="mr-2" />
-                                    {isProcessing ? 'Converting...' : 'Convert to JPG'}
+                                    {isProcessing ? 'Converting...' : `Convert to ${format === 'png' ? 'PNG' : 'JPG'}`}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
                                     <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={downloadAll} >
                                         <Archive size={18} className="mr-2" />
-                                        {pageImages.length === 1 ? 'Download JPG' : `Download All (${pageImages.length} images)`}
+                                        {pageImages.length === 1 ? `Download ${ext.toUpperCase()}` : `Download All (${pageImages.length} images)`}
                                     </Button>
                                     <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>
                                         <RefreshCcw size={16} className="mr-2" /> Start New
@@ -337,7 +369,7 @@ export const PdfToJpg: React.FC = () => {
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600">
                             <FileImage size={48} className="mb-4 opacity-50" />
-                            <p className="text-sm">Click "Convert to JPG" to begin</p>
+                            <p className="text-sm">Click "Convert" to begin</p>
                         </div>
                     )}
                 </div>

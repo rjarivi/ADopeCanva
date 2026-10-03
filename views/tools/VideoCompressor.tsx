@@ -24,6 +24,8 @@ export const VideoCompressor: React.FC = () => {
     const [crf, setCrf] = useState(28); // 18 (Best) to 51 (Worst), Default 23/28
     const [preset, setPreset] = useState('ultrafast');
     const [resizeScale, setResizeScale] = useState(100); // Percentage
+    const [muteAudio, setMuteAudio] = useState(false);
+    const [fpsCap, setFpsCap] = useState(0); // 0 = keep source frame rate
 
     const ffmpegRef = useRef<FFmpeg | null>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -75,9 +77,19 @@ export const VideoCompressor: React.FC = () => {
                 '-crf', crf.toString(),
                 '-preset', preset,
                 '-threads', threads,
-                '-c:a', 'aac',
-                '-b:a', '128k'
             ];
+
+            // Mute audio: drop the audio stream entirely instead of re-encoding it
+            if (muteAudio) {
+                args.push('-an');
+            } else {
+                args.push('-c:a', 'aac', '-b:a', '128k');
+            }
+
+            // FPS cap option
+            if (fpsCap < 100) {
+                args.push('-r', String(fpsCap));
+            }
 
             if (resizeScale < 100) {
                 args.push('-vf', `scale=iw*${resizeScale / 100}:-1`);
@@ -246,6 +258,36 @@ export const VideoCompressor: React.FC = () => {
                                     {s === 100 ? 'Original' : s + '%'}
                                 </button>
                             ))}
+                        </div>
+                    </section>
+
+                    {/* Mute + FPS cap options */}
+                    <section className="space-y-4">
+                        <div className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-2xl border border-zinc-800/50">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Mute Audio</span>
+                            <input
+                                type="checkbox"
+                                checked={muteAudio}
+                                onChange={(e) => { setMuteAudio(e.target.checked); setResultUrl(null); }}
+                                className="accent-indigo-500 h-4 w-4 rounded cursor-pointer"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+                                <span>FPS Cap</span>
+                                <span className="text-indigo-400 font-mono">{fpsCap === 0 ? 'Source' : fpsCap}</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[0, 24, 30, 60].map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => { setFpsCap(f); setResultUrl(null); }}
+                                        className={`py-2 rounded-lg text-xs font-bold border transition-all ${fpsCap === f ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/20' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        {f === 0 ? 'Auto' : f}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </section>
 

@@ -4,8 +4,34 @@ import { FileUploader } from '../../components/FileUploader';
 import { FileData } from '../../types';
 import {
     FileCode2, Copy, Check, Download, Code2, Eye, Upload,
-    FileSearch, Braces, ArrowLeftRight, Maximize2
+    FileSearch, Braces, ArrowLeftRight, Maximize2, Wand2
 } from 'lucide-react';
+
+// ─── Compact SVG optimizer (regex-based SVGO-lite) ───────────────────────────
+
+function optimizeSvg(source: string): string {
+    let out = source;
+    // Remove XML comments
+    out = out.replace(/<!--[\s\S]*?-->/g, '');
+    // Remove editor namespace declarations (sodipodi / inkscape)
+    out = out.replace(/\s+xmlns:(?:sodipodi|inkscape|figma|sketch|Adobe)x??="[^"]*"/gi, '');
+    // Figma-specific xmlns="sodipodi style" leftovers: e.g. xmlns:openxmlstandard | any custom
+    out = out.replace(/\s+xmlns:[\w-]+="[^"]*"\s*(?=\/?>|<)/g, (m) => {
+        // Keep four standard SVG namespaces, drop editor junk
+        return /xmlns:[\w-]+="http:\/\/(www\.w3\.org\/2000\/svg|www\.w3\.org\/1999\/xlink|www\.w3\.org\/2001\/xmlEvents|www\.w3\.org\/XML\/1998\/namespace)"/i.test(m)
+            ? m
+            : '';
+    });
+    // Remove namespaced editor attributes: sodipodi:*, inkscape:* (incl. other junk like stroke-dasharray="..." kept)
+    out = out.replace(/\s+(?:sodipodi|inkscape|sketch|figma|serif):[\w-]+="[^"]*"/gi, '');
+    // Remove common editor-only standard attributes (keep ids — url(#…) refs depend on them)
+    out = out.replace(/\s+(?:baseProfile)="[^"]*"/gi, '');
+    // Collapse whitespace between tags
+    out = out.replace(/>\s+</g, '><');
+    // Collapse leading / trailing whitespace per line → single-line copy
+    out = out.replace(/\s+/g, ' ').trim();
+    return out;
+}
 
 export const SvgToCode: React.FC = () => {
     const [code, setCode] = useState('');
@@ -31,15 +57,21 @@ export const SvgToCode: React.FC = () => {
 
     const handleDownload = () => {
         if (!code) return;
-        const blob = new Blob([code], { type: 'text/plain' });
+        const blob = new Blob([code], { type: 'image/svg+xml' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${fileName || 'output'}.svg.txt`;
+        a.download = `${fileName || 'output'}.svg`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    };
+
+    const handleOptimize = () => {
+        if (!code) return;
+        const optimized = optimizeSvg(code);
+        setCode(optimized);
     };
 
     if (!code) {
@@ -115,6 +147,10 @@ export const SvgToCode: React.FC = () => {
                         <Eye size={14} className="md:mr-2" />
                         <span className="hidden md:inline">{previewVisible ? 'Hide' : 'Show'} Preview</span>
                     </Button>
+                    <Button variant="secondary" size="sm" onClick={handleOptimize} disabled={!code}>
+                        <Wand2 size={14} className="md:mr-2" />
+                        <span className="hidden md:inline">Optimize</span>
+                    </Button>
                     <Button variant="secondary" size="sm" onClick={handleCopy}>
                         {copied
                             ? <><Check size={14} className="md:mr-2 text-green-400" /><span className="hidden md:inline">Copied!</span></>
@@ -125,7 +161,7 @@ export const SvgToCode: React.FC = () => {
                         size="sm"
                         className="bg-indigo-600 hover:bg-indigo-700 text-white border-none"
                     >
-                        <Download size={14} className="mr-2" /> Download
+                        <Download size={14} className="mr-2" /> Download SVG
                     </Button>
                 </div>
             </div>

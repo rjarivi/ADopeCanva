@@ -11,8 +11,8 @@ export const ApngMaker: React.FC = () => {
 
 // Video to APNG
 export const VideoToApng: React.FC = () => {
-    // Similar dependency on VideoToGif refactor.
-    return <VideoToGif />;
+    // VideoToGif supports the 'apng' output format directly (writes output.apng with -f apng / -plays)
+    return <VideoToGif outputFormat="apng" />;
 };
 
 // Converters

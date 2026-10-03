@@ -3,7 +3,8 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { TOOLS } from './Dashboard';
 import { getProgrammaticSubRoute, buildToolSchema, updateHeadTags, SITE_URL, getDefaultSteps, getDefaultComparisonTable } from '../utils/seoHelper';
 import { SEOSections } from '../components/SEOSections';
-import { ChevronLeft, ArrowRightLeft } from 'lucide-react';
+import { ArrowLeftRight, ArrowRightLeft, ChevronLeft } from 'lucide-react';
+import { ToolCategory } from '../types';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 interface ProgrammaticToolViewProps {

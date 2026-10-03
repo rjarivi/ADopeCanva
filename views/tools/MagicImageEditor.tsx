@@ -5,7 +5,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
-import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, Settings, Share2, Trash2 } from 'lucide-react';
+import { Wand2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, History } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
@@ -25,14 +25,27 @@ export const MagicImageEditor: React.FC = () => {
   };
 
   const [resultImage, setResultImage] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]); // last N results, newest first
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [apiKey, setApiKey] = useState('');
+
+  const HISTORY_LIMIT = 5;
+
+  const addToHistory = (url: string) => {
+    setHistory(prev => [url, ...prev.filter(h => h !== url)].slice(0, HISTORY_LIMIT));
+  };
+
+  const restoreFromHistory = (url: string) => {
+    setResultImage(url);
+    addToHistory(url);
+  };
 
   const handleReset = () => {
     setFile(null);
     setPrompt('');
     setResultImage(null);
+    setHistory([]);
     setError(null);
     setIsProcessing(false);
   };
@@ -95,6 +108,7 @@ export const MagicImageEditor: React.FC = () => {
             const base64EncodeString = part.inlineData.data;
             const imageUrl = `data:image/png;base64,${base64EncodeString}`;
             setResultImage(imageUrl);
+            addToHistory(imageUrl);
             foundImage = true;
             break;
           }
@@ -220,19 +234,23 @@ export const MagicImageEditor: React.FC = () => {
 
               {!resultImage ? (
                 <Button className="w-full h-12 border-none shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all" onClick={handleGenerate} isLoading={isProcessing} disabled={!prompt.trim() || isProcessing || !apiKey} >
-                  <Sparkles size={18} className="mr-2" />
-                  {isProcessing ? 'Processing...' : 'Apply Magic'}
-                </Button>
-              ) : (
+                    <Sparkles size={18} className="mr-2" />
+                    {isProcessing ? 'Processing...' : 'Apply Magic'}
+                  </Button>
+                ) : (
                 <div className="space-y-3 animate-slide-up">
                   <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg font-bold uppercase text-xs tracking-widest" onClick={() => {
                       const link = document.createElement('a');
                       link.href = resultImage;
-                      link.download = `magic-edited-${file.file.name}`;
+                      const baseName = file.file.name.replace(/\.[^.]+$/, '') || 'image';
+                      link.download = `magic-edited-${baseName}.png`; // actual PNG output
                       link.click();
                     }}
                   >
                     <Download size={18} className="mr-2" /> Download PNG
+                  </Button>
+                  <Button className="w-full h-12 border-none bg-zinc-900 hover:bg-zinc-800 border-zinc-800 font-bold uppercase text-xs tracking-widest text-zinc-300" onClick={() => setResultImage(null)}>
+                    <Wand2 size={16} className="mr-2" /> Try Another Prompt
                   </Button>
                   <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>
                     <RefreshCcw size={16} className="mr-2" /> Start New
@@ -245,6 +263,41 @@ export const MagicImageEditor: React.FC = () => {
                   <AlertCircle size={14} className="shrink-0 mt-0.5" />
                   <p>{error}</p>
                 </div>
+              )}
+
+              {/* Results History */}
+              {history.length > 0 && (
+                <section className="space-y-2 animate-fade-in">
+                  <SectionLabel>
+                    <span className="flex items-center gap-1.5"><History size={12} className="inline" /> Results History</span>
+                  </SectionLabel>
+                  <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                    {history.map((url, i) => (
+                      <button
+                        key={i}
+                        onClick={() => restoreFromHistory(url)}
+                        className={`group relative shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all hover:-translate-y-0.5 ${resultImage === url ? 'border-indigo-500/60' : 'border-zinc-800 hover:border-indigo-500/40'}`}
+                        title={`Restore result ${i + 1}`}
+                      >
+                        <img src={url} alt={`Result ${i + 1}`} className="w-full h-full object-cover" />
+                        <span
+                          role="button"
+                          className="absolute bottom-0.5 right-0.5 p-1 rounded bg-black/70 text-zinc-300 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const link = document.createElement('a');
+                            link.href = url;
+                            const baseName = file.file.name.replace(/\.[^.]+$/, '') || 'image';
+                            link.download = `magic-edited-${baseName}-${i + 1}.png`;
+                            link.click();
+                          }}
+                        >
+                          <Download size={10} />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               )}
             </div>
 

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { toPng } from 'html-to-image'
+import { toPng, toJpeg } from 'html-to-image'
 import {
     Download, RotateCcw, Image as ImageIcon,
     Sparkles, Camera, Focus, Layers, SlidersHorizontal, ExternalLink,
-    Globe, Loader2, Link, Maximize2, Minimize2,
+    Globe, Loader2, Link, Maximize2, Minimize2, AlertTriangle,
 } from 'lucide-react'
 import { FileUploader } from '../../components/FileUploader'
 import { Button } from '../../components/ui/Button'
@@ -247,6 +247,8 @@ export const DeviceMockup: React.FC = () => {
     const [capturing, setCapturing]   = useState(false)
     const [captureError, setCaptureError] = useState('')
     const [isExternalImage, setIsExternalImage] = useState(false)
+    const [exportFormat, setExportFormat] = useState<'png' | 'jpeg'>('png')
+    const [exportError, setExportError] = useState<string | null>(null)
 
     // Drag state tracked in refs to avoid stale closures
     const dragRef = useRef({ active: false, startX: 0, startY: 0, originX: 0, originY: 0 })
@@ -386,6 +388,7 @@ export const DeviceMockup: React.FC = () => {
     const handleExport = useCallback(async () => {
         if (!imageUrl || !previewRef.current) return
         setExporting(true)
+        setExportError(null)
 
         // Temporarily disable cross-origin stylesheets so html-to-image
         // doesn't hit SecurityError reading cssRules from Google Fonts etc.
@@ -402,31 +405,40 @@ export const DeviceMockup: React.FC = () => {
         try {
             const rect  = previewRef.current.getBoundingClientRect()
             const ratio = 3840 / rect.width
+            const isTransparent = settings.bgId === 'transparent'
 
-            const dataUrl = await toPng(previewRef.current, {
+            if (exportFormat === 'jpeg' && isTransparent) {
+                throw new Error('JPEG has no transparency — switch to PNG (transparent) or pick an opaque background first.')
+            }
+
+            const options = {
                 pixelRatio: ratio,
                 skipFonts: true,
                 // Transparent bg: force canvas to stay clear so PNG alpha works
-                ...(settings.bgId === 'transparent' && { backgroundColor: 'rgba(0,0,0,0)' }),
+                ...(isTransparent && { backgroundColor: 'rgba(0,0,0,0)' }),
                 // Skip UI chrome (hint label, focus button, checkerboard overlay)
-                filter: (node) =>
+                filter: (node: Node) =>
                     !(node instanceof Element && node.hasAttribute('data-export-skip')),
-            })
+            } as const
+
+            const dataUrl = exportFormat === 'jpeg'
+                ? await toJpeg(previewRef.current, { ...options, quality: 0.95 })
+                : await toPng(previewRef.current, options)
 
             const a = document.createElement('a')
             a.href     = dataUrl
-            a.download = `cinematic-mockup-${Date.now()}.png`
+            a.download = `cinematic-mockup-${Date.now()}.${exportFormat}`
             document.body.appendChild(a)
             a.click()
             document.body.removeChild(a)
         } catch (err) {
-            console.error('Export failed:', err)
+            setExportError(err instanceof Error ? err.message : 'Export failed — try again.')
         } finally {
             // Re-enable stylesheets regardless of success or failure
             for (const sheet of disabledSheets) sheet.disabled = false
             setExporting(false)
         }
-    }, [imageUrl, isExternalImage, settings])
+    }, [imageUrl, isExternalImage, settings, exportFormat])
 
     const { tiltX, tiltY, roll, zoom, posX, posY, perspective,
             dofType, blur, dofDirection, dofFocalX, dofFocalY, canvasBlur, borderRadius, bgId, shadow, bloom, canvasRatio } = settings
@@ -1012,14 +1024,39 @@ export const DeviceMockup: React.FC = () => {
                 </div>
 
                 {/* Sticky Export — always visible at bottom */}
-                <div className="pt-2 border-t border-zinc-800 shrink-0">
+                <div className="pt-2 border-t border-zinc-800 shrink-0 space-y-2">
+                    {exportError && (
+                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-jakarta">
+                            <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            <span className="leading-relaxed break-words">{exportError}</span>
+                        </div>
+                    )}
+                    <div className="flex gap-1">
+                        {(['png', 'jpeg'] as const).map(f => (
+                            <button
+                                key={f}
+                                title={f === 'jpeg' && bgId === 'transparent'
+                                    ? 'JPEG has no transparency — pick an opaque background first'
+                                    : `Export as ${f.toUpperCase()}`}
+                                onClick={() => { setExportFormat(f); setExportError(null) }}
+                                disabled={f === 'jpeg' && bgId === 'transparent'}
+                                className={`flex-1 py-1.5 rounded-lg text-[10px] font-jakarta font-bold uppercase tracking-wider border transition-all ${
+                                    exportFormat === f
+                                        ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
+                                        : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300'
+                                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                            >
+                                {f} {f === 'png' && bgId === 'transparent' ? '(transparent)' : ''}
+                            </button>
+                        ))}
+                    </div>
                     <Button
                         onClick={handleExport}
                         disabled={exporting}
                         className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold"
                     >
                         <Download className="w-4 h-4" />
-                        {exporting ? 'Exporting…' : 'Export PNG (3840px)'}
+                        {exporting ? 'Exporting…' : `Export ${exportFormat.toUpperCase()} (3840px)`}
                     </Button>
                 </div>
             </div>

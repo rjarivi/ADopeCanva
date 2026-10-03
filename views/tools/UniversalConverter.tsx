@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    ArrowRightLeft, Copy, Download, Trash2,
+    ArrowRightLeft, Copy, Download, Trash2, Upload,
     FileJson, FileCode, FileSpreadsheet, FileText, AlertCircle,
     ChevronDown, Check
 } from 'lucide-react';
@@ -84,8 +84,12 @@ export const UniversalConverter: React.FC = () => {
     const [inputFormat, setInputFormat] = useState<Format>('json');
     const [outputFormat, setOutputFormat] = useState<Format>('csv');
     const [error, setError] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [csvDelimiter, setCsvDelimiter] = useState<',' | ';' | '\t' | '|'>(',');
+    const [csvHeader, setCsvHeader] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Auto-convert when input or formats change
+    // Auto-convert when input, formats, or CSV options change
     useEffect(() => {
         if (!input.trim()) {
             setOutput('');
@@ -98,7 +102,7 @@ export const UniversalConverter: React.FC = () => {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [input, inputFormat, outputFormat]);
+    }, [input, inputFormat, outputFormat, csvDelimiter, csvHeader]);
 
     const parseInput = (data: string, format: Format): any => {
         try {
@@ -110,10 +114,11 @@ export const UniversalConverter: React.FC = () => {
                     const xmlData = xml2js(data, { compact: true });
                     // Usually requires unwrapping the root if simple conversion
                     return xmlData;
-                case 'csv':
-                    const csvResult = Papa.parse(data, { header: true, dynamicTyping: true });
+                case 'csv': {
+                    const csvResult = Papa.parse(data, { header: csvHeader, dynamicTyping: true, delimiter: csvDelimiter });
                     if (csvResult.errors.length > 0) throw new Error(csvResult.errors[0].message);
                     return csvResult.data;
+                }
                 case 'yaml':
                     return yaml.load(data);
                 default:
@@ -131,10 +136,11 @@ export const UniversalConverter: React.FC = () => {
                     return JSON.stringify(data, null, 2);
                 case 'xml':
                     return js2xml(data, { compact: true, spaces: 2 });
-                case 'csv':
-                    // Fix: Papa.unparse expects an array. If data is an object, wrap it.
+                case 'csv': {
+                    // Respect the delimiter option; unparse takes the configured delimiter
                     const csvInput = Array.isArray(data) ? data : [data];
-                    return Papa.unparse(csvInput);
+                    return Papa.unparse(csvInput, { delimiter: csvDelimiter });
+                }
                 case 'yaml':
                     return yaml.dump(data);
                 default:
@@ -166,6 +172,18 @@ export const UniversalConverter: React.FC = () => {
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(output);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const handleUpload = async (f: File) => {
+        try {
+            const text = await f.text();
+            setInput(text);
+            setError(null);
+        } catch {
+            setError('Could not read that file as text.');
+        }
     };
 
     const downloadOutput = () => {
@@ -203,19 +221,58 @@ export const UniversalConverter: React.FC = () => {
                 <div className="flex flex-col bg-zinc-900/50 rounded-3xl border border-zinc-800/50 overflow-hidden shadow-2xl hover:border-indigo-500/30 transition-colors">
                     <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-indigo-400 uppercase tracking-widest font-unbounded flex items-center gap-2">
-                                <ArrowRightLeft size={16} /> Input
-                            </span>
                             <FormatSelector value={inputFormat} onChange={setInputFormat} />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                title="Load a text file (.json, .xml, .csv, .yaml, .txt)"
+                                className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 transition-all"
+                            >
+                                <Upload size={14} /> Upload
+                            </button>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".json,.xml,.csv,.yaml,.yml,.txt,.tsv,text/plain"
+                                className="hidden"
+                                onChange={(e) => {
+                                    const f = e.target.files?.[0];
+                                    if (f) handleUpload(f);
+                                    e.target.value = '';
+                                }}
+                            />
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => { setInput(''); setOutput(''); setError(null); }}>
                             <Trash2 size={16} /> Clear
                         </Button>
                     </div>
+                    {inputFormat === 'csv' && (
+                        <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 flex items-center gap-3">
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Delimiter</label>
+                            <select
+                                value={csvDelimiter === '\t' ? 'tab' : csvDelimiter}
+                                onChange={(e) => setCsvDelimiter((e.target.value === 'tab' ? '\t' : e.target.value) as ',' | ';' | '|' | '\t')}
+                                className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
+                            >
+                                <option value=",">Comma</option>
+                                <option value=";">Semicolon</option>
+                                <option value="tab">Tab</option>
+                                <option value="|">Pipe</option>
+                            </select>
+                            <label className={`text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ${csvHeader ? 'text-indigo-400' : 'text-zinc-500'}`}>
+                                <input
+                                    type="checkbox"
+                                    checked={csvHeader}
+                                    onChange={(e) => setCsvHeader(e.target.checked)}
+                                    className="w-3 h-3 accent-indigo-500"
+                                />
+                                Header Row
+                            </label>
+                        </div>
+                    )}
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={`Paste your ${inputFormat.toUpperCase()} here...`}
+                        placeholder={`Paste or upload your ${inputFormat.toUpperCase()} here...`}
                         className="flex-1 w-full bg-zinc-950/50 p-6 text-sm font-mono text-zinc-300 outline-none resize-none placeholder:text-zinc-700"
                         spellCheck={false}
                     />
@@ -232,7 +289,8 @@ export const UniversalConverter: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <Button variant="secondary" size="sm" onClick={copyToClipboard} disabled={!output}>
-                                <Copy size={16} className="mr-2" /> Copy
+                                {copied ? <Check size={16} className="mr-2 text-green-500" /> : <Copy size={16} className="mr-2" />}
+                                {copied ? 'Copied' : 'Copy'}
                             </Button>
                             <Button size="sm" onClick={downloadOutput} disabled={!output}>
                                 <Download size={16} className="mr-2" /> Download

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Pipette, Copy, Check, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Pipette, Copy, Check, Download, CheckCircle2, AlertCircle, ArrowUpDown } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
@@ -31,6 +31,9 @@ interface ColorDetail {
     rgb: Rgb;
     hsl: Hsl;
 }
+
+// Native EyeDropper API (Chrome/Edge) — feature-detected
+type EyeDropperCtor = new () => { open: () => Promise<{ sRGBHex: string }> };
 
 // --- Helpers for Color Math ---
 
@@ -216,6 +219,19 @@ export const ColorTool: React.FC = () => {
     const [baseRgb, setBaseRgb] = useState<Rgb>({ r: 79, g: 70, b: 229 });
     const [baseHsl, setBaseHsl] = useState<Hsl>({ h: 243, s: 75, l: 59 });
     const [copiedColor, setCopiedColor] = useState<string | null>(null);
+    const [copiedExport, setCopiedExport] = useState<string | null>(null);
+    const hasEyeDropper = typeof (window as unknown as { EyeDropper?: EyeDropperCtor }).EyeDropper !== 'undefined';
+
+    const openEyeDropper = async () => {
+        try {
+            const ctor = (window as unknown as { EyeDropper?: EyeDropperCtor }).EyeDropper;
+            if (!ctor) return;
+            const result = await new ctor().open();
+            updateFromHex(result.sRGBHex);
+        } catch {
+            // user cancelled the eyedropper
+        }
+    };
 
     // Sync formats when HEX changes
     const updateFromHex = (hex: string) => {
@@ -292,6 +308,36 @@ export const ColorTool: React.FC = () => {
         link.download = `palette-${harmonyStrategy}-${baseHex}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
+    };
+
+    const copyExport = (key: string, text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedExport(key);
+        setTimeout(() => setCopiedExport(null), 1500);
+    };
+
+    const paletteExports = {
+        cssVars: `:root {\n${harmonyColors.map((c, i) => `  --c${i + 1}: ${c.hex};`).join('\n')}\n}`,
+        tailwind: `theme: {\n  extend: {\n    colors: {\n${harmonyColors.map((c, i) => `      c${i + 1}: '${c.hex}',`).join('\n')}\n    },\n  },\n}`,
+    };
+
+    const copyAsCssVars = () => copyExport('css-vars', paletteExports.cssVars);
+    const copyAsTailwind = () => copyExport('tailwind', paletteExports.tailwind);
+
+    const downloadPaletteJson = () => {
+        const palette = harmonyColors.map((c, i) => ({
+            name: `c${i + 1}`,
+            hex: c.hex,
+            rgb: `rgb(${c.rgb.r}, ${c.rgb.g}, ${c.rgb.b})`,
+            hsl: `hsl(${c.hsl.h}, ${c.hsl.s}%, ${c.hsl.l}%)`,
+        }));
+        const blob = new Blob([JSON.stringify(palette, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `palette-${harmonyStrategy}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     // --- Tab 2: Contrast Checker State ---
@@ -412,6 +458,15 @@ export const ColorTool: React.FC = () => {
                                     placeholder="#000000"
                                 />
                             </div>
+                            {hasEyeDropper && (
+                                <button
+                                    onClick={openEyeDropper}
+                                    title="Pick a color from anywhere on your screen"
+                                    className="p-2 shrink-0 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 rounded-lg transition-colors"
+                                >
+                                    <Pipette size={14} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -470,7 +525,7 @@ export const ColorTool: React.FC = () => {
                                     <h3 className="text-lg font-black text-white font-unbounded uppercase tracking-wider">Color Harmony Rules</h3>
                                     <p className="text-xs text-zinc-500 mt-1 font-medium">Automatic palettes generated using color wheels.</p>
                                 </div>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 flex-wrap">
                                     <select 
                                         value={harmonyStrategy}
                                         onChange={(e) => setHarmonyStrategy(e.target.value as HarmonyStrategy)}
@@ -483,6 +538,17 @@ export const ColorTool: React.FC = () => {
                                         <option value="tetradic">Tetradic / Double (4 colors)</option>
                                         <option value="monochromatic">Monochromatic (5 colors)</option>
                                     </select>
+                                    <Button onClick={copyAsCssVars} variant="secondary" size="sm" className="h-9 font-bold text-[10px] uppercase tracking-wider rounded-xl">
+                                        {copiedExport === 'css-vars' ? <Check size={14} className="mr-1.5 text-green-400" /> : <Copy size={14} className="mr-1.5" />}
+                                        CSS Vars
+                                    </Button>
+                                    <Button onClick={copyAsTailwind} variant="secondary" size="sm" className="h-9 font-bold text-[10px] uppercase tracking-wider rounded-xl">
+                                        {copiedExport === 'tailwind' ? <Check size={14} className="mr-1.5 text-green-400" /> : <Copy size={14} className="mr-1.5" />}
+                                        Tailwind
+                                    </Button>
+                                    <Button onClick={downloadPaletteJson} variant="secondary" size="sm" className="h-9 font-bold text-[10px] uppercase tracking-wider rounded-xl">
+                                        <Download size={14} className="mr-1.5" /> JSON
+                                    </Button>
                                     <Button onClick={downloadPaletteAsPng} variant="secondary" size="sm" className="h-9 font-bold text-xs uppercase tracking-wider rounded-xl">
                                         <Download size={14} className="mr-1.5" /> Export PNG
                                     </Button>
@@ -536,9 +602,18 @@ export const ColorTool: React.FC = () => {
                     {/* Tab 2: WCAG Contrast Checker */}
                     {activeTab === 'contrast' && (
                         <div className="space-y-8 animate-fade-in max-w-4xl">
-                            <div>
-                                <h3 className="text-lg font-black text-white font-unbounded uppercase tracking-wider">WCAG Contrast Checker</h3>
-                                <p className="text-xs text-zinc-500 mt-1 font-medium">Verify text readability according to the Web Content Accessibility Guidelines (WCAG 2.1).</p>
+                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                                <div>
+                                    <h3 className="text-lg font-black text-white font-unbounded uppercase tracking-wider">WCAG Contrast Checker</h3>
+                                    <p className="text-xs text-zinc-500 mt-1 font-medium">Verify text readability according to the Web Content Accessibility Guidelines (WCAG 2.1).</p>
+                                </div>
+                                <button
+                                    onClick={() => { setContrastFg(contrastBg); setContrastBg(contrastFg) }}
+                                    title="Swap foreground and background colors"
+                                    className="flex items-center gap-2 h-9 px-4 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 transition-colors font-bold"
+                                >
+                                    <ArrowUpDown size={14} /> Swap
+                                </button>
                             </div>
 
                             {/* Foreground / Background color setup fields */}

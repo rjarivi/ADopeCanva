@@ -7,7 +7,7 @@ import {
     Play, Pause, Scissors, Film, Volume2, VolumeX, RotateCcw, Loader2,
     AlertCircle, Download, Settings, Trash2, Undo2, Maximize, Clock,
     ArrowLeftToLine, ArrowRightToLine, FastForward, Repeat, Keyboard,
-    Check, Sparkles, Sliders, ChevronRight
+    Check, Sparkles, Sliders, ChevronRight, Camera
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -61,6 +61,17 @@ function formatTimecode(seconds: number): string {
 export const VideoTrimmer: React.FC = () => {
     const isMobile = useIsMobile();
 
+    /** Build a chain of atempo filters so effective speed stays within each filter's 0.5–2 range (0.25x–4x in sync) */
+    const atempoChain = (speed: number): string[] => {
+        const parts: string[] = [];
+        let s = speed;
+        while (s > 2) { parts.push('2'); s /= 2; }
+        while (s < 0.5) { parts.push('0.5'); s *= 2; }
+        if (parts.length === 0 && s >= 0.5 && s <= 2 && Math.abs(s - 1) > 0.001) parts.push(s.toFixed(4));
+        else if (parts.length > 0 && s !== 1) parts.push(s.toFixed(4));
+        return parts.map(p => `atempo=${p}`);
+    };
+
     // Source File & Video State
     const [file, setFile] = useState<FileData | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -76,6 +87,13 @@ export const VideoTrimmer: React.FC = () => {
     // Range in SECONDS
     const [startTime, setStartTime] = useState(0);
     const [endTime, setEndTime] = useState(0);
+
+    // Middle-cut segments ("Split at Playhead" → delete middle segment → two+ keeps)
+    const [segments, setSegments] = useState<{ id: string; start: number; end: number }[]>([]);
+    const genSegId = () => Math.random().toString(36).slice(2, 9);
+
+    // Export loop count (1 = play once, up to 5 replays baked via -stream_loop)
+    const [loopCount, setLoopCount] = useState(1);
 
     // Timeline Thumbnails
     const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -178,10 +196,60 @@ export const VideoTrimmer: React.FC = () => {
             setDuration(dur);
             setStartTime(0);
             setEndTime(dur);
+            setSegments([{ id: genSegId(), start: 0, end: dur }]);
             if (file) {
                 generateThumbnails(file.file, dur);
             }
         }
+    };
+
+    // ── Middle-cut helpers ──
+    const splitAtPlayhead = useCallback(() => {
+        if (!duration || currentTime <= 0 || currentTime >= duration) return;
+        setSegments(prev => {
+            const next: { id: string; start: number; end: number }[] = [];
+            let didSplit = false;
+            for (const seg of prev) {
+                if (!didSplit && currentTime > seg.start + 0.1 && currentTime < seg.end - 0.1) {
+                    next.push({ id: genSegId(), start: seg.start, end: currentTime });
+                    next.push({ id: genSegId(), start: currentTime, end: seg.end });
+                    didSplit = true;
+                } else {
+                    next.push(seg);
+                }
+            }
+            return didSplit ? next : prev;
+        });
+        setTrimmedUrl(null);
+    }, [duration, currentTime]);
+
+    const deleteSegment = (id: string) => {
+        setSegments(prev => prev.filter(s => s.id !== id));
+        setTrimmedUrl(null);
+    };
+
+    const resetSegments = () => {
+        setSegments([{ id: genSegId(), start: 0, end: duration }]);
+        setTrimmedUrl(null);
+    };
+
+    // ── Screenshot current playhead frame (PNG) ──
+    const handleScreenshot = () => {
+        const v = videoRef.current;
+        if (!v || !v.videoWidth) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const t = currentTime.toFixed(2).replace('.', '_');
+        a.download = `frame_${t}s.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     // Update Volume and Playback Rate
@@ -413,7 +481,6 @@ export const VideoTrimmer: React.FC = () => {
         const originalExt = file.file.name.substring(file.file.name.lastIndexOf('.')) || '.mp4';
         const inputName = `input_${Date.now()}${originalExt}`;
         const outputExt = exportFormat;
-        const outputName = `output_${Date.now()}.${outputExt}`;
 
         const onProgress = ({ progress }: { progress: number }) => {
             if (progress >= 0 && progress <= 1) {
@@ -422,46 +489,122 @@ export const VideoTrimmer: React.FC = () => {
         };
         ffmpeg.on('progress', onProgress);
 
-        try {
-            const clipDuration = Math.max(0.1, endTime - startTime);
-            await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+        const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? Math.min(navigator.hardwareConcurrency, 4).toString()
+            : '2';
 
-            const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
-                ? Math.min(navigator.hardwareConcurrency, 4).toString()
-                : '2';
+        // Baked preview settings: playback rate, volume, and optional loop replays
+        const keepVideoAudio = !removeAudio; // webm/mp4 can carry audio
+        const bake = (): { vfParts: string[]; afParts: string[]; loopArgs: string[] } => {
+            const vfParts: string[] = [];
+            const afParts: string[] = [];
+            if (playbackRate !== 1) {
+                vfParts.push(`setpts=PTS/${playbackRate.toFixed(4)}`);
+                if (keepVideoAudio) afParts.push(...atempoChain(playbackRate));
+            }
+            if (keepVideoAudio && volume !== 100) afParts.push(`volume=${(volume / 100).toFixed(2)}`);
+            const loopArgs = loopCount > 1 ? ['-stream_loop', String(loopCount - 1)] : [];
+            return { vfParts, afParts, loopArgs };
+        };
 
-            const args: string[] = [
-                '-y',
-                '-ss', startTime.toFixed(3),
-                '-i', inputName,
-                '-t', clipDuration.toFixed(3),
-                '-threads', threads,
-            ];
+        /** Per-segment args for this target format (speed/volume baked). */
+        const buildSegmentArgs = (inName: string, start: number, dur: number, outName: string): string[] => {
+            const { vfParts, afParts, loopArgs } = bake();
+            const args: string[] = ['-y', ...loopArgs, '-ss', start.toFixed(3), '-i', inName, '-t', dur.toFixed(3), '-threads', threads];
 
             if (exportFormat === 'gif') {
-                args.push('-vf', 'fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse');
+                args.push('-vf', [...vfParts, 'fps=15', 'scale=480:-1:flags=lanczos'].join(',') + ',split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse');
             } else if (exportFormat === 'mp3') {
                 args.push('-vn', '-c:a', 'libmp3lame', '-b:a', '256k');
             } else {
-                // Video Export
+                // Video export (webm uses real VP8 args, mp4 keeps x264)
                 if (removeAudio) {
                     args.push('-an');
+                } else if (afParts.length) {
+                    args.push('-af', afParts.join(','), '-c:a', exportFormat === 'webm' ? 'libvorbis' : 'aac', '-b:a', '192k');
                 } else {
-                    args.push('-c:a', 'aac', '-b:a', '192k');
+                    args.push('-c:a', exportFormat === 'webm' ? 'libvorbis' : 'aac', '-b:a', '192k');
                 }
 
-                if (qualityPreset === 'fast') {
+                if (exportFormat === 'webm') {
+                    const bitrates: Record<typeof qualityPreset, string> = { fast: '500k', high: '1M', lossless: '3M' };
+                    if (vfParts.length) args.push('-vf', vfParts.join(','));
+                    args.push('-c:v', 'libvpx', '-quality', 'realtime', '-cpu-used', '5', '-b:v', bitrates[qualityPreset], '-b:a', '128k');
+                } else if (qualityPreset === 'fast') {
+                    if (vfParts.length) args.push('-vf', vfParts.join(','));
                     args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26');
                 } else {
+                    if (vfParts.length) args.push('-vf', vfParts.join(','));
                     args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20');
                 }
             }
+            args.push(outName);
+            return args;
+        };
 
-            args.push(outputName);
+        try {
+            const multiSegment = segments.length > 1;
+            let outputName: string;
+            let inputCleanupName: string | null = null;
 
-            const ret = await ffmpeg.exec(args);
-            if (ret !== 0) {
-                throw new Error(`FFmpeg returned code ${ret}`);
+            if (multiSegment) {
+                // Middle-cut mode: encode each kept segment as an intermediate h264/aac pass
+                // (speed/volume baked), then one final concat encode in the chosen format.
+                outputName = `concat_${Date.now()}.${outputExt}`;
+                const trimmed: string[] = [];
+                for (let i = 0; i < segments.length; i++) {
+                    const seg = segments[i];
+                    const inName = `cut_in_${i}${originalExt}`;
+                    const midName = `cut_mid_${i}.mp4`;
+                    await writeFileToFFmpeg(ffmpeg, inName, file.file);
+                    const { vfParts, afParts, loopArgs } = bake();
+                    const segArgs: string[] = ['-y', ...loopArgs, '-ss', seg.start.toFixed(3), '-i', inName, '-t', Math.max(0.1, seg.end - seg.start).toFixed(3), '-threads', threads];
+                    if (!removeAudio && afParts.length) segArgs.push('-af', afParts.join(','), '-c:a', 'aac', '-b:a', '192k');
+                    else if (!removeAudio) segArgs.push('-c:a', 'aac', '-b:a', '192k');
+                    else segArgs.push('-an');
+                    if (vfParts.length) segArgs.push('-vf', vfParts.join(','));
+                    segArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '20', midName);
+                    const ret = await ffmpeg.exec(segArgs);
+                    if (ret !== 0) throw new Error(`FFmpeg returned code ${ret}`);
+                    await ffmpeg.deleteFile(inName);
+                    trimmed.push(midName);
+                }
+                const list = trimmed.map(n => `file '${n}'`).join('\n');
+                await ffmpeg.writeFile('cut_list.txt', new TextEncoder().encode(list));
+                const finalArgs: string[] = ['-y', '-f', 'concat', '-safe', '0', '-i', 'cut_list.txt', '-threads', threads];
+
+                if (exportFormat === 'gif') {
+                    finalArgs.push('-vf', 'fps=15,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse');
+                } else if (exportFormat === 'mp3') {
+                    finalArgs.push('-vn', '-c:a', 'libmp3lame', '-b:a', '256k');
+                } else if (exportFormat === 'webm') {
+                    const bitrates: Record<typeof qualityPreset, string> = { fast: '500k', high: '1M', lossless: '3M' };
+                    if (removeAudio) finalArgs.push('-an');
+                    else finalArgs.push('-c:a', 'libvorbis', '-b:a', '192k');
+                    finalArgs.push('-c:v', 'libvpx', '-quality', 'realtime', '-cpu-used', '5', '-b:v', bitrates[qualityPreset]);
+                } else {
+                    if (removeAudio) finalArgs.push('-an');
+                    else finalArgs.push('-c:a', 'aac', '-b:a', '192k');
+                    if (qualityPreset === 'fast') finalArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26');
+                    else finalArgs.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20');
+                }
+
+                finalArgs.push(outputName);
+                const ret = await ffmpeg.exec(finalArgs);
+                if (ret !== 0) throw new Error(`FFmpeg returned code ${ret}`);
+                for (const n of trimmed) await ffmpeg.deleteFile(n);
+                await ffmpeg.deleteFile('cut_list.txt');
+            } else {
+                // Single selection export
+                outputName = `output_${Date.now()}.${outputExt}`;
+                const clipDuration = Math.max(0.1, endTime - startTime);
+                await writeFileToFFmpeg(ffmpeg, inputName, file.file);
+                inputCleanupName = inputName;
+                const args = buildSegmentArgs(inputName, startTime, clipDuration, outputName);
+                const ret = await ffmpeg.exec(args);
+                if (ret !== 0) {
+                    throw new Error(`FFmpeg returned code ${ret}`);
+                }
             }
 
             const mimeTypes: Record<VideoExportFormat, string> = {
@@ -483,8 +626,10 @@ export const VideoTrimmer: React.FC = () => {
                 setTrimmedSize(null);
             }
 
-            await ffmpeg.deleteFile(inputName);
-            await ffmpeg.deleteFile(outputName);
+            if (inputCleanupName) {
+                try { await ffmpeg.deleteFile(inputCleanupName); } catch { }
+            }
+            try { await ffmpeg.deleteFile(outputName); } catch { }
         } catch (e) {
             console.error('Video Trim error:', e);
             alert('Failed to trim video. Please check settings and retry.');
@@ -831,6 +976,14 @@ export const VideoTrimmer: React.FC = () => {
                         </button>
 
                         <button
+                            onClick={handleScreenshot}
+                            className="p-2.5 rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/50 transition-all"
+                            title="Capture current frame as PNG"
+                        >
+                            <Camera size={16} />
+                        </button>
+
+                        <button
                             onClick={() => {
                                 if (videoRef.current) {
                                     videoRef.current.currentTime = startTime;
@@ -1044,6 +1197,70 @@ export const VideoTrimmer: React.FC = () => {
                             onChange={setVolume}
                             unit="%"
                         />
+                        <p className="text-[9px] text-zinc-600 italic px-1">
+                            Speed, volume and loop replays are baked into the exported file.
+                        </p>
+                    </section>
+
+                    {/* Middle-Cut Segments */}
+                    <section className="space-y-2">
+                        <SectionLabel>Cut List (Middle Cut)</SectionLabel>
+                        <div className="flex gap-1.5">
+                            <button
+                                onClick={splitAtPlayhead}
+                                disabled={isProcessing}
+                                className="flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-indigo-500/50 transition-all disabled:opacity-40"
+                                title="Split the segment at the playhead; delete a segment to cut it out"
+                            >
+                                Split at Playhead
+                            </button>
+                            <button
+                                onClick={resetSegments}
+                                disabled={isProcessing || segments.length <= 1}
+                                className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl border bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white transition-all disabled:opacity-40"
+                            >
+                                Reset
+                            </button>
+                        </div>
+                        {segments.length > 1 && (
+                            <div className="space-y-1 max-h-40 overflow-y-auto custom-scrollbar">
+                                {segments.map((seg, i) => (
+                                    <div
+                                        key={seg.id}
+                                        className="flex items-center justify-between bg-zinc-950/80 border border-zinc-800 rounded-lg px-2.5 py-1.5"
+                                    >
+                                        <span className="text-[10px] font-mono text-zinc-300">
+                                            <span className="text-indigo-400 font-bold mr-1.5">#{i + 1}</span>
+                                            {formatTimecode(seg.start)} → {formatTimecode(seg.end)}
+                                        </span>
+                                        <button
+                                            onClick={() => deleteSegment(seg.id)}
+                                            className="p-1 rounded text-zinc-600 hover:text-red-400 transition-colors"
+                                            title="Delete segment (cut it out)"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {/* Loop & Screenshot (Export-baked) */}
+                    <section className="space-y-2">
+                        <SectionLabel>Loop Replays</SectionLabel>
+                        <div className="grid grid-cols-5 gap-1">
+                            {[1, 2, 3, 4, 5].map(n => (
+                                <button
+                                    key={n}
+                                    onClick={() => { setLoopCount(n); setTrimmedUrl(null); }}
+                                    className={`py-1 text-[10px] font-bold rounded-lg border transition-all ${loopCount === n ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
+                                    title={n === 1 ? 'Play once (no loop)' : `Repeat ${n - 1} extra time in export`}
+                                >
+                                    ×{n}
+                                </button>
+                            ))}
+                        </div>
                     </section>
 
                     {/* Export Format */}

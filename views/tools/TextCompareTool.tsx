@@ -10,20 +10,44 @@ interface DiffLine {
     rightLine: string | null;
     leftNum: number | null;
     rightNum: number | null;
+    /** Word-level tokens for changed rows (word-diff mode) */
+    leftWords?: WordTok[];
+    rightWords?: WordTok[];
 }
 
-// Simple line-by-line LCS diff
-function computeDiff(left: string, right: string): DiffLine[] {
+interface WordTok {
+    text: string;
+    changed: boolean;
+}
+
+interface DiffOptions {
+    ignoreCase: boolean;
+    ignoreWhitespace: boolean;
+    wordDiff: boolean;
+    onChange: (opts: Partial<DiffOptions>) => void;
+}
+
+// Simple line-by-line LCS diff (comparison uses the normalized form when options are on)
+function computeDiff(left: string, right: string, ignoreCase: boolean, ignoreWhitespace: boolean): DiffLine[] {
     const leftLines = left.split('\n');
     const rightLines = right.split('\n');
     const m = leftLines.length;
     const n = rightLines.length;
 
+    const norm = (s: string) => {
+        let out = s;
+        if (ignoreWhitespace) out = out.trim();
+        if (ignoreCase) out = out.toLowerCase();
+        return out;
+    };
+    const leftNorm = leftLines.map(norm);
+    const rightNorm = rightLines.map(norm);
+
     // Build LCS table
     const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
     for (let i = m - 1; i >= 0; i--) {
         for (let j = n - 1; j >= 0; j--) {
-            if (leftLines[i] === rightLines[j]) {
+            if (leftNorm[i] === rightNorm[j]) {
                 dp[i][j] = dp[i + 1][j + 1] + 1;
             } else {
                 dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
@@ -37,7 +61,7 @@ function computeDiff(left: string, right: string): DiffLine[] {
     let leftNum = 1, rightNum = 1;
 
     while (li < m || ri < n) {
-        if (li < m && ri < n && leftLines[li] === rightLines[ri]) {
+        if (li < m && ri < n && leftNorm[li] === rightNorm[ri]) {
             result.push({ type: 'equal', leftLine: leftLines[li], rightLine: rightLines[ri], leftNum: leftNum++, rightNum: rightNum++ });
             li++; ri++;
         } else if (ri < n && (li >= m || dp[li][ri + 1] >= dp[li + 1][ri])) {
@@ -52,16 +76,67 @@ function computeDiff(left: string, right: string): DiffLine[] {
     return result;
 }
 
+// Word-level LCS diff between two lines → tokens flagged as changed
+function computeWordDiff(a: string, b: string): WordTok[] {
+    const aTok = a.split(/(\s+)/).filter(t => t !== '');
+    const bTok = b.split(/(\s+)/).filter(t => t !== '');
+    const m = aTok.length, n = bTok.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+    for (let i = m - 1; i >= 0; i--) {
+        for (let j = n - 1; j >= 0; j--) {
+            if (aTok[i] === bTok[j]) dp[i][j] = dp[i + 1][j + 1] + 1;
+            else dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+        }
+    }
+    const aOut: WordTok[] = aTok.map(t => ({ text: t, changed: true }));
+    const bOut: WordTok[] = bTok.map(t => ({ text: t, changed: true }));
+    let i = 0, j = 0, ai = 0, bi = 0;
+    while (i < m || j < n) {
+        if (i < m && j < n && aTok[i] === bTok[j]) { aOut[ai].changed = false; bOut[bi].changed = false; i++; j++; ai++; bi++; }
+        else if (j < n && (i >= m || dp[i][j + 1] >= dp[i + 1][j])) { j++; bi++; }
+        else { i++; ai++; }
+    }
+    return aOut;
+}
+
+function markWordPairs(diff: DiffLine[]): DiffLine[] {
+    for (let k = 0; k < diff.length - 1; k++) {
+        if (diff[k].type === 'remove' && diff[k + 1].type === 'add') {
+            diff[k].leftWords = computeWordDiff(diff[k].leftLine ?? '', diff[k + 1].rightLine ?? '');
+            diff[k + 1].rightWords = diff[k].leftWords;
+        }
+    }
+    return diff;
+}
+
+const WordTokens: React.FC<{ toks: WordTok[]; add: boolean }> = ({ toks, add }) => (
+    <>
+        {toks.map((t, i) =>
+            t.changed ? (
+                <span key={i} className={`rounded px-0.5 ${add ? 'bg-green-500/30 text-green-200' : 'bg-red-500/30 text-red-200'}`}>{t.text}</span>
+            ) : (
+                <React.Fragment key={i}>{t.text}</React.Fragment>
+            )
+        )}
+    </>
+);
+
 export const TextCompareTool: React.FC = () => {
     const [leftText, setLeftText] = useState('');
     const [rightText, setRightText] = useState('');
     const [copied, setCopied] = useState<'left' | 'right' | null>(null);
     const [showDiff, setShowDiff] = useState(false);
+    const [diffOpts, setDiffOpts] = useState<Pick<DiffOptions, 'ignoreCase' | 'ignoreWhitespace' | 'wordDiff'>>({
+        ignoreCase: false,
+        ignoreWhitespace: false,
+        wordDiff: true,
+    });
 
     const diff = useMemo(() => {
         if (!showDiff || (!leftText && !rightText)) return [];
-        return computeDiff(leftText, rightText);
-    }, [leftText, rightText, showDiff]);
+        const rows = computeDiff(leftText, rightText, diffOpts.ignoreCase, diffOpts.ignoreWhitespace);
+        return diffOpts.wordDiff ? markWordPairs(rows) : rows;
+    }, [leftText, rightText, showDiff, diffOpts]);
 
     const stats = useMemo(() => {
         const added = diff.filter(d => d.type === 'add').length;
@@ -97,7 +172,24 @@ export const TextCompareTool: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                    {showDiff && (
+                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-wider text-zinc-500 mr-2">
+                    {([
+                        { key: 'ignoreCase' as const, label: 'Ignore Case' },
+                        { key: 'ignoreWhitespace' as const, label: 'Trim Lines' },
+                        { key: 'wordDiff' as const, label: 'Word Diff' },
+                    ]).map(o => (
+                        <label key={o.key} className={`flex items-center gap-1.5 cursor-pointer select-none border rounded px-2 py-1 transition-colors ${diffOpts[o.key] ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-400' : 'border-zinc-800 hover:text-zinc-300'}`}>
+                            <input
+                                type="checkbox"
+                                checked={diffOpts[o.key]}
+                                onChange={(e) => setDiffOpts(prev => ({ ...prev, [o.key]: e.target.checked }))}
+                                className="w-3 h-3 accent-indigo-500"
+                            />
+                            {o.label}
+                        </label>
+                    ))}
+                </div>
+                {showDiff && (
                         <div className="flex items-center gap-3 text-xs font-mono mr-2">
                             <span className="text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-1 rounded">+{stats.added} added</span>
                             <span className="text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded">−{stats.removed} removed</span>
@@ -196,7 +288,7 @@ export const TextCompareTool: React.FC = () => {
                                             <span className="text-zinc-700 select-none w-7 shrink-0 text-right">{row.leftNum ?? ''}</span>
                                             <span className={`whitespace-pre-wrap break-all ${row.type === 'remove' ? 'text-red-300' : 'text-zinc-400'}`}>
                                                 {row.type === 'remove' && <span className="text-red-500 mr-1 select-none">−</span>}
-                                                {row.leftLine ?? ''}
+                                                {row.leftWords ? <WordTokens toks={row.leftWords} add={false} /> : row.leftLine ?? ''}
                                             </span>
                                         </div>
                                         {/* Right cell */}
@@ -204,7 +296,7 @@ export const TextCompareTool: React.FC = () => {
                                             <span className="text-zinc-700 select-none w-7 shrink-0 text-right">{row.rightNum ?? ''}</span>
                                             <span className={`whitespace-pre-wrap break-all ${row.type === 'add' ? 'text-green-300' : 'text-zinc-400'}`}>
                                                 {row.type === 'add' && <span className="text-green-500 mr-1 select-none">+</span>}
-                                                {row.rightLine ?? ''}
+                                                {row.rightWords ? <WordTokens toks={row.rightWords} add={true} /> : row.rightLine ?? ''}
                                             </span>
                                         </div>
                                     </div>

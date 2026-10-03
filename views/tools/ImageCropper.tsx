@@ -7,7 +7,8 @@ import { FileData } from '../../types';
 import {
     Crop, RotateCw, RotateCcw, Check, Undo2, Download, Maximize,
     Square, RectangleHorizontal, RectangleVertical, MousePointer2,
-    ZoomIn, ZoomOut, Move, Hand, Settings, Share2, Trash2, RefreshCw, Image
+    ZoomIn, ZoomOut, Move, Hand, Settings, Share2, Trash2, RefreshCw, Image,
+    FlipHorizontal, FlipVertical
 } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 import { preprocessImageFileData, preprocessHeic } from '../../utils/imagePreprocess';
@@ -25,6 +26,8 @@ export const ImageCropper: React.FC = () => {
     const isMobile = useIsMobile();
     const [file, setFile] = useState<FileData | null>(null);
     const [rotation, setRotation] = useState(0);
+    const [flipX, setFlipX] = useState(false);
+    const [flipY, setFlipY] = useState(false);
     const [croppedImage, setCroppedImage] = useState<string | null>(null);
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('free');
 
@@ -64,6 +67,8 @@ export const ImageCropper: React.FC = () => {
         if (file) {
             setCrop({ x: 10, y: 10, width: 80, height: 80 });
             setRotation(0);
+            setFlipX(false);
+            setFlipY(false);
             setAspectRatio('free');
             setZoom(1);
             setPan({ x: 0, y: 0 });
@@ -212,9 +217,13 @@ export const ImageCropper: React.FC = () => {
             const zoomedDx = rawDx / zoom;
             const zoomedDy = rawDy / zoom;
 
-            // Adjust for Rotation (We need to map screen moves to local image moves)
-            // If image is rotated 90deg, moving mouse Right (Screen X+) means moving Top (Image Y-)
-            const { x: localDxPixels, y: localDyPixels } = rotatePoint(zoomedDx, zoomedDy, -rotation);
+            // Adjust for Rotation + Flip
+            // Wrapper transform is scale(sx, sy) · rotate(r); its inverse maps
+            // screen deltas back into unmirrored, unrotated image space:
+            // local = R(-r) · S(dx, dy) where S applies the flip signs.
+            const flipSx = flipX ? -1 : 1;
+            const flipSy = flipY ? -1 : 1;
+            const { x: localDxPixels, y: localDyPixels } = rotatePoint(zoomedDx * flipSx, zoomedDy * flipSy, -rotation);
 
             // Convert pixels to Percentages
             // We use the offsetWidth of the container (the rotated wrapper).
@@ -334,7 +343,7 @@ export const ImageCropper: React.FC = () => {
             window.removeEventListener('mousemove', handleGlobalMove);
             window.removeEventListener('mouseup', handleGlobalUp);
         };
-    }, [isDragging, dragType, aspectRatio, zoom, rotation]);
+    }, [isDragging, dragType, aspectRatio, zoom, rotation, flipX, flipY]);
 
 
     const handleCropImage = () => {
@@ -360,9 +369,12 @@ export const ImageCropper: React.FC = () => {
         const tempCtx = tempCanvas.getContext('2d');
         if (!tempCtx) return;
 
-        // Draw rotated image onto temp canvas
+        // Draw rotated image onto temp canvas.
+        // Flip is applied AFTER rotation (in canvas matrix terms:
+        // translate · rotate · scale), matching the on-screen transform order.
         tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
         tempCtx.rotate(rotation * Math.PI / 180);
+        tempCtx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
         tempCtx.drawImage(img, -naturalWidth / 2, -naturalHeight / 2);
 
         // Map crop percentages to rotated dimensions
@@ -386,7 +398,7 @@ export const ImageCropper: React.FC = () => {
         if (!croppedImage) return;
         const link = document.createElement('a');
         link.href = croppedImage;
-        link.download = `cropped-${file?.file.name}`;
+        link.download = `cropped-${file?.file.name.replace(/\.[^.]+$/, '') || 'image'}.png`;
         link.click();
     };
 
@@ -556,6 +568,20 @@ export const ImageCropper: React.FC = () => {
                                     <RotateCw size={16} />
                                     <span className="text-[10px] font-bold uppercase">+45°</span>
                                 </button>
+                                <button
+                                    onClick={() => setFlipX(f => !f)}
+                                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${flipX ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-indigo-500/50 hover:text-indigo-300'}`}
+                                >
+                                    <FlipHorizontal size={16} />
+                                    <span className="text-[10px] font-bold uppercase">Flip H</span>
+                                </button>
+                                <button
+                                    onClick={() => setFlipY(f => !f)}
+                                    className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all ${flipY ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:border-indigo-500/50 hover:text-indigo-300'}`}
+                                >
+                                    <FlipVertical size={16} />
+                                    <span className="text-[10px] font-bold uppercase">Flip V</span>
+                                </button>
                             </div>
                         </section>
 
@@ -652,7 +678,7 @@ export const ImageCropper: React.FC = () => {
                         <div
                             ref={containerRef}
                             className="relative shadow-2xl origin-center transition-transform duration-200 border border-dashed border-zinc-700/50"
-                            style={{ transform: `rotate(${rotation}deg)` }}
+                            style={{ transform: `scale(${flipX ? -1 : 1}, ${flipY ? -1 : 1}) rotate(${rotation}deg)` }}
                         >
                             {/* Image Dimensions Indicator */}
                             {imageDimensions.w > 0 && (

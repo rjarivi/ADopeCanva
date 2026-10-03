@@ -466,7 +466,7 @@ export const ImageConverter: React.FC<ImageConverterProps> = ({
                             </div>
                             <Button 
                                 onClick={reset}
-                                variant="outline"
+                                variant="ghost"
                                 className="h-8 px-3 text-xs text-zinc-400 hover:text-red-400 border-zinc-800"
                             >
                                 Clear All

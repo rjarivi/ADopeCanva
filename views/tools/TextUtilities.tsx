@@ -148,18 +148,10 @@ export const TextUtilities: React.FC = () => {
         setInput(uuid); // Show in input too for consistency? Or just output.
     };
 
-    const generateHash = async (algo: 'SHA-256' | 'SHA-1' | 'MD5') => {
+    const generateHash = async (algo: 'SHA-256' | 'SHA-1') => {
         if (!input) return;
         const msgBuffer = new TextEncoder().encode(input);
-
-        // MD5 not supported by subtle crypto usually, stick to SHA
-        if (algo === 'MD5') {
-            // Simple JS MD5 or placeholder implementation would be needed.
-            // For now let's just do SHA-256 which is standard.
-            setOutput("MD5 requires external lib, using SHA-256 instead...");
-        }
-
-        const hashBuffer = await crypto.subtle.digest(algo === 'MD5' ? 'SHA-256' : algo, msgBuffer);
+        const hashBuffer = await crypto.subtle.digest(algo, msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         setOutput(hashHex);
@@ -245,9 +237,10 @@ export const TextUtilities: React.FC = () => {
                             </div>
                         )}
                         {mode === 'generate' && (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                                 <Button variant="secondary" size="sm" onClick={generateUUID}><Fingerprint size={14} className="mr-2" /> Generate UUID</Button>
                                 <Button variant="secondary" size="sm" onClick={() => generateHash('SHA-256')} disabled={!input}><Hash size={14} className="mr-2" /> SHA-256</Button>
+                                <Button variant="secondary" size="sm" onClick={() => generateHash('SHA-1')} disabled={!input}><Hash size={14} className="mr-2" /> SHA-1</Button>
                             </div>
                         )}
                     </div>

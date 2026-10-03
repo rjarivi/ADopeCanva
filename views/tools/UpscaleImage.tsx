@@ -5,8 +5,7 @@ import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
-import { Maximize2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, Settings, ChevronDown } from 'lucide-react';
-import { SectionLabel, SliderControl } from '../../components/EditorControls';
+import { Maximize2, Download, RefreshCcw, Sliders, Sparkles, AlertCircle, Settings, ChevronDown } from 'lucide-react';import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -44,6 +43,55 @@ export const UpscaleImage: React.FC = () => {
     const [upscaleOption, setUpscaleOption] = useState(UPSCALE_OPTIONS[0].id);
     const [customPrompt, setCustomPrompt] = useState('');
     const [isScaleDropdownOpen, setIsScaleDropdownOpen] = useState(false);
+    const [resultDims, setResultDims] = useState<{ w: number; h: number } | null>(null);
+    const [usedFallback, setUsedFallback] = useState(false);
+
+    const loadImage = (src: string): Promise<HTMLImageElement> => new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+    });
+
+    // High-quality canvas bicubic stepwise upscale: doubles in steps (2x each
+    // pass) for smooth results, then applies one final fractional step.
+    const stepwiseUpscale = (img: HTMLImageElement, factor: number): { url: string; w: number; h: number } => {
+        const startW = img.width;
+        const startH = img.height;
+        let curCanvas: HTMLCanvasElement | null = null;
+        let curW = startW;
+        let curH = startH;
+
+        const drawInto = (source: HTMLImageElement | HTMLCanvasElement, w: number, h: number): HTMLCanvasElement | null => {
+            const c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext('2d');
+            if (!ctx) return null;
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(source, 0, 0, w, h);
+            return c;
+        };
+
+        while (curW * 2 <= startW * factor + 0.5) {
+            const c = drawInto(curCanvas ?? img, curW * 2, curH * 2);
+            if (!c) break;
+            curCanvas = c;
+            curW = c.width;
+            curH = c.height;
+        }
+        if (curW < startW * factor) {
+            const c = drawInto(curCanvas ?? img, Math.round(startW * factor), Math.round(startH * factor));
+            if (c) {
+                curCanvas = c;
+                curW = c.width;
+                curH = c.height;
+            }
+        }
+        if (!curCanvas) return { url: img.src, w: img.width, h: img.height };
+        return { url: curCanvas.toDataURL('image/png'), w: curW, h: curH };
+    };
 
     const handleReset = () => {
         setFile(null);
@@ -128,7 +176,44 @@ export const UpscaleImage: React.FC = () => {
                     if (part.inlineData) {
                         const base64EncodeString = part.inlineData.data;
                         const imageUrl = `data:image/png;base64,${base64EncodeString}`;
-                        setResultImage(imageUrl);
+                        let resultUrl = imageUrl;
+                        let outW = 0;
+                        let outH = 0;
+                        const factor = upscaleOption === '2x' ? 2 : upscaleOption === '4x' ? 4 : 1;
+                        setUsedFallback(false);
+                        try {
+                            const origImg = await loadImage(file.previewUrl ?? URL.createObjectURL(file.file));
+                            const resultImg = await loadImage(imageUrl);
+                            if (factor > 1) {
+                                const targetW = Math.round(origImg.width * factor);
+                                const targetH = Math.round(origImg.height * factor);
+                                const roughTarget =
+                                    Math.abs(resultImg.width - targetW) <= targetW * 0.12 &&
+                                    Math.abs(resultImg.height - targetH) <= targetH * 0.12;
+                                const largerThanInput = resultImg.width > origImg.width && resultImg.height > origImg.height;
+                                if (roughTarget || largerThanInput) {
+                                    // Accept the AI result as-is
+                                    outW = resultImg.width;
+                                    outH = resultImg.height;
+                                } else {
+                                    // AI didn't deliver a larger / promised size —
+                                    // guarantee it with bicubic stepwise canvas upscaling.
+                                    const up = stepwiseUpscale(origImg, factor);
+                                    resultUrl = up.url;
+                                    outW = up.w;
+                                    outH = up.h;
+                                    setUsedFallback(true);
+                                }
+                            } else {
+                                outW = resultImg.width;
+                                outH = resultImg.height;
+                            }
+                            setResultDims({ w: outW, h: outH });
+                        } catch (dimErr) {
+                            console.warn('Dimension verification failed:', dimErr);
+                            setResultDims(null);
+                        }
+                        setResultImage(resultUrl);
                         foundImage = true;
                         break;
                     }
@@ -296,7 +381,10 @@ export const UpscaleImage: React.FC = () => {
                                     <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg font-bold uppercase text-xs tracking-widest" onClick={() => {
                                             const link = document.createElement('a');
                                             link.href = resultImage;
-                                            link.download = `upscaled-${file.file.name}`;
+                                            const baseName = file.file.name.replace(/\.[^.]+$/, '') || 'image';
+                                            const w = resultDims?.w ?? 0;
+                                            const h = resultDims?.h ?? 0;
+                                            link.download = `upscaled-${baseName}${w && h ? `_${w}x${h}` : ''}.png`;
                                             link.click();
                                         }}
                                     >
@@ -326,6 +414,12 @@ export const UpscaleImage: React.FC = () => {
                                     onChange={setSliderPosition}
                                     unit="%"
                                 />
+                                {resultDims && (
+                                    <p className="mt-2 text-[10px] text-zinc-500 font-mono">
+                                        Delivered size: {resultDims.w} × {resultDims.h}px
+                                        {usedFallback && <span className="text-indigo-400 font-bold uppercase tracking-widest ml-2">canvas fallback used</span>}
+                                    </p>
+                                )}
                             </section>
                         )}
 

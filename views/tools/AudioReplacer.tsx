@@ -11,12 +11,27 @@ export const AudioReplacer: React.FC = () => {
     const [videoFile, setVideoFile] = useState<FileData | null>(null);
     const [audioFile, setAudioFile] = useState<FileData | null>(null);
     const [outputFormat, setOutputFormat] = useState('MP4');
+    const [offsetMs, setOffsetMs] = useState(0);
+    const [gainDb, setGainDb] = useState(0);
+    const [keepVideoLength, setKeepVideoLength] = useState(true);
+    const [mixOriginal, setMixOriginal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [isDone, setIsDone] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const [processingError, setProcessingError] = useState<string>('');
     const [resultUrl, setResultUrl] = useState<string | null>(null);
+    const [sourceVideoUrl, setSourceVideoUrl] = useState<string | null>(null);
     const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
     const [errorMessage, setErrorMessage] = useState<string>('');
     const ffmpegRef = useRef<FFmpeg | null>(null);
+
+    // Object URL for source video preview
+    useEffect(() => {
+        if (!videoFile) { setSourceVideoUrl(null); return; }
+        const url = URL.createObjectURL(videoFile.file);
+        setSourceVideoUrl(url);
+        return () => URL.revokeObjectURL(url);
+    }, [videoFile]);
 
     useEffect(() => {
         getFFmpeg()
@@ -35,6 +50,10 @@ export const AudioReplacer: React.FC = () => {
         if (!videoFile || !audioFile || !ffmpegRef.current) return;
 
         setIsProcessing(true);
+        setIsDone(false);
+        setResultUrl(null);
+        setProcessingError('');
+        setProgress(0);
         const ffmpeg = ffmpegRef.current;
 
         // Extensions
@@ -45,28 +64,46 @@ export const AudioReplacer: React.FC = () => {
         const aName = `input_a.${aExt}`;
         const outName = `output.${outputFormat.toLowerCase()}`;
 
+        const onProgress = ({ progress }: { progress: number }) => {
+            if (progress >= 0 && progress <= 1) {
+                setProgress(Math.round(progress * 100));
+            }
+        };
+        ffmpeg.on('progress', onProgress);
+
         try {
             await writeFileToFFmpeg(ffmpeg, vName, videoFile.file);
             await writeFileToFFmpeg(ffmpeg, aName, audioFile.file);
 
-            // FFmpeg Command:
-            // -i video -i audio 
-            // -c:v copy (Copy video stream directly, super fast)
-            // -c:a aac (Encode audio to AAC for compatibility)
-            // -map 0:v:0 (Take 1st video stream from 1st input)
-            // -map 1:a:0 (Take 1st audio stream from 2nd input)
-            // -shortest (Stop when shorter input ends)
-            await ffmpeg.exec([
-                '-y',
-                '-i', vName,
-                '-i', aName,
+            // Filters applied to the NEW audio track
+            const aFilters: string[] = [];
+            if (gainDb !== 0) aFilters.push(`volume=${gainDb.toFixed(1)}dB`);
+            if (offsetMs > 0) aFilters.push(`adelay=${Math.round(offsetMs)}:all=1`);
+
+            const args: string[] = ['-y', '-i', vName, '-i', aName];
+
+            if (mixOriginal) {
+                // Blend original + new; duration follows the ORIGINAL audio (≈ video length)
+                const filterComplex = `[1:a]${aFilters.length > 0 ? aFilters.join(',') + ',' : ''}anull[nw];[0:a][nw]amix=inputs=2:duration=first:dropout_transition=0:normalize=0[aout]`;
+                args.push('-filter_complex', filterComplex, '-map', '0:v:0', '-map', '[aout]');
+            } else {
+                // Padded replacement keeps the video length: apad makes audio endless, -shortest caps at video
+                if (keepVideoLength) aFilters.push('apad');
+                if (aFilters.length > 0) args.push('-af', aFilters.join(','));
+                args.push('-map', '0:v:0', '-map', '1:a:0');
+            }
+
+            args.push(
                 '-c:v', 'copy',
                 '-c:a', 'aac',
-                '-map', '0:v:0',
-                '-map', '1:a:0',
                 '-shortest',
                 outName
-            ]);
+            );
+
+            const ret = await ffmpeg.exec(args);
+            if (ret !== 0) {
+                throw new Error(`FFmpeg returned code ${ret}. Check file formats and retry.`);
+            }
 
             const url = await readFileFromFFmpeg(ffmpeg, outName, `video/${outputFormat.toLowerCase()}`);
             setResultUrl(url);
@@ -78,8 +115,9 @@ export const AudioReplacer: React.FC = () => {
 
         } catch (e) {
             console.error(e);
-            alert('Processing failed. ' + (e as Error).message);
+            setProcessingError((e as Error).message || 'Processing failed. Check formats and retry.');
         } finally {
+            ffmpeg.off('progress', onProgress);
             setIsProcessing(false);
         }
     };
@@ -100,6 +138,12 @@ export const AudioReplacer: React.FC = () => {
         setAudioFile(null);
         setIsDone(false);
         setResultUrl(null);
+        setProgress(0);
+        setProcessingError('');
+        setKeepVideoLength(true);
+        setMixOriginal(false);
+        setOffsetMs(0);
+        setGainDb(0);
     };
 
     if (engineStatus === 'error') {
@@ -278,7 +322,90 @@ export const AudioReplacer: React.FC = () => {
                                     ))}
                                 </div>
                             </div>
+
+                            <div className="h-px bg-zinc-800"></div>
+
+                            {/* New Audio Processing */}
+                            <div className="space-y-4">
+                                <label className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                    <Volume2 size={16} className="text-indigo-400" /> New Audio
+                                </label>
+
+                                <div>
+                                    <div className="flex justify-between text-xs mb-1.5">
+                                        <span className="text-zinc-400">Start Offset</span>
+                                        <span className="text-zinc-300 font-mono">{(offsetMs / 1000).toFixed(1)}s</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={10000}
+                                        step={100}
+                                        value={offsetMs}
+                                        onChange={(e) => setOffsetMs(Number(e.target.value))}
+                                        disabled={isProcessing}
+                                        className="w-full accent-indigo-500 h-1 bg-zinc-800 rounded cursor-pointer"
+                                    />
+                                    <p className="text-[10px] text-zinc-600 mt-0.5">Delays the new audio track relative to the video start.</p>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between text-xs mb-1.5">
+                                        <span className="text-zinc-400">Volume Gain</span>
+                                        <span className={`font-mono ${gainDb > 0 ? 'text-emerald-400' : gainDb < 0 ? 'text-pink-400' : 'text-zinc-300'}`}>
+                                            {gainDb > 0 ? '+' : ''}{gainDb.toFixed(1)} dB
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min={-24}
+                                        max={24}
+                                        step={0.5}
+                                        value={gainDb}
+                                        onChange={(e) => setGainDb(Number(e.target.value))}
+                                        disabled={isProcessing}
+                                        className="w-full accent-indigo-500 h-1 bg-zinc-800 rounded cursor-pointer"
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <button
+                                        onClick={() => setKeepVideoLength(prev => !prev)}
+                                        disabled={isProcessing}
+                                        className={`w-full py-2.5 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${keepVideoLength ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:text-zinc-300'}`}
+                                    >
+                                        <Video size={14} />
+                                        Keep Video Length {keepVideoLength ? 'On' : 'Off'}
+                                    </button>
+                                    <p className="text-[10px] text-zinc-600">
+                                        {keepVideoLength
+                                            ? 'Audio is padded, output always matches the video\u2019s full duration.'
+                                            : 'Output ends when either stream is shorter (audio may truncate the video).'}
+                                    </p>
+
+                                    <button
+                                        onClick={() => setMixOriginal(prev => !prev)}
+                                        disabled={isProcessing}
+                                        className={`w-full py-2.5 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${mixOriginal ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-800/50 border-zinc-800 text-zinc-400 hover:text-zinc-300'}`}
+                                    >
+                                        <Music size={14} />
+                                        Mix With Original {mixOriginal ? 'On' : 'Off'}
+                                    </button>
+                                    {mixOriginal && (
+                                        <p className="text-[10px] text-zinc-600">
+                                            Requires the source video to contain an audio stream.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
                         </div>
+
+                        {processingError && (
+                            <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-2xl text-xs text-red-400 flex items-start gap-2 animate-fade-in">
+                                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                                <span className="break-all">{processingError}</span>
+                            </div>
+                        )}
 
                         <Button className="w-full h-12 text-lg shadow-lg shadow-indigo-500/20" onClick={handleProcess} isLoading={isProcessing} disabled={isDone} >
                             {isDone ? 'Completed' : 'Replace Audio'}
@@ -292,24 +419,29 @@ export const AudioReplacer: React.FC = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 to-black pointer-events-none"></div>
 
                     {isProcessing ? (
-                        <div className="text-center space-y-4 z-10 animate-fade-in">
+                        <div className="text-center space-y-4 z-10 animate-fade-in p-8 w-full max-w-xs">
                             <div className="relative w-20 h-20 mx-auto">
                                 <div className="absolute inset-0 border-4 border-zinc-800 rounded-full"></div>
                                 <div className="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                             <p className="text-zinc-300 font-medium">Merging tracks...</p>
-                            <p className="text-xs text-zinc-500">FFmpeg is processing your streams</p>
+                            <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
+                            </div>
+                            <p className="text-xs text-zinc-500 font-mono">{Math.max(progress, 1)}%</p>
                         </div>
                     ) : isDone ? (
-                        <div className="text-center space-y-6 z-10 animate-slide-up p-8">
-                            <div className="w-20 h-20 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto border border-green-500/20 shadow-[0_0_20px_rgba(34,197,94,0.2)]">
-                                <CheckCircle size={40} />
+                        <div className="text-center space-y-5 z-10 animate-slide-up p-6 w-full">
+                            <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto border border-green-500/20">
+                                <CheckCircle size={32} />
                             </div>
-                            <div>
-                                <h3 className="text-2xl font-bold text-white">Success!</h3>
-                                <p className="text-zinc-400 mt-2">Your video has been updated with the new audio.</p>
-                            </div>
-                            <div className="flex gap-3">
+                            {/* Result preview before download */}
+                            <video
+                                src={resultUrl ?? undefined}
+                                controls
+                                className="w-full rounded-2xl border border-zinc-800 bg-black max-h-[320px]"
+                            />
+                            <div className="flex gap-3 justify-center">
                                 <Button variant="secondary" onClick={resetAll}>Edit Another</Button>
                                 <Button className=" text-white shadow-lg shadow-indigo-500/20 border-none" onClick={handleDownload}>
                                     <Download size={18} className="mr-2" /> Download
@@ -317,11 +449,19 @@ export const AudioReplacer: React.FC = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center z-10 opacity-50 space-y-4 p-8">
-                            <div className="flex items-center justify-center gap-4 text-zinc-600">
-                                <Video size={48} />
-                                <ArrowRight size={24} />
-                                <Music size={48} />
+                        <div className="text-center z-10 space-y-4 p-8 w-full max-w-xs">
+                            {/* Source video preview */}
+                            {sourceVideoUrl && (
+                                <video
+                                    src={sourceVideoUrl}
+                                    controls
+                                    className="w-full rounded-2xl border border-zinc-800 bg-black"
+                                />
+                            )}
+                            <div className={`flex items-center justify-center gap-4 text-zinc-600 ${sourceVideoUrl ? 'opacity-60' : ''}`}>
+                                <Video size={40} />
+                                <ArrowRight size={20} />
+                                <Music size={40} />
                             </div>
                             <p className="text-zinc-500 max-w-xs mx-auto">
                                 Ready to merge. Review your settings and click "Replace Audio" to start.

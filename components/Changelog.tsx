@@ -14,6 +14,54 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.12.0',
+        date: 'Oct 3, 2026',
+        items: [
+            {
+                icon: Bug,
+                title: 'Full-Suite Integrity Pass — 41 Tools Audited & Fixed',
+                description: "Company-wide audit of every tool for missing or broken basics. Fixed all fake/broken features (honest modes everywhere), then filled the missing-basics gaps: previews that lied, export mismatches, batch support, and format/quality controls across video, audio, image, docs, and design tools.",
+                type: 'fix'
+            },
+            {
+                icon: Zap,
+                title: 'Video & GIF Export Engines',
+                description: "Quick Video Editor: real offset crop, frame screenshots, MP3 extraction, MP4/WebM + fps/quality controls; per-clip mute and 0.25–4× speed now bake correctly into exports. Video Trimmer: speed/volume/loop now affect output, split-at-playhead multi-cut added. VideoConverter/Compressor gained trim/mute/speed/mute/fps. All GIF/APNG tools gained loop-count, reverse, palette-quality and fps/resize controls; Video-to-APNG now actually outputs APNG.",
+                type: 'update'
+            },
+            {
+                icon: Music,
+                title: 'Audio Engine Completion',
+                description: "Normalize (loudnorm) across Trimmer/Converter/Merger; speed finally baked into Audio Trimmer exports; Merger crossfade & gap made real with per-track trim inputs and drag-reorder; Audio Replacer gained video preview, progress bar, offset, gain, mix-with-original and keep-video-length; Waveform exporter gained PNG raster download; mono/stereo + sample-rate controls app-wide.",
+                type: 'update'
+            },
+            {
+                icon: Scissors,
+                title: 'Image Suite Level-up',
+                description: "Background Remover adds Erase & Restore touch-up brushes; Image Editor gains crop mode + PNG/JPG/WEBP export; Resizer and Compressor are now batch tools with ZIP download; Cropper adds flip H/V; Splitter adds custom rows×cols grids + quality; Upscale now guarantees the promised 2×/4× size with canvas fallback.",
+                type: 'update'
+            },
+            {
+                icon: FileDown,
+                title: 'Docs, Text & Dev Utilities',
+                description: "Removed the fake PDF password and corrupt MOBI/AZW/EPUB paths. Text Compare gained ignore-case/trim-lines/word-level diff; Text→PDF gained paper size, orientation, fonts & page numbers; PDF→JPG adds PNG; PDF→Text adds page ranges & batch; JSON gets indent/sort-keys/error positions; CSV tools fix delimiter & header handling; Text Cleaner expanded with 6 cleaning ops.",
+                type: 'update'
+            },
+            {
+                icon: Sparkles,
+                title: 'Design & Web Polish',
+                description: "SVG Converter now really converts (PNG/JPG raster export); SVG→Code gained Optimizer and real .svg download; Signature Generator ships transparent-PNG download (dead MP4 state removed); Font Previewer supports uploaded custom fonts; Color Tool gains eyedropper, CSS vars/Tailwind/JSON palette exports; Device Mockup gains JPEG export; gradients gain SVG export.",
+                type: 'update'
+            },
+            {
+                icon: Layers,
+                title: 'Paste Anywhere',
+                description: "The shared uploader now accepts Ctrl+V clipboard images across every tool, keeping drag-and-drop and multi-file intact.",
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.11.0',
         date: 'Sep 10, 2026',
         items: [

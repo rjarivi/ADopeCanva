@@ -40,6 +40,11 @@ export const GifEditor: React.FC = () => {
     // Sprite State
     const [isSpriteWorker, setIsSpriteWorker] = useState(false);
 
+    // GIF output options (all wired into ffmpeg args)
+    const [loopCount, setLoopCount] = useState(0); // 0 = infinite
+    const [gifFps, setGifFps] = useState(0); // 0 = keep source timing
+    const [paletteQuality, setPaletteQuality] = useState(true);
+
     // Trim State
     const [duration, setDuration] = useState<number>(0);
     const [trimRange, setTrimRange] = useState<[number, number]>([0, 0]); // [start, end]
@@ -229,6 +234,9 @@ export const GifEditor: React.FC = () => {
             if (reverse) filters.push('reverse');
             if (speed !== 1) filters.push(`setpts=${1 / speed}*PTS`);
 
+            // 3b. GIF output fps cap (applied after speed so timing stays consistent)
+            if (mode === 'gif' && gifFps > 0) filters.push(`fps=${gifFps}`);
+
             // 4. Text
             if (text) {
                 const fontLoaded = await loadFont(ffmpeg);
@@ -319,11 +327,18 @@ export const GifEditor: React.FC = () => {
             }
 
             if (filters.length > 0) {
-                args.push('-vf', filterGraph);
+                // High-quality palette path for GIF output (palettegen + paletteuse with dither)
+                if (mode === 'gif' && paletteQuality) {
+                    const chain = filters.length > 0 ? filters.join(',') : 'null';
+                    args.push('-vf', `[0:v]${chain},split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=2`);
+                } else {
+                    args.push('-vf', filterGraph);
+                }
             }
             // Explicit format for safety
             if (mode === 'gif') {
                 args.push('-f', 'gif');
+                args.push('-loop', String(loopCount)); // 0 = infinite
             }
             args.push(outputName);
 
@@ -704,6 +719,44 @@ export const GifEditor: React.FC = () => {
                             </button>
                         </div>
                     )}
+                </div>
+
+                {/* GIF Output options (apply to all tools) */}
+                <div className="space-y-4 pt-6 mt-6 border-t border-zinc-800">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-2">
+                        <Settings size={13} /> GIF Output
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Loop</span>
+                            <select
+                                value={loopCount}
+                                onChange={(e) => setLoopCount(Number(e.target.value))}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer"
+                            >
+                                <option value={0}>Infinite</option>
+                                {[1, 2, 3, 5].map(n => <option key={n} value={n}>{n} play{n > 1 ? 's' : ''}</option>)}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">FPS</span>
+                            <select
+                                value={gifFps}
+                                onChange={(e) => setGifFps(Number(e.target.value))}
+                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer"
+                            >
+                                <option value={0}>Auto</option>
+                                {[5, 10, 12, 15, 20, 24].map(f => <option key={f} value={f}>{f} fps</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setPaletteQuality(q => !q)}
+                        className={`w-full py-2.5 rounded-xl text-xs font-bold border transition-all ${paletteQuality ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'}`}
+                        title="Higher quality GIF via palettegen + paletteuse with dithering"
+                    >
+                        {paletteQuality ? 'Palette Quality: High' : 'Palette Quality: Fast'}
+                    </button>
                 </div>
 
                 <div className="mt-auto pt-6 border-t border-zinc-800 space-y-3">

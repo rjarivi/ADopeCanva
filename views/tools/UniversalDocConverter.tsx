@@ -28,10 +28,13 @@ type ConversionType =
     'md-to-html' | 'md-to-pdf' |
     'html-to-pdf' | 'img-to-pdf' |
     'excel-to-csv' | 'excel-to-json' | 'excel-to-html' | 'excel-to-txt' |
-    'pdf-to-img' | 'pdf-to-txt' | 'pdf-to-docx' | 'pdf-to-epub' |
+    'pdf-to-img' | 'pdf-to-txt' | 'pdf-to-docx' |
     'epub-to-pdf' | 'heic-to-pdf' | 'heic-to-jpg' |
-    'ebook-txt-extract' | 'azw-to-epub' | 'azw-to-mobi' | 'azw-to-pdf' |
-    'mobi-to-pdf' | 'fb2-to-pdf' | 'epub-to-docx';
+    'ebook-txt-extract' | 'fb2-to-pdf' | 'epub-to-docx';
+// NOTE: 'azw-to-*', 'mobi-to-*' and all '-to-epub' conversions were removed on purpose:
+// AZW/MOBI are binary containers (text-stripping them yields garbage), and the old
+// "EPUB" output was actually plain HTML renamed with an .epub extension. Neither
+// produces a real, usable file in a browser, so they are not offered anymore.
 
 export const UniversalDocConverter: React.FC = () => {
     const [file, setFile] = useState<FileData | null>(null);
@@ -60,9 +63,8 @@ export const UniversalDocConverter: React.FC = () => {
         else if (['jpg', 'png', 'jpeg', 'webp'].includes(ext || '')) setConversionType('img-to-pdf');
         else if (ext === 'pdf') setConversionType('pdf-to-img');
         else if (ext === 'epub') setConversionType('epub-to-pdf');
-        else if (['heic', 'heif'].includes(ext || '')) setConversionType('heic-to-pdf');
-        else if (ext === 'azw' || ext === 'azw3') setConversionType('azw-to-pdf');
-        else if (ext === 'mobi') setConversionType('mobi-to-pdf');
+        else if (ext === 'heic' || ext === 'heif') setConversionType('heic-to-pdf');
+        else if (ext === 'azw' || ext === 'azw3' || ext === 'mobi') setConversionType('ebook-txt-extract'); // placeholder flag — AZW/MOBI paths are blocked in the UI
         else if (ext === 'fb2' || ext === 'fbz') setConversionType('fb2-to-pdf');
         else setConversionType('docx-to-pdf');
     };
@@ -345,7 +347,7 @@ export const UniversalDocConverter: React.FC = () => {
                     downloadExt = 'jpg';
                 }
             }
-            else if (conversionType.startsWith('epub-') || conversionType.startsWith('azw-') || conversionType.startsWith('mobi-') || conversionType.startsWith('fb2-') || conversionType === 'ebook-txt-extract' || conversionType === 'pdf-to-epub') {
+            else if (conversionType.startsWith('epub-') || conversionType.startsWith('fb2-') || conversionType === 'ebook-txt-extract') {
                 let fullText = '';
                 let title = 'Document';
 
@@ -373,12 +375,10 @@ export const UniversalDocConverter: React.FC = () => {
                         fullText += textContent.items.map((item: any) => item.str).join(' ') + '\n';
                     }
                 } else {
+                    // FB2 is XML — strip tags. Binary ebook containers (AZW/MOBI) never reach
+                    // this branch via the UI because those conversions are unsupported.
                     const text = await file.file.text();
-                    if (file.file.name.endsWith('.fb2')) {
-                        fullText = text.replace(/<[^>]*>?/gm, ' ');
-                    } else {
-                        fullText = text.replace(/[^\x20-\x7E\n\t]/g, '');
-                    }
+                    fullText = text.replace(/<[^>]*>?/gm, ' ');
                 }
 
                 if (conversionType.endsWith('-pdf')) {
@@ -408,10 +408,6 @@ export const UniversalDocConverter: React.FC = () => {
                     });
                     blob = await Packer.toBlob(doc);
                     downloadExt = 'docx';
-                } else if (conversionType.endsWith('-epub')) {
-                    const htmlContent = `<html><body><h1>${title}</h1><pre>${fullText}</pre></body></html>`;
-                    blob = new Blob([htmlContent], { type: 'application/epub+zip' });
-                    downloadExt = 'epub';
                 } else {
                     blob = new Blob([fullText], { type: 'text/plain' });
                     downloadExt = 'txt';
@@ -530,6 +526,19 @@ export const UniversalDocConverter: React.FC = () => {
 
                         {file && !resultUrl && (
                             <div className="mt-8 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+                                {/\.(azw3?|mobi)$/i.test(file.file.name) && (
+                                    <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-5 flex items-start gap-4 text-left">
+                                        <AlertCircle size={20} className="text-zinc-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-zinc-300 mb-1">AZW / MOBI not supported</p>
+                                            <p className="text-xs text-zinc-500 leading-relaxed">
+                                                AZW/MOBI are DRM-era binary ebook containers that browsers cannot decode —
+                                                converting them would produce a corrupt file. Please convert to EPUB or PDF
+                                                with a desktop tool first, or use the dedicated PDF/EPUB tools here.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-6">
                                     <SectionLabel className="flex items-center gap-2">
                                         <FileOutput size={16} className="text-indigo-500" />
@@ -543,7 +552,6 @@ export const UniversalDocConverter: React.FC = () => {
                                                 {renderOption('pdf-to-img', ImageIcon, 'Images (ZIP)')}
                                                 {renderOption('pdf-to-docx', FileText, 'Word Doc')}
                                                 {renderOption('pdf-to-txt', FileText, 'Plain Text')}
-                                                {renderOption('pdf-to-epub', BookOpen, 'EPUB')}
                                             </>
                                         )}
                                         {file.file.name.toLowerCase().endsWith('.docx') && (
@@ -552,7 +560,7 @@ export const UniversalDocConverter: React.FC = () => {
                                                 {renderOption('docx-to-html', FileCode, 'HTML')}
                                             </>
                                         )}
-                                        {['.epub', '.mobi', '.azw', '.azw3', '.fb2', '.fbz'].some(e => file.file.name.toLowerCase().endsWith(e)) && (
+                                        {['.epub', '.fb2', '.fbz'].some(e => file.file.name.toLowerCase().endsWith(e)) && (
                                             <>
                                                 {renderOption(conversionType.includes('-pdf') ? conversionType : `${file.file.name.split('.').pop()}-to-pdf` as any, FileOutput, 'PDF')}
                                                 {renderOption(conversionType.includes('-docx') ? conversionType : `${file.file.name.split('.').pop()}-to-docx` as any, FileText, 'Word Doc')}
@@ -592,10 +600,16 @@ export const UniversalDocConverter: React.FC = () => {
                                         </div>
                                     )}
 
-                                    <Button onClick={processFile} disabled={isProcessing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]" >
-                                        {isProcessing ? <Loader2 className="animate-spin mr-3" size={24} /> : <ArrowRight className="mr-3" size={24} />}
-                                        {isProcessing ? 'Converting...' : 'Start Conversion'}
-                                    </Button>
+                                    {/\.(azw3?|mobi)$/i.test(file.file.name) ? (
+                                        <Button disabled className="w-full bg-zinc-800 text-zinc-500 py-6 text-lg font-bold rounded-2xl cursor-not-allowed" >
+                                            Unsupported Format
+                                        </Button>
+                                    ) : (
+                                        <Button onClick={processFile} disabled={isProcessing} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 text-lg font-bold rounded-2xl shadow-xl shadow-indigo-600/20 transform transition-transform hover:scale-[1.02] active:scale-[0.98]" >
+                                            {isProcessing ? <Loader2 className="animate-spin mr-3" size={24} /> : <ArrowRight className="mr-3" size={24} />}
+                                            {isProcessing ? 'Converting...' : 'Start Conversion'}
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {error && (

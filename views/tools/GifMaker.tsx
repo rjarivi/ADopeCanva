@@ -51,6 +51,8 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
   const [isFramesCollapsed, setIsFramesCollapsed] = useState(false);
   const [isProCollapsed, setIsProCollapsed] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [loopCount, setLoopCount] = useState(0); // 0 = infinite
+  const [reverseFrames, setReverseFrames] = useState(false);
 
   // Viewport State
   const [zoom, setZoom] = useState(1);
@@ -362,7 +364,8 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
         });
       };
 
-      const selectedFiles = files.slice(frameRange[0], frameRange[1] + 1);
+      const selectedFilesAll = files.slice(frameRange[0], frameRange[1] + 1);
+      const selectedFiles = reverseFrames ? [...selectedFilesAll].reverse() : selectedFilesAll;
       const framesData: { name: string, duration: number }[] = [];
       let frameCounter = 0;
 
@@ -430,12 +433,12 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
       if (outputFormat === 'gif') {
         // High quality palette generation + force single thread for concat stability
         args.push('-vf', 'split[a][b];[a]palettegen[p];[b][p]paletteuse');
-        args.push('-loop', '0');
+        args.push('-loop', String(loopCount)); // 0 = infinite
         args.push('-threads', '1');
       } else if (outputFormat === 'apng') {
-        args.push('-f', 'apng', '-plays', '0', '-threads', '1');
+        args.push('-f', 'apng', '-plays', String(loopCount), '-threads', '1');
       } else if (outputFormat === 'webp') {
-        args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', '0', '-threads', '1');
+        args.push('-c:v', 'libwebp', '-lossless', '0', '-loop', String(loopCount), '-threads', '1');
       }
 
       args.push('-y', outputFilename);
@@ -662,6 +665,29 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
                           </button>
                         ))}
                       </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest pl-1">Loop Count</div>
+                      <div className="grid grid-cols-5 gap-2">
+                        {[0, 1, 2, 3, 5].map(n => (
+                          <button
+                            key={n}
+                            onClick={() => { setLoopCount(n); setIsProMode(true); }}
+                            className={`py-2 rounded-xl transition-all text-[10px] font-bold uppercase border ${loopCount === n ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-indigo-500/40'}`}
+                            title={n === 0 ? 'Loop forever' : `Play ${n} time${n > 1 ? 's' : ''}`}
+                          >
+                            {n === 0 ? '∞' : n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <button
+                        onClick={() => { setReverseFrames(r => !r); setIsProMode(true); }}
+                        className={`w-full py-2.5 rounded-xl transition-all text-[10px] font-bold uppercase tracking-wider border ${reverseFrames ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-indigo-500/40'}`}
+                      >
+                        {reverseFrames ? 'Frames Reversed' : 'Reverse Frame Order'}
+                      </button>
                     </div>
                   </div>
                 )}

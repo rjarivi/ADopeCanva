@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { FileData } from '../../types';
-import { Music, Mic2, Download, CheckCircle, RefreshCcw, Settings2, AlertCircle, Loader2 } from 'lucide-react';
+import { Music, Mic2, Download, CheckCircle, RefreshCcw, Settings2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { SectionLabel } from '../../components/EditorControls';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -12,6 +12,32 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 
 const AUDIO_FORMATS = ['MP3', 'WAV', 'AAC', 'FLAC', 'M4A', 'OGG'];
 const BITRATES = ['128k', '192k', '256k', '320k'];
+
+// Lightweight input-file waveform peaks for the visualizer panel
+async function decodePeaks(file: File, sampleCount = 64): Promise<{ peaks: number[]; duration: number }> {
+    const ctx = new AudioContext();
+    try {
+        const buf = await file.arrayBuffer();
+        const audio = await ctx.decodeAudioData(buf);
+        const ch = audio.getChannelData(0);
+        const chunk = Math.max(1, Math.floor(ch.length / sampleCount));
+        const peaks: number[] = [];
+        let max = 0.001;
+        for (let i = 0; i < sampleCount; i++) {
+            let peak = 0;
+            const end = Math.min(i * chunk + chunk, ch.length);
+            for (let j = i * chunk; j < end; j++) {
+                const abs = Math.abs(ch[j]);
+                if (abs > peak) peak = abs;
+            }
+            peaks.push(peak);
+            if (peak > max) max = peak;
+        }
+        return { peaks: peaks.map(p => p / max), duration: audio.duration };
+    } finally {
+        if (ctx.state !== 'closed') await ctx.close();
+    }
+}
 
 export const AudioConverter: React.FC = () => {
   const isMobile = useIsMobile();
@@ -25,8 +51,36 @@ export const AudioConverter: React.FC = () => {
   const [logs, setLogs] = useState<string>('');
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [convertError, setConvertError] = useState<string>('');
+  const [inputUrl, setInputUrl] = useState<string | null>(null);
+  const [normalize, setNormalize] = useState(false);
+  const [channelMode, setChannelMode] = useState<'auto' | 'stereo' | 'mono'>('auto');
+  const [sampleRate, setSampleRate] = useState<'original' | '44100' | '48000' | '22050'>('original');
+  const [peaks, setPeaks] = useState<number[]>([]);
+  const [sourceDuration, setSourceDuration] = useState(0);
 
   const ffmpegRef = useRef<FFmpeg | null>(null);
+
+  // Decode lightweight peaks for the input file
+  useEffect(() => {
+    if (!file) { setInputUrl(null); setPeaks([]); setSourceDuration(0); return; }
+    const url = URL.createObjectURL(file.file);
+    setInputUrl(url);
+    setPeaks([]);
+    setSourceDuration(0);
+    let cancelled = false;
+    decodePeaks(file.file)
+      .then(({ peaks, duration }) => {
+        if (cancelled) return;
+        setPeaks(peaks);
+        setSourceDuration(duration);
+      })
+      .catch(() => { /* waveform is decorative; conversion still works */ });
+    return () => {
+      cancelled = true;
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
 
   useEffect(() => {
     getFFmpeg()
@@ -46,6 +100,7 @@ export const AudioConverter: React.FC = () => {
     setIsProcessing(true);
     setProgress(0);
     setIsDone(false);
+    setConvertError('');
     setLogs('Starting audio conversion...');
 
     const ffmpeg = ffmpegRef.current;
@@ -56,20 +111,26 @@ export const AudioConverter: React.FC = () => {
     setConvertedUrl(null);
 
     try {
-      ffmpeg.on('progress', ({ progress }) => {
+      const onProgress = ({ progress }: { progress: number }) => {
         setProgress(Math.round(progress * 100));
-      });
-
-      ffmpeg.on('log', ({ message }) => {
+      };
+      const onLog = ({ message }: { message: string }) => {
         setLogs(prev => prev + '\n' + message);
-      });
-
+      };
+      ffmpeg.on('progress', onProgress);
+      ffmpeg.on('log', onLog);
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
       const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
         ? Math.min(navigator.hardwareConcurrency, 4).toString()
         : '2';
       const args = ['-y', '-i', inputName, '-threads', threads];
+      const filters: string[] = [];
+      if (normalize) filters.push('loudnorm=I=-16:TP=-1.5:LRA=11');
+      if (filters.length > 0) args.push('-af', filters.join(','));
+      if (channelMode === 'stereo') args.push('-ac', '2');
+      else if (channelMode === 'mono') args.push('-ac', '1');
+      if (sampleRate !== 'original') args.push('-ar', sampleRate);
 
       // Audio Codec Logic
       switch (format) {
@@ -120,12 +181,13 @@ export const AudioConverter: React.FC = () => {
 
     } catch (e) {
       console.error(e);
-      setLogs(prev => prev + `\nError: ${(e as Error).message} `);
+      const msg = (e as Error).message || 'Audio conversion failed';
+      setConvertError(msg);
+      setLogs(prev => prev + `\nError: ${msg}`);
     } finally {
       setIsProcessing(false);
     }
   };
-
   const handleDownload = () => {
     if (!convertedUrl) return;
     const a = document.createElement('a');
@@ -144,6 +206,7 @@ export const AudioConverter: React.FC = () => {
     setIsProcessing(false);
     setConvertedUrl(null);
     setLogs('');
+    setConvertError('');
   };
 
   if (engineStatus === 'error') {
@@ -279,7 +342,50 @@ export const AudioConverter: React.FC = () => {
                 </select>
                 {(format === 'WAV' || format === 'FLAC') && <p className="text-xs text-zinc-500">Bitrate selection not applicable for lossless formats.</p>}
               </div>
+
+              <div className="space-y-3">
+                <SectionLabel>Channels & Sample Rate</SectionLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  <select
+                    value={channelMode}
+                    onChange={(e) => { setChannelMode(e.target.value as typeof channelMode); setIsDone(false); setConvertedUrl(null); }}
+                    disabled={isProcessing}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="auto">Original Channels</option>
+                    <option value="stereo">Stereo</option>
+                    <option value="mono">Mono</option>
+                  </select>
+                  <select
+                    value={sampleRate}
+                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setIsDone(false); setConvertedUrl(null); }}
+                    disabled={isProcessing}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="original">Original Sample Rate</option>
+                    <option value="44100">44100 Hz</option>
+                    <option value="48000">48000 Hz</option>
+                    <option value="22050">22050 Hz</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { setNormalize(prev => !prev); setIsDone(false); setConvertedUrl(null); }}
+                disabled={isProcessing}
+                className={`w-full py-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${normalize ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
+              >
+                <Sparkles size={14} />
+                Normalize Loudness {normalize ? 'On' : 'Off'}
+              </button>
             </div>
+
+            {convertError && (
+              <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-2xl text-xs text-red-400 flex items-start gap-2 animate-fade-in">
+                <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                <span className="break-all">{convertError}</span>
+              </div>
+            )}
 
             {isProcessing && (
               <div className="h-24 bg-black/40 rounded-xl p-3 overflow-y-auto text-xs font-mono text-zinc-500 border border-zinc-800 custom-scrollbar">
@@ -303,20 +409,17 @@ export const AudioConverter: React.FC = () => {
             )}
           </div>
 
-          {/* Visualizer */}
+          {/* Visualizer & A/B Preview */}
           <div className="relative aspect-square md:aspect-[4/3] rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-            {/* Sound Wave Visualization Simulation */}
-            <div className="absolute inset-0 flex items-center justify-center gap-1 opacity-20">
-              {Array.from({ length: 20 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-2 bg-indigo-500 rounded-full transition-all duration-300 ${isProcessing ? 'animate-pulse' : ''}`}
-                  style={{
-                    height: `${Math.random() * 60 + 20}% `,
-                    animationDelay: `${i * 0.1} s`
-                  }}
-                />
-              ))}
+            {/* Real input waveform (static, lightweight) */}
+            <div className="absolute inset-x-6 flex items-center justify-center gap-0.5 opacity-20 h-1/2 pointer-events-none">
+              {peaks.length > 0 ? peaks.map((p, i) => (
+                <div key={i} className="flex-1 bg-indigo-500 rounded-full" style={{ height: `${Math.max(4, p * 100)}%` }} />
+              )) : (
+                Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className={`w-2 bg-indigo-500 rounded-full ${isProcessing ? 'animate-pulse' : ''}`} style={{ height: '30%' }} />
+                ))
+              )}
             </div>
 
             {isProcessing ? (
@@ -325,26 +428,46 @@ export const AudioConverter: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-white font-black font-unbounded uppercase tracking-wider text-sm">Converting...</p>
                   <div className="h-2 w-full bg-zinc-800 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}% ` }}></div>
+                    <div className="h-full bg-indigo-500 transition-all duration-300" style={{ width: `${progress}%` }}></div>
                   </div>
                 </div>
               </div>
             ) : isDone ? (
-              <div className="z-10 space-y-4 animate-slide-up">
-                <div className="w-20 h-20 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mx-auto border border-green-500/30">
-                  <CheckCircle size={40} />
+              <div className="z-10 space-y-4 animate-slide-up w-full max-w-xs">
+                <div className="w-16 h-16 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mx-auto border border-green-500/30">
+                  <CheckCircle size={32} />
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-white font-unbounded uppercase tracking-wider">Ready!</h3>
-                  <p className="text-zinc-500 mt-1">
-                    {file.file.name.split('.')[0]}_converted.{format.toLowerCase()}
-                  </p>
-                </div>
+                <h3 className="text-lg font-black text-white font-unbounded uppercase tracking-wider">A/B Preview</h3>
+
+                {/* Original preview */}
+                {inputUrl && (
+                  <div className="text-left space-y-1">
+                    <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Original</span>
+                    {sourceDuration > 0 && (
+                      <p className="text-[10px] text-zinc-500 font-mono">{sourceDuration.toFixed(1)}s</p>
+                    )}
+                    <audio src={inputUrl} controls className="w-full h-8" />
+                  </div>
+                )}
+
+                {/* Converted preview */}
+                {convertedUrl && (
+                  <div className="text-left space-y-1">
+                    <span className="text-[10px] text-indigo-400 uppercase tracking-widest font-bold">Converted ({format})</span>
+                    <audio src={convertedUrl} controls className="w-full h-8" />
+                  </div>
+                )}
+
+                <p className="text-[10px] text-zinc-600 font-mono truncate">
+                  {file?.file.name.split('.')[0] || 'audio'}_converted.{format.toLowerCase()}
+                </p>
               </div>
             ) : (
               <div className="z-10 opacity-50 space-y-2">
                 <Mic2 size={48} className="mx-auto text-zinc-600" />
-                <p className="text-zinc-500">Ready to convert</p>
+                <p className="text-zinc-500">
+                  {sourceDuration > 0 ? `Ready to convert • ${sourceDuration.toFixed(1)}s source` : 'Ready to convert'}
+                </p>
               </div>
             )}
           </div>

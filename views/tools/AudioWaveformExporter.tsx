@@ -197,6 +197,11 @@ export const AudioWaveformExporter: React.FC = () => {
     const [maskImageSrc, setMaskImageSrc] = useState<string | null>(null);
     const maskInputRef = useRef<HTMLInputElement>(null);
 
+    // Export
+    const [pngScale, setPngScale] = useState(1);
+    const [isRasterizing, setIsRasterizing] = useState(false);
+    const [exportError, setExportError] = useState('');
+
     const samplesRef = useRef(samples);
     samplesRef.current = samples;
 
@@ -253,6 +258,7 @@ export const AudioWaveformExporter: React.FC = () => {
         setAudioUrl(null);
         setIsPlaying(false);
         setCurrentTime(0);
+        setExportError('');
     }, [audioUrl]);
 
     // ── SVG generation ────────────────────────────────────────────────────────
@@ -459,6 +465,40 @@ export const AudioWaveformExporter: React.FC = () => {
         await navigator.clipboard.writeText(svgString);
         setCopied(true); setTimeout(() => setCopied(false), 2000);
     }, [svgString]);
+
+    // Rasterize the generated SVG to a transparent PNG at ×pngScale resolution
+    const handleDownloadPng = useCallback(async () => {
+        if (!svgString) return;
+        setIsRasterizing(true); setExportError('');
+        try {
+            const blobUrl = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' }));
+            const img = new Image();
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('Failed to rasterize SVG'));
+                img.src = blobUrl;
+            });
+            const canvas = document.createElement('canvas');
+            canvas.width = svgWidth * pngScale;
+            canvas.height = svgHeight * pngScale;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas unavailable in this browser');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(blobUrl);
+            const blob = await new Promise<Blob | null>(res => canvas.toBlob(res, 'image/png'));
+            if (!blob) throw new Error('PNG encoding failed');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `waveform-${waveStyle}-${svgWidth * pngScale}x${svgHeight * pngScale}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            setExportError((e as Error).message || 'PNG export failed');
+        } finally {
+            setIsRasterizing(false);
+        }
+    }, [svgString, svgWidth, svgHeight, pngScale, waveStyle]);
 
     const handleMaskImage = (e: React.ChangeEvent<HTMLInputElement>) => {
         const f = e.target.files?.[0]; if (!f) return;
@@ -772,12 +812,25 @@ export const AudioWaveformExporter: React.FC = () => {
                         </>
                     )}
                     <span className="text-xs text-zinc-600 font-mono truncate flex-1">{file?.file.name}</span>
+                    {exportError && (
+                        <span className="hidden md:inline text-[10px] text-red-400 max-w-[180px] truncate" title={exportError}>{exportError}</span>
+                    )}
+                    <div className="hidden md:flex items-center gap-1 shrink-0">
+                        {([1, 2, 4] as const).map(s => (
+                            <Pill key={s} sm active={pngScale === s} onClick={() => setPngScale(s)}>{s}x</Pill>
+                        ))}
+                    </div>
                     <button onClick={handleCopy}
-                        className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all">
+                        className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shrink-0">
                         {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
                         {copied ? 'Copied!' : 'Copy SVG'}
                     </button>
-                    <Button onClick={handleDownload} variant="primary" className="flex items-center gap-2 text-xs font-bold">
+                    <button onClick={handleDownloadPng} disabled={isRasterizing}
+                        className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold transition-all shrink-0 disabled:opacity-50">
+                        <ImageIcon size={13} />
+                        {isRasterizing ? 'Rendering…' : 'PNG'}
+                    </button>
+                    <Button onClick={handleDownload} variant="primary" className="flex items-center gap-2 text-xs font-bold shrink-0">
                         <Download size={13} /> Export SVG
                     </Button>
                 </div>

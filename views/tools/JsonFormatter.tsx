@@ -1,30 +1,90 @@
 /// <reference lib="dom" />
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { FileJson, Braces, Copy, Check, Trash2, Wand2, Minimize, Download } from 'lucide-react';
+
+// Extract a friendly "line:column" hint from a JSON.parse error.
+// V8 messages contain either "at position N" (absolute char index) or
+// "at line L column C" (newer V8). Also handle SpiderMonkey ("at line L column C of the JSON data").
+function extractErrorPosition(message: string, input: string): string | null {
+    try {
+        const lineCol = message.match(/at line (\d+) column (\d+)/);
+        if (lineCol) return `line ${lineCol[1]}, column ${lineCol[2]}`;
+
+        const posMatch = message.match(/at position (\d+)/i);
+        if (posMatch) {
+            const pos = parseInt(posMatch[1], 10);
+            const before = input.slice(0, pos);
+            const line = before.split('\n').length;
+            const col = pos - before.lastIndexOf('\n');
+            return `line ${line}, column ${col}`;
+        }
+    } catch {
+        // fall through — never fail because of error formatting
+    }
+    return null;
+}
+
+const INDENT_OPTIONS: { value: string; label: string }[] = [
+    { value: '2', label: '2 Spaces' },
+    { value: '4', label: '4 Spaces' },
+    { value: 'tab', label: 'Tab' },
+];
+
+function getIndent(value: string): string | number {
+    return value === 'tab' ? '\t' : parseInt(value, 10);
+}
+
+/** Recursively sort object keys (arrays keep order) */
+function sortKeysDeep(value: any): any {
+    if (Array.isArray(value)) return value.map(sortKeysDeep);
+    if (value && typeof value === 'object') {
+        const out: Record<string, any> = {};
+        for (const key of Object.keys(value).sort()) out[key] = sortKeysDeep(value[key]);
+        return out;
+    }
+    return value;
+}
 
 export const JsonFormatter: React.FC = () => {
     const [input, setInput] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const [indent, setIndent] = useState('2');
+    const [sortKeys, setSortKeys] = useState(false);
+
+    const errorPosition = useMemo(
+        () => (error && input ? extractErrorPosition(error, input) : null),
+        [error, input]
+    );
+
+    const handleError = (e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError("Invalid JSON: " + msg);
+    };
+
+    const stringify = (parsed: any, minify: boolean) => {
+        const data = sortKeys ? sortKeysDeep(parsed) : parsed;
+        return minify ? JSON.stringify(data) : JSON.stringify(data, null, getIndent(indent));
+    };
 
     const handleFormat = () => {
         try {
             const parsed = JSON.parse(input);
-            setInput(JSON.stringify(parsed, null, 2));
+            setInput(stringify(parsed, false));
             setError(null);
         } catch (e) {
-            setError("Invalid JSON: " + (e as Error).message);
+            handleError(e);
         }
     };
 
     const handleMinify = () => {
         try {
             const parsed = JSON.parse(input);
-            setInput(JSON.stringify(parsed));
+            setInput(stringify(parsed, true));
             setError(null);
         } catch (e) {
-            setError("Invalid JSON: " + (e as Error).message);
+            handleError(e);
         }
     };
 
@@ -73,8 +133,26 @@ export const JsonFormatter: React.FC = () => {
 
             <div className="flex-1 bg-surface rounded-2xl border border-zinc-800 p-1 flex flex-col shadow-xl overflow-hidden">
                 {/* Toolbar */}
-                <div className="bg-zinc-900/50 border-b border-zinc-800 px-4 py-2 flex justify-between items-center">
-                    <span className="text-xs font-mono text-zinc-500">JSON Input / Output</span>
+                <div className="bg-zinc-900/50 border-b border-zinc-800 px-4 py-2 flex justify-between items-center gap-3">
+                    <div className="flex gap-2">
+                        <span className="text-xs font-mono text-zinc-500 mr-1">JSON Input / Output</span>
+                        <select
+                            value={indent}
+                            onChange={(e) => setIndent(e.target.value)}
+                            className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
+                        >
+                            {INDENT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                        <label className={`flex items-center gap-1.5 cursor-pointer select-none border rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${sortKeys ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-400' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}>
+                            <input
+                                type="checkbox"
+                                checked={sortKeys}
+                                onChange={(e) => setSortKeys(e.target.checked)}
+                                className="w-3 h-3 accent-indigo-500"
+                            />
+                            Sort Keys
+                        </label>
+                    </div>
                     <button
                         onClick={handleCopy}
                         className="text-xs flex items-center gap-1 text-zinc-400 hover:text-white transition-colors"
@@ -95,8 +173,11 @@ export const JsonFormatter: React.FC = () => {
 
                     {error && (
                         <div className="absolute bottom-4 left-4 right-4 bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl backdrop-blur-md text-sm font-mono flex items-center animate-slide-up">
-                            <Braces size={16} className="mr-2" />
-                            {error}
+                            <Braces size={16} className="mr-2 shrink-0" />
+                            <span>
+                                {error}
+                                {errorPosition && <span className="text-red-300 ml-2">({errorPosition})</span>}
+                            </span>
                         </div>
                     )}
                 </div>

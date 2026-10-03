@@ -215,6 +215,15 @@ export const ImageEditor: React.FC = () => {
         x: number, y: number, w: number, h: number, mx: number, my: number, fontSize?: number
     } | null>(null);
     const [isCropping, setIsCropping] = useState(false);
+    // Full-canvas crop mask (export crop) — a drag-rect over the composed canvas
+    const [cropMode, setCropMode] = useState(false);
+    interface ExportCropRect { x: number; y: number; w: number; h: number }
+    const [exportCrop, setExportCrop] = useState<ExportCropRect | null>(null);
+    const [isExportCropDragging, setIsExportCropDragging] = useState(false);
+    const cropDragStartRef = useRef({ x: 0, y: 0 });
+    // Export options
+    const [exportFormat, setExportFormat] = useState<'image/png' | 'image/jpeg' | 'image/webp'>('image/png');
+    const [exportQuality, setExportQuality] = useState(90);
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
     const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
     const [clipboard, setClipboard] = useState<Layer | null>(null);
@@ -883,14 +892,80 @@ export const ImageEditor: React.FC = () => {
     const activeLayer = layers.find(l => l.id === activeLayerId);
 
     // File Download
+    // Builds the export canvas: the composed composition, with the crop mask
+    // applied (if active) before export.
+    const buildExportCanvas = (): HTMLCanvasElement | null => {
+        const src = canvasRef.current;
+        if (!src) return null;
+
+        if (!exportCrop) return src;
+
+        // Clamp crop rect to canvas bounds
+        const cx = Math.max(0, Math.round(exportCrop.x));
+        const cy = Math.max(0, Math.round(exportCrop.y));
+        const cw = Math.min(src.width - cx, Math.max(1, Math.round(exportCrop.w)));
+        const ch = Math.min(src.height - cy, Math.max(1, Math.round(exportCrop.h)));
+        if (cw <= 0 || ch <= 0) return src;
+
+        const out = document.createElement('canvas');
+        out.width = cw;
+        out.height = ch;
+        const outCtx = out.getContext('2d');
+        if (!outCtx) return null;
+        outCtx.drawImage(src, cx, cy, cw, ch, 0, 0, cw, ch);
+        return out;
+    };
+
+    // Derive export filename from the source image name where possible
+    const getExportBaseName = (): string => {
+        const firstImageLayer = layers.find(l => l.type === 'image');
+        if (firstImageLayer?.name) {
+            return firstImageLayer.name.replace(/\.[^.]+$/, '') || 'edited-image';
+        }
+        return 'edited-image';
+    };
+
     const downloadImage = () => {
-        const canvas = canvasRef.current;
+        const canvas = buildExportCanvas();
         if (!canvas) return;
+        const ext = exportFormat === 'image/png' ? 'png' : exportFormat === 'image/jpeg' ? 'jpg' : 'webp';
         const link = document.createElement('a');
-        link.download = 'edited-image.png';
-        link.href = canvas.toDataURL('image/png');
+        link.download = `${getExportBaseName()}-edited.${ext}`;
+        link.href = canvas.toDataURL(exportFormat, exportFormat === 'image/png' ? undefined : exportQuality / 100);
         link.click();
     };
+
+    // Export-crop drag interaction over the canvas
+    useEffect(() => {
+        if (!isExportCropDragging) return;
+        const handleMove = (e: MouseEvent) => {
+            const rect = canvasRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const x = ((e.clientX - rect.left) / rect.width) * canvasSize.width;
+            const y = ((e.clientY - rect.top) / rect.height) * canvasSize.height;
+            const sx = cropDragStartRef.current.x;
+            const sy = cropDragStartRef.current.y;
+            setExportCrop({
+                x: Math.max(0, Math.min(sx, x, canvasSize.width)),
+                y: Math.max(0, Math.min(sy, y, canvasSize.height)),
+                w: Math.max(0, Math.min(Math.max(sx, x), canvasSize.width) - Math.max(0, Math.min(sx, x, canvasSize.width))),
+                h: Math.max(0, Math.min(Math.max(sy, y), canvasSize.height) - Math.max(0, Math.min(sy, y, canvasSize.height))),
+            });
+        };
+        const handleUp = () => {
+            setExportCrop(prev => {
+                if (prev && (prev.w < 5 || prev.h < 5)) return null; // ignore tiny accidental drags
+                return prev;
+            });
+            setIsExportCropDragging(false);
+        };
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMove);
+            window.removeEventListener('mouseup', handleUp);
+        };
+    }, [isExportCropDragging, canvasSize.width, canvasSize.height]);
 
 
 
@@ -2274,6 +2349,51 @@ export const ImageEditor: React.FC = () => {
                     </div>
                 </div >
 
+                {/* Export Options */}
+                < div className={`${isMobile ? 'px-4 pt-3' : 'px-4 pt-3'} bg-zinc-950 space-y-3`}>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => { setCropMode(m => !m); setExportCrop(null); }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all ${cropMode ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
+                            title="Crop final composition at export"
+                        >
+                            <Crop size={14} /> {cropMode ? 'Crop On' : 'Crop Mode'}
+                        </button>
+                        {cropMode && exportCrop && (
+                            <button
+                                onClick={() => setExportCrop(null)}
+                                className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-all"
+                                title="Reset crop"
+                            >
+                                <RotateCcw size={14} />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <select
+                            value={exportFormat}
+                            onChange={(e) => setExportFormat(e.target.value as 'image/png' | 'image/jpeg' | 'image/webp')}
+                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl text-xs p-2.5 text-zinc-300 outline-none focus:border-zinc-700 cursor-pointer"
+                            title="Export format"
+                        >
+                            <option value="image/png">PNG</option>
+                            <option value="image/jpeg">JPG</option>
+                            <option value="image/webp">WEBP</option>
+                        </select>
+                        <div className={`flex items-center gap-2 flex-1 ${exportFormat === 'image/png' ? 'opacity-40 pointer-events-none' : ''}`}>
+                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest whitespace-nowrap">Quality</span>
+                            <input
+                                type="range"
+                                min={10} max={100}
+                                value={exportQuality}
+                                onChange={(e) => setExportQuality(parseInt(e.target.value))}
+                                className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:rounded-full"
+                            />
+                            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded">{exportQuality}</span>
+                        </div>
+                    </div>
+                </div >
+
                 {/* Export Button */}
                 < div className={`${isMobile ? 'p-4 border-t-0' : 'p-4 border-t border-zinc-800'} bg-zinc-950 mt-auto shrink-0 z-10 w-full`}>
                     <div className="flex items-center gap-2">
@@ -2373,6 +2493,19 @@ export const ImageEditor: React.FC = () => {
                             height={canvasSize.height}
                             className={`block w-full h-full bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] ${isDragging ? 'cursor-grabbing' : isCanvasLocked ? 'cursor-not-allowed' : 'cursor-grab'}`}
                             onMouseDown={(e) => {
+                                if (cropMode && !isCanvasLocked) {
+                                    // Begin export-crop mask drag (in canvas coordinates)
+                                    const rect = canvasRef.current?.getBoundingClientRect();
+                                    if (rect) {
+                                        const x = ((e.clientX - rect.left) / rect.width) * canvasSize.width;
+                                        const y = ((e.clientY - rect.top) / rect.height) * canvasSize.height;
+                                        cropDragStartRef.current = { x, y };
+                                        setExportCrop({ x, y, w: 0, h: 0 });
+                                        setIsExportCropDragging(true);
+                                    }
+                                    e.stopPropagation();
+                                    return;
+                                }
                                 if (isCanvasLocked) return;
                                 const rect = canvasRef.current?.getBoundingClientRect();
                                 const canvas = canvasRef.current;
@@ -2514,6 +2647,30 @@ export const ImageEditor: React.FC = () => {
                                 }
                             }}
                         />
+
+                        {/* Export Crop Mask Overlay */}
+                        {cropMode && (
+                            <div className="absolute inset-0 z-[15] pointer-events-none" style={{ cursor: 'crosshair' }}>
+                                {exportCrop && exportCrop.w > 0 && exportCrop.h > 0 && (
+                                    <div
+                                        className="absolute border-2 border-indigo-400"
+                                        style={{
+                                            left: `${exportCrop.x * zoom}px`,
+                                            top: `${exportCrop.y * zoom}px`,
+                                            width: `${exportCrop.w * zoom}px`,
+                                            height: `${exportCrop.h * zoom}px`,
+                                            boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+                                            background: 'rgba(79,70,229,0.05)',
+                                            pointerEvents: 'none',
+                                        }}
+                                    >
+                                        <span className="absolute -top-5 right-0 text-[10px] font-mono text-indigo-300 bg-zinc-900/90 px-1.5 py-0.5 rounded border border-zinc-800">
+                                            {Math.round(exportCrop.w)}×{Math.round(exportCrop.h)}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Inline Text Editor Overlay */}
                         {editingTextLayerId && (() => {

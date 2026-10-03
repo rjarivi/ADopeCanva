@@ -25,6 +25,9 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
   const [progress, setProgress] = useState(0);
   const [width, setWidth] = useState(480);
   const [quality, setQuality] = useState<'high' | 'standard'>('high');
+  const [loopCount, setLoopCount] = useState(0); // 0 = infinite
+  const [reverse, setReverse] = useState(false);
+  const [cropAspect, setCropAspect] = useState<'none' | '1:1' | '4:3' | '16:9' | '9:16'>('none');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
@@ -139,7 +142,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     setLogs([]);
     const ffmpeg = ffmpegRef.current;
     const inputName = 'input.mp4';
-    const outputName = `output.${outputFormat} `;
+    const outputName = `output.${outputFormat}`;
 
     // Progress Handler
     const onProgress = ({ progress }: { progress: number }) => {
@@ -174,8 +177,20 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
       filters.push(`trim = start = ${trimRange[0]}: end = ${trimRange[1]} `);
       filters.push('setpts=PTS-STARTPTS');
 
+      // Center-crop to an aspect ratio preset (commas escaped inside expressions)
+      if (cropAspect !== 'none') {
+        const a: Record<string, number> = { '1:1': 1, '4:3': 4 / 3, '16:9': 16 / 9, '9:16': 9 / 16 };
+        const ar = a[cropAspect];
+        filters.push(
+          `crop=min(iw\\,ih*${ar.toFixed(4)}):min(ih\\,iw/${ar.toFixed(4)}):(iw-min(iw\\,ih*${ar.toFixed(4)}))/2:(ih-min(ih\\,iw/${ar.toFixed(4)}))/2`
+        );
+      }
+
       // Scaling
       filters.push(`fps = ${fps}, scale = ${width}: -1: flags = lanczos`);
+
+      // Reverse frame order (applied last so it reverses the final frame set)
+      if (reverse) filters.push('reverse');
 
       // Text Overlay
       if (text) {
@@ -210,17 +225,18 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
         }
         args.push('-vf', filterGraph);
         args.push('-f', 'gif');
+        args.push('-loop', String(loopCount)); // 0 = infinite
       } else if (outputFormat === 'apng') {
         // APNG
         args.push('-vf', filters.join(','));
         args.push('-f', 'apng');
-        args.push('-plays', '0');
+        args.push('-plays', String(loopCount)); // 0 = infinite
       } else {
         // WebP
         args.push('-vf', filters.join(','));
         args.push('-c:v', 'libwebp');
         args.push('-lossless', '0');
-        args.push('-loop', '0');
+        args.push('-loop', String(loopCount));
         args.push('-preset', 'default');
       }
 
@@ -252,7 +268,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
     const a = document.createElement('a');
     a.href = gifUrl;
     const nameWithoutExt = file?.file.name.substring(0, file.file.name.lastIndexOf('.')) || 'video';
-    a.download = `${nameWithoutExt}.gif`;
+    a.download = `${nameWithoutExt}.${outputFormat}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -467,6 +483,41 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
                   </select>
                 </div>
               </div>
+            </div>
+
+            {/* Loop / Reverse / Crop */}
+            <div className="space-y-4 pt-4 border-t border-zinc-900">
+              <SectionLabel>Playback & Framing</SectionLabel>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Loop</span>
+                  <select
+                    value={loopCount}
+                    onChange={(e) => { setLoopCount(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
+                  >
+                    <option value={0}>Infinite</option>
+                    {[1, 2, 3, 5].map(n => <option key={n} value={n}>{n} play{n > 1 ? 's' : ''}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Crop Aspect</span>
+                  <select
+                    value={cropAspect}
+                    onChange={(e) => { setCropAspect(e.target.value as typeof cropAspect); setIsDone(false); setGifUrl(null); }}
+                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="none">None</option>
+                    {(['1:1', '4:3', '16:9', '9:16'] as const).map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={() => { setReverse(r => !r); setIsDone(false); setGifUrl(null); }}
+                className={`w-full py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border transition-all ${reverse ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+              >
+                {reverse ? 'Reversed' : 'Reverse Frames'}
+              </button>
             </div>
 
             {/* Text Overlay */}

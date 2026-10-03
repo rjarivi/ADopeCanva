@@ -1,5 +1,5 @@
 /// <reference lib="dom" />
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Upload, X, File as FileIcon, Check } from 'lucide-react';
 import { FileData } from '../types';
 
@@ -55,6 +55,34 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
       handleFiles(Array.from(target.files));
     }
   };
+
+  // Paste-from-clipboard support: route image files pasted anywhere
+  // (while this component is mounted) through the same onSelect flow.
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      // Don't hijack paste inside focused text inputs
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const imageFiles: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const f = item.getAsFile();
+          if (f) imageFiles.push(f);
+        }
+      }
+      if (imageFiles.length > 0) {
+        e.preventDefault();
+        handleFiles(imageFiles);
+      }
+    };
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [multiple, onFileSelect, onFilesSelect]);
 
   const handleFiles = (files: File[]) => {
     if (!multiple && files.length > 1) {

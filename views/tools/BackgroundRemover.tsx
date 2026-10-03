@@ -1,15 +1,17 @@
 /// <reference lib="dom" />
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
 import { ApiKeyInput } from '../../components/ui/ApiKeyInput';
 import { FileData } from '../../types';
-import { Eraser, Download, RefreshCcw, Sliders, AlertCircle, Layers, Settings, Share2, Trash2, Sparkles } from 'lucide-react';
+import { Eraser, Download, RefreshCcw, Sliders, AlertCircle, Layers, Brush, Sparkles, Paintbrush } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { preprocessImageFileData } from '../../utils/imagePreprocess';
 
 import { useIsMobile } from '../../hooks/useIsMobile';
+
+type BrushMode = 'erase' | 'restore' | null;
 
 export const BackgroundRemover: React.FC = () => {
   const isMobile = useIsMobile();
@@ -24,15 +26,73 @@ export const BackgroundRemover: React.FC = () => {
   };
 
   const [resultImage, setResultImage] = useState<string | null>(null);
+  const [workingImage, setWorkingImage] = useState<string | null>(null); // current touch-up state
+  const [isEdited, setIsEdited] = useState(false);
+  const [brushMode, setBrushMode] = useState<BrushMode>(null);
+  const [brushRadius, setBrushRadius] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const [apiKey, setApiKey] = useState('');
 
+  // Touch-up refs: full-resolution offscreen working canvas + brush interaction
+  const workCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const originalImgRef = useRef<HTMLImageElement | null>(null);
+  const aiResultImgRef = useRef<HTMLImageElement | null>(null);
+  const viewCanvasRef = useRef<HTMLCanvasElement>(null);
+  const isBrushingRef = useRef(false);
+  const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  // Brush cursor preview position (CSS px over the display canvas)
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
+
   const handleReset = () => {
     setFile(null);
     setResultImage(null);
+    setWorkingImage(null);
+    setIsEdited(false);
+    setBrushMode(null);
     setError(null);
     setIsProcessing(false);
+    workCanvasRef.current = null;
+    aiResultImgRef.current = null;
+    originalImgRef.current = null;
+  };
+
+  // Sync brush display canvas with the working canvas whenever brush mode toggles on
+  useEffect(() => {
+    if (!brushMode || !workCanvasRef.current || !viewCanvasRef.current) return;
+    const ctx = viewCanvasRef.current.getContext('2d');
+    const w = workCanvasRef.current;
+    if (ctx && w.width > 0) {
+      viewCanvasRef.current.width = w.width;
+      viewCanvasRef.current.height = w.height;
+      ctx.clearRect(0, 0, w.width, w.height);
+      ctx.drawImage(w, 0, 0);
+    }
+  }, [brushMode, workingImage]);
+
+  const initWorkCanvas = async (aiUrl: string, originalUrl: string | undefined) => {
+    const loadImg = (src: string): Promise<HTMLImageElement> => new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i);
+      i.onerror = rej;
+      i.src = src;
+    });
+    try {
+      const aiImg = await loadImg(aiUrl);
+      aiResultImgRef.current = aiImg;
+      if (originalUrl) {
+        originalImgRef.current = await loadImg(originalUrl).catch(() => null);
+      }
+      const c = document.createElement('canvas');
+      c.width = aiImg.width;
+      c.height = aiImg.height;
+      const ctx = c.getContext('2d');
+      if (ctx) ctx.drawImage(aiImg, 0, 0);
+      workCanvasRef.current = c;
+    } catch (e) {
+      console.error('Failed to init touch-up canvas', e);
+    }
   };
 
   const getBase64 = (file: File): Promise<string> => {
@@ -94,7 +154,11 @@ export const BackgroundRemover: React.FC = () => {
           if (part.inlineData) {
             const base64EncodeString = part.inlineData.data;
             const imageUrl = `data:image/png;base64,${base64EncodeString}`;
+            await initWorkCanvas(imageUrl, file.previewUrl);
+            setWorkingImage(imageUrl);
+            setIsEdited(false);
             setResultImage(imageUrl);
+            setBrushMode(null);
             foundImage = true;
             break;
           }
@@ -133,6 +197,171 @@ export const BackgroundRemover: React.FC = () => {
     }
   };
 
+  // ── Touch-up brush mechanics ──────────────────────────────────────────────
+  const featheredGradient = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(0.6, 'rgba(0,0,0,0.9)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    return g;
+  };
+
+  // Erase: remove alpha with a soft destination-out gradient stamp
+  const stampErase = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = featheredGradient(ctx, x, y, r);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  };
+
+  // Restore: paint original pixels back through the same feathered brush mask
+  const stampRestore = (ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, r: number) => {
+    const size = Math.ceil(r * 2) + 2;
+    const ox = Math.round(x - r - 1);
+    const oy = Math.round(y - r - 1);
+    const stamp = document.createElement('canvas');
+    stamp.width = size;
+    stamp.height = size;
+    const sCtx = stamp.getContext('2d');
+    if (!sCtx) return;
+    // Soft mask
+    sCtx.fillStyle = featheredGradient(sCtx, r + 1, r + 1, r);
+    sCtx.beginPath();
+    sCtx.arc(r + 1, r + 1, r, 0, Math.PI * 2);
+    sCtx.fill();
+    // Mask the original pixels into the stamp
+    sCtx.globalCompositeOperation = 'source-in';
+    sCtx.drawImage(img, ox, oy);
+    ctx.drawImage(stamp, ox, oy);
+  };
+
+  const canvasPoint = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
+    const view = viewCanvasRef.current;
+    const clientPoint = 'touches' in e ? e.touches[0] : e;
+    if (!view || !clientPoint) return null;
+    const rect = view.getBoundingClientRect();
+    const scaleX = view.width / rect.width;
+    const scaleY = view.height / rect.height;
+    return {
+      x: (clientPoint.clientX - rect.left) * scaleX,
+      y: (clientPoint.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const applyStamp = (x: number, y: number) => {
+    const work = workCanvasRef.current;
+    const view = viewCanvasRef.current;
+    const workCtx = work?.getContext('2d');
+    const viewCtx = view?.getContext('2d');
+    if (!workCtx || !viewCtx || !work) return;
+    if (brushMode === 'erase') {
+      stampErase(workCtx, x, y, brushRadius);
+      stampErase(viewCtx, x, y, brushRadius);
+    } else if (brushMode === 'restore' && originalImgRef.current) {
+      stampRestore(workCtx, originalImgRef.current, x, y, brushRadius);
+      stampRestore(viewCtx, originalImgRef.current, x, y, brushRadius);
+    }
+  };
+
+  const handleBrushDown = (e: React.MouseEvent) => {
+    if (!brushMode) return;
+    e.preventDefault();
+    const p = canvasPoint(e);
+    if (!p) return;
+    isBrushingRef.current = true;
+    lastPointRef.current = p;
+    applyStamp(p.x, p.y);
+  };
+
+  const handleBrushMove = (e: React.MouseEvent) => {
+    if (!brushMode) return;
+    const view = viewCanvasRef.current;
+    if (view) {
+      const rect = view.getBoundingClientRect();
+      setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+    if (!isBrushingRef.current) return;
+    e.preventDefault();
+    const p = canvasPoint(e);
+    if (!p) return;
+    // Interpolate along the drag path for a continuous stroke
+    const last = lastPointRef.current ?? p;
+    const dist = Math.hypot(p.x - last.x, p.y - last.y);
+    const step = Math.max(brushRadius * 0.25, 1);
+    const n = Math.max(1, Math.ceil(dist / step));
+    for (let i = 1; i <= n; i++) {
+      applyStamp(last.x + ((p.x - last.x) * i) / n, last.y + ((p.y - last.y) * i) / n);
+    }
+    lastPointRef.current = p;
+  };
+
+  const handleBrushUp = () => {
+    if (!isBrushingRef.current) return;
+    isBrushingRef.current = false;
+    lastPointRef.current = null;
+    // Persist the touched-up state as a data URL for export / preview
+    const work = workCanvasRef.current;
+    if (work) {
+      setWorkingImage(work.toDataURL('image/png'));
+      setIsEdited(true);
+    }
+  };
+
+  const resetTouchUp = useCallback(() => {
+    const aiImg = aiResultImgRef.current;
+    const work = workCanvasRef.current;
+    if (!aiImg || !work) return;
+    const ctx = work.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, work.width, work.height);
+    ctx.drawImage(aiImg, 0, 0);
+    const view = viewCanvasRef.current;
+    const viewCtx = view?.getContext('2d');
+    if (view && viewCtx) {
+      view.width = work.width;
+      view.height = work.height;
+      viewCtx.clearRect(0, 0, view.width, view.height);
+      viewCtx.drawImage(work, 0, 0);
+    }
+    setWorkingImage(work.toDataURL('image/png'));
+    setIsEdited(false);
+  }, []);
+
+  // ── Exports ───────────────────────────────────────────────────────────────
+  const triggerDownload = (dataUrl: string, name: string) => {
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = name;
+    link.click();
+  };
+
+  const baseName = file?.file.name.replace(/\.[^.]+$/, '') || 'image';
+  const exportSource = workingImage ?? resultImage;
+
+  const handleDownloadPng = () => {
+    if (exportSource) triggerDownload(exportSource, `no-bg-${baseName}.png`);
+  };
+
+  const handleDownloadJpg = () => {
+    if (!exportSource) return;
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#ffffff'; // white background for JPG export
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0);
+      triggerDownload(c.toDataURL('image/jpeg', 0.92), `no-bg-${baseName}.jpg`);
+    };
+    img.src = exportSource;
+  };
+
   if (!file) {
     return (
       <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
@@ -142,7 +371,7 @@ export const BackgroundRemover: React.FC = () => {
             <Eraser size={32} /> Smart Background Remover
           </h2>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Isolate subjects instantly using Gemini Vision AI.
+            Isolate subjects instantly using Gemini Vision AI, then refine with an erase/restore brush.
           </p>
         </div>
 
@@ -155,16 +384,16 @@ export const BackgroundRemover: React.FC = () => {
             label="Upload Image"
             description="Supports JPG, PNG, WEBP, AVIF, HEIC"
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
-          />
+ />
         </div>
 
         {/* Feature Highlights */}
         <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
           {[
             { icon: Eraser, label: 'Instant Clear', desc: 'Remove bg in seconds' },
-            { icon: Sparkles, label: 'AI Powered', desc: 'Gemini Vision Tech' },
+            { icon: Brush, label: 'Touch-Up Brush', desc: 'Erase & restore edges' },
             { icon: Layers, label: 'Transparent', desc: 'Perfect edge detection' },
-            { icon: Download, label: 'HD Export', desc: 'Full resolution PNG' }
+            { icon: Download, label: 'PNG & JPG', desc: 'Transparent or white bg' },
           ].map((feat, i) => (
             <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
               <div className="p-2 bg-indigo-500/10 rounded-full text-indigo-400">
@@ -184,9 +413,7 @@ export const BackgroundRemover: React.FC = () => {
   return (
     <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
 
-      {/* Navigation removed for unified UX */}
-
-      {/* 2. Settings Panel (Middle) */}
+      {/* 2. Settings Panel */}
       <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
         <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
           <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
@@ -214,14 +441,58 @@ export const BackgroundRemover: React.FC = () => {
                 </Button>
               ) : (
                 <div className="space-y-3 animate-slide-up">
-                  <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = resultImage;
-                      link.download = `no-bg-${file.file.name.split('.')[0]}.png`;
-                      link.click();
-                    }}
-                  >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Touch-Up</span>
+                    {isEdited && (
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-1.5 py-0.5 rounded">
+                        Edited
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setBrushMode(brushMode === 'erase' ? null : 'erase')}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${brushMode === 'erase' ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
+                      title="Erase leftover background"
+                    >
+                      <Eraser size={14} /> Erase
+                    </button>
+                    <button
+                      onClick={() => setBrushMode(brushMode === 'restore' ? null : 'restore')}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-[10px] font-bold uppercase tracking-widest transition-all ${brushMode === 'restore' ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'}`}
+                      title="Restore the original subject"
+                    >
+                      <Paintbrush size={14} /> Restore
+                    </button>
+                  </div>
+
+                  {brushMode && (
+                    <div className="space-y-1 animate-fade-in">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-zinc-400">Brush Radius</span>
+                        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded">{brushRadius}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={5} max={120}
+                        value={brushRadius}
+                        onChange={(e) => setBrushRadius(parseInt(e.target.value))}
+                        className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:rounded-full"
+                      />
+                      <button
+                        onClick={resetTouchUp}
+                        className="w-full mt-2 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 bg-zinc-900 border border-zinc-800 rounded-xl hover:text-white hover:border-zinc-700 transition-all"
+                      >
+                        <RefreshCcw size={12} className="mr-1.5 inline -mt-0.5" /> Reset Touch-Up
+                      </button>
+                    </div>
+                  )}
+
+                  <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={handleDownloadPng}>
                     <Download size={18} className="mr-2" /> Download PNG
+                  </Button>
+                  <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleDownloadJpg}>
+                    <Download size={16} className="mr-2" /> Download JPG (White BG)
                   </Button>
                   <Button variant="secondary" className="w-full h-12 border-zinc-800 font-bold uppercase text-[10px] tracking-widest" onClick={handleReset}>
                     <RefreshCcw size={16} className="mr-2" /> New Image
@@ -237,16 +508,18 @@ export const BackgroundRemover: React.FC = () => {
               )}
             </div>
 
-            <section>
-              <SliderControl
-                label="Before / After View"
-                value={sliderPosition}
-                min={0}
-                max={100}
-                onChange={setSliderPosition}
-                unit="%"
-              />
-            </section>
+            {!brushMode && resultImage && (
+              <section>
+                <SliderControl
+                  label="Before / After View"
+                  value={sliderPosition}
+                  min={0}
+                  max={100}
+                  onChange={setSliderPosition}
+                  unit="%"
+                />
+              </section>
+            )}
 
             <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
               <SectionLabel>Subject Tips</SectionLabel>
@@ -267,9 +540,19 @@ export const BackgroundRemover: React.FC = () => {
 
         <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full max-w-2xl aspect-square'}`}>
           <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center">
-            {resultImage ? (
+            {resultImage && brushMode ? (
+              <canvas
+                ref={viewCanvasRef}
+                className="absolute inset-0 w-full h-full object-contain"
+                style={{ cursor: cursorPos ? 'none' : brushMode === 'erase' ? 'crosshair' : 'crosshair' }}
+                onMouseDown={handleBrushDown}
+                onMouseMove={handleBrushMove}
+                onMouseUp={handleBrushUp}
+                onMouseLeave={() => { handleBrushUp(); setCursorPos(null); }}
+              />
+            ) : resultImage ? (
               <div className="relative w-full h-full group">
-                <img src={resultImage} alt="No Background" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
+                <img src={workingImage ?? resultImage} alt="No Background" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
                 <img
                   src={file.previewUrl}
                   alt="Original"
@@ -308,9 +591,25 @@ export const BackgroundRemover: React.FC = () => {
                 )}
               </div>
             )}
+
+            {/* Brush cursor preview circle */}
+            {resultImage && brushMode && cursorPos && (
+              <div
+                className="absolute rounded-full border pointer-events-none z-30"
+                style={{
+                  left: cursorPos.x,
+                  top: cursorPos.y,
+                  width: brushRadius * 2,
+                  height: brushRadius * 2,
+                  transform: 'translate(-50%, -50%)',
+                  borderColor: brushMode === 'erase' ? 'rgba(79,70,229,0.8)' : 'rgba(63,230,159,0.8)',
+                  background: brushMode === 'erase' ? 'rgba(79,70,229,0.12)' : 'rgba(63,230,159,0.12)',
+                }}
+              />
+            )}
           </div>
         </div>
-        {isMobile && <div className="absolute bottom-2 right-4 text-[10px] text-zinc-700 font-bold tracking-widest uppercase">Isolation Stage</div>}
+        {isMobile && <div className="absolute bottom-2 right-4 text-[10px] text-zinc-700 font-bold tracking-widest uppercase">{brushMode ? 'Touch-Up Stage' : 'Isolation Stage'}</div>}
       </main>
     </div>
   );

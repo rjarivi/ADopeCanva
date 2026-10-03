@@ -22,6 +22,8 @@ export const GifCompressor: React.FC = () => {
 
     // Compression Settings
     const [level, setLevel] = useState(50); // 0 (None) to 100 (Max)
+    const [resizeWidth, setResizeWidth] = useState(480); // 0 = keep source width
+    const [fps, setFps] = useState(15); // 0 = keep source frame rate
 
     const ffmpegRef = useRef<FFmpeg | null>(null);
 
@@ -102,9 +104,16 @@ export const GifCompressor: React.FC = () => {
             const maxColors = Math.max(8, Math.round(256 - (level / 100) * 240));
             const scaleFactor = Math.max(0.3, 1 - (level / 100) * 0.7);
 
-            // Aggressive Filter: stats_mode=full for better quality with fewer colors,
-            // dither=bayer:bayer_scale=1 for significantly better compression than floyd_steinberg.
-            const filter = `scale=iw*${scaleFactor}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=${maxColors}:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1`;
+            // Build filter chain: optional fps cap + explicit width (independent controls) or proportional scale
+            const filterParts: string[] = [];
+            if (fps > 0) filterParts.push(`fps=${fps}`);
+            if (resizeWidth > 0) {
+                filterParts.push(`scale=${resizeWidth}:-2:flags=lanczos`);
+            } else {
+                filterParts.push(`scale=iw*${scaleFactor}:-1:flags=lanczos`);
+            }
+            filterParts.push('split[s0][s1];[s0]palettegen=max_colors=' + maxColors + ':stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=1');
+            const filter = filterParts.join(',');
 
             const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
                 ? Math.min(navigator.hardwareConcurrency, 4).toString()
@@ -239,7 +248,11 @@ export const GifCompressor: React.FC = () => {
                                     min={0} max={90}
                                     value={level}
                                     onChange={(v) => {
-                                        setLevel(v as number);
+                                        const lv = v as number;
+                                        setLevel(lv);
+                                        // Level doubles as a quick preset for the independent width/fps controls
+                                        setResizeWidth(lv < 20 ? 640 : lv < 50 ? 480 : lv < 75 ? 360 : 240);
+                                        setFps(lv < 50 ? 15 : 10);
                                         setResultUrl(null); // Clear result if settings change
                                     }}
                                     trackStyle={{ backgroundColor: '#6366f1' }}
@@ -248,8 +261,37 @@ export const GifCompressor: React.FC = () => {
                                 />
                             </div>
                             <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-tight italic opacity-60">
-                                Higher levels reduce file size but may impact quality.
+                                Higher levels reduce file size but may impact quality. Also presets Width &amp; FPS below.
                             </p>
+                        </section>
+
+                        {/* Independent resize + fps controls */}
+                        <section className="space-y-4">
+                            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Fine Controls</div>
+                            <div className="space-y-1.5">
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Resize Width</span>
+                                <select
+                                    value={resizeWidth}
+                                    onChange={(e) => { setResizeWidth(Number(e.target.value)); setResultUrl(null); }}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer appearance-none"
+                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                                >
+                                    <option value={0}>Source Width</option>
+                                    {[160, 240, 360, 480, 640, 800].map(w => <option key={w} value={w}>{w}px</option>)}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">FPS</span>
+                                <select
+                                    value={fps}
+                                    onChange={(e) => { setFps(Number(e.target.value)); setResultUrl(null); }}
+                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer appearance-none"
+                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                                >
+                                    <option value={0}>Source FPS</option>
+                                    {[5, 8, 10, 12, 15, 20, 24].map(f => <option key={f} value={f}>{f} fps</option>)}
+                                </select>
+                            </div>
                         </section>
 
                         <section className="bg-zinc-900/50 p-4 rounded-xl space-y-3 border border-zinc-800/50">

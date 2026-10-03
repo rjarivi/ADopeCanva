@@ -1,10 +1,14 @@
 /// <reference lib="dom" />
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Button } from '../../components/ui/Button';
 import { FileText, Download, RefreshCcw, Type, AlignLeft, Zap, Settings } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { jsPDF } from 'jspdf';
+
+const SELECT_ARROW_STYLE = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' } as const;
+
+const SELECT_CLASS = "w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-8 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none appearance-none hover:border-indigo-500/50 transition-colors cursor-pointer";
 
 export const TextToPdf: React.FC = () => {
     const isMobile = useIsMobile();
@@ -12,6 +16,10 @@ export const TextToPdf: React.FC = () => {
     const [fontSize, setFontSize] = useState(12);
     const [lineSpacing, setLineSpacing] = useState(1.5);
     const [marginSize, setMarginSize] = useState(20);
+    const [paperSize, setPaperSize] = useState<'a4' | 'letter' | 'legal'>('a4');
+    const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
+    const [fontFamily, setFontFamily] = useState<'helvetica' | 'times' | 'courier'>('helvetica');
+    const [pageNumbers, setPageNumbers] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
     const [charCount, setCharCount] = useState(0);
@@ -22,37 +30,60 @@ export const TextToPdf: React.FC = () => {
         setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
     }, [text]);
 
+    // Many non-Latin characters → warn: jsPDF built-in fonts embed only Latin-1
+    const nonLatinRatio = useMemo(() => {
+        if (!text) return 0;
+        const nonLatin = (text.match(/[^\u0000-\u024F\u2000-\u206F]/g) || []).length;
+        return nonLatin / text.length;
+    }, [text]);
+    const showNonLatinWarning = nonLatinRatio > 0.15;
+
+    // Shared PDF builder for both preview and download
+    const buildPdf = useCallback(() => {
+        const doc = new jsPDF({ orientation, unit: 'mm', format: paperSize });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        // Landscape pages get bigger widths — clamp the textbox to the printable area
+        const maxWidth = Math.max(20, Math.min(pageWidth - (marginSize * 2), pageWidth * 0.85));
+
+        doc.setFontSize(fontSize);
+        doc.setFont(fontFamily, 'normal');
+
+        const lines = doc.splitTextToSize(text, maxWidth);
+        const lineHeight = fontSize * 0.352778 * lineSpacing; // Convert pt to mm
+
+        let y = marginSize;
+
+        for (const line of lines) {
+            if (y + lineHeight > pageHeight - marginSize) {
+                doc.addPage();
+                y = marginSize;
+            }
+            doc.text(line, marginSize, y);
+            y += lineHeight;
+        }
+
+        if (pageNumbers) {
+            const total = doc.getNumberOfPages();
+            for (let i = 1; i <= total; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(110);
+                doc.text(`${i} / ${total}`, pageWidth - marginSize - 2, pageHeight - (marginSize / 2));
+            }
+        }
+
+        return doc;
+    }, [text, fontSize, lineSpacing, marginSize, paperSize, orientation, fontFamily, pageNumbers]);
+
     const generatePdf = useCallback(() => {
         if (!text.trim()) return;
 
         setIsProcessing(true);
 
         try {
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4'
-            });
-
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const maxWidth = pageWidth - (marginSize * 2);
-
-            doc.setFontSize(fontSize);
-
-            const lines = doc.splitTextToSize(text, maxWidth);
-            const lineHeight = fontSize * 0.352778 * lineSpacing; // Convert pt to mm
-
-            let y = marginSize;
-
-            for (const line of lines) {
-                if (y + lineHeight > pageHeight - marginSize) {
-                    doc.addPage();
-                    y = marginSize;
-                }
-                doc.text(line, marginSize, y);
-                y += lineHeight;
-            }
+            const doc = buildPdf();
 
             // Generate blob URL for preview
             const pdfBlob = doc.output('blob');
@@ -67,45 +98,23 @@ export const TextToPdf: React.FC = () => {
         } finally {
             setIsProcessing(false);
         }
-    }, [text, fontSize, lineSpacing, marginSize, pdfPreviewUrl]);
+    }, [text, buildPdf, pdfPreviewUrl]);
 
     const handleDownload = useCallback(() => {
         if (!text.trim()) return;
 
-        const doc = new jsPDF({
-            orientation: 'portrait',
-            unit: 'mm',
-            format: 'a4'
-        });
-
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const maxWidth = pageWidth - (marginSize * 2);
-
-        doc.setFontSize(fontSize);
-
-        const lines = doc.splitTextToSize(text, maxWidth);
-        const lineHeight = fontSize * 0.352778 * lineSpacing;
-
-        let y = marginSize;
-
-        for (const line of lines) {
-            if (y + lineHeight > pageHeight - marginSize) {
-                doc.addPage();
-                y = marginSize;
-            }
-            doc.text(line, marginSize, y);
-            y += lineHeight;
-        }
-
-        doc.save('document.pdf');
-    }, [text, fontSize, lineSpacing, marginSize]);
+        buildPdf().save('document.pdf');
+    }, [text, buildPdf]);
 
     const handleReset = () => {
         setText('');
         setFontSize(12);
         setLineSpacing(1.5);
         setMarginSize(20);
+        setPaperSize('a4');
+        setOrientation('portrait');
+        setFontFamily('helvetica');
+        setPageNumbers(false);
         if (pdfPreviewUrl) {
             URL.revokeObjectURL(pdfPreviewUrl);
         }
@@ -143,6 +152,60 @@ export const TextToPdf: React.FC = () => {
                             </div>
                         </section>
 
+                        {/* Page Setup */}
+                        <section className="space-y-4">
+                            <SectionLabel>Page Setup</SectionLabel>
+
+                            <div className="group">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-zinc-400">Paper Size</span>
+                                </div>
+                                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value as 'a4' | 'letter' | 'legal')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
+                                    <option value="a4">A4 (210 × 297 mm)</option>
+                                    <option value="letter">Letter (8.5 × 11 in)</option>
+                                    <option value="legal">Legal (8.5 × 14 in)</option>
+                                </select>
+                            </div>
+
+                            <div className="group">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-zinc-400">Orientation</span>
+                                </div>
+                                <select value={orientation} onChange={(e) => setOrientation(e.target.value as 'portrait' | 'landscape')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
+                                    <option value="portrait">Portrait</option>
+                                    <option value="landscape">Landscape</option>
+                                </select>
+                            </div>
+
+                            <div className="group">
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-zinc-400">Font Family</span>
+                                </div>
+                                <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value as 'helvetica' | 'times' | 'courier')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
+                                    <option value="helvetica">Helvetica (Sans)</option>
+                                    <option value="times">Times (Serif)</option>
+                                    <option value="courier">Courier (Mono)</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    id="tto-pdf-numbers"
+                                    type="checkbox"
+                                    checked={pageNumbers}
+                                    onChange={(e) => setPageNumbers(e.target.checked)}
+                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-offset-0 focus:ring-indigo-500/50"
+                                />
+                                <label htmlFor="tto-pdf-numbers" className="text-xs text-zinc-500 cursor-pointer select-none">Print page numbers</label>
+                            </div>
+
+                            {showNonLatinWarning && (
+                                <p className="text-[10px] text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 leading-relaxed">
+                                    Default PDF fonts may not render non-Latin text correctly — characters like that may appear garbled. Use a Latin transcription or a dedicated Unicode font loader.
+                                </p>
+                            )}
+                        </section>
+
                         {/* Typography Settings */}
                         <section className="space-y-4">
                             <SectionLabel>Typography</SectionLabel>
@@ -164,8 +227,8 @@ export const TextToPdf: React.FC = () => {
                                 <select
                                     value={lineSpacing}
                                     onChange={(e) => setLineSpacing(parseFloat(e.target.value))}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-8 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none appearance-none hover:border-indigo-500/50 transition-colors cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+                                    className={SELECT_CLASS}
+                                    style={SELECT_ARROW_STYLE}
                                 >
                                     <option value={1}>Single (1×)</option>
                                     <option value={1.15}>Compact (1.15×)</option>

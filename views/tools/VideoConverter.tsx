@@ -9,6 +9,33 @@ import { FFmpeg } from '@ffmpeg/ffmpeg';
 
 const FORMATS = ['MP4', 'MOV', 'AVI', 'MKV', 'WEBM', 'APNG', 'GIF', 'WEBP', 'PNG', 'JPG'];
 
+const EXT_MIMES: Record<string, string> = {
+    mp4: 'video/mp4',
+    mov: 'video/quicktime',
+    avi: 'video/x-msvideo',
+    mkv: 'video/x-matroska',
+    webm: 'video/webm',
+    apng: 'image/apng',
+    gif: 'image/gif',
+    webp: 'image/webp',
+    png: 'image/png',
+    jpg: 'image/jpeg',
+};
+
+const VIDEO_TARGETS = ['MP4', 'MOV', 'AVI', 'MKV', 'WEBM'];
+const ANIMATED_IMAGE_TARGETS = ['APNG', 'GIF', 'WEBP'];
+
+/** Build an atempo filter chain so effective speed stays in each filter's 0.5–2 range (0.25x–4x in sync) */
+const atempoChain = (speed: number): string[] => {
+    const parts: string[] = [];
+    let s = speed;
+    while (s > 2) { parts.push('2'); s /= 2; }
+    while (s < 0.5) { parts.push('0.5'); s *= 2; }
+    if (parts.length === 0 && s >= 0.5 && s <= 2 && Math.abs(s - 1) > 0.001) parts.push(s.toFixed(4));
+    else if (parts.length > 0 && s !== 1) parts.push(s.toFixed(4));
+    return parts.map(p => `atempo=${p}`);
+};
+
 interface VideoConverterProps {
   accept?: string;
   description?: string;
@@ -30,6 +57,15 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
   const [engineStatus, setEngineStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Trim / mute / speed / scale options (all wired into ffmpeg args)
+  const [duration, setDuration] = useState(0);
+  const [trimEnabled, setTrimEnabled] = useState(false);
+  const [trimStart, setTrimStart] = useState(0);
+  const [trimEnd, setTrimEnd] = useState(0); // 0 = end of source
+  const [muteAudio, setMuteAudio] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [scalePercent, setScalePercent] = useState(100);
+
   const ffmpegRef = useRef<FFmpeg | null>(null);
 
   useEffect(() => {
@@ -44,6 +80,22 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         setEngineStatus('error');
       });
   }, []);
+
+  // Probe source duration for trim inputs
+  useEffect(() => {
+    if (!file) { setDuration(0); setTrimStart(0); setTrimEnd(0); return; }
+    const v = document.createElement('video');
+    const url = URL.createObjectURL(file.file);
+    v.src = url;
+    v.onloadedmetadata = () => {
+      setDuration(v.duration);
+      setTrimStart(0);
+      setTrimEnd(v.duration);
+      URL.revokeObjectURL(url);
+    };
+    v.onerror = () => { URL.revokeObjectURL(url); };
+    return () => { try { URL.revokeObjectURL(url); } catch { } };
+  }, [file]);
 
   const handleConvert = async () => {
     if (!file || !ffmpegRef.current) return;
@@ -71,7 +123,16 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
       setLogs(prev => prev + '\nWriting file to memory...');
       await writeFileToFFmpeg(ffmpeg, inputName, file.file);
 
-      const args = ['-y', '-i', inputName];
+      // Trim options — before the input for fast seeking
+      const trimEnabledValid = trimEnabled && (trimStart > 0 || (trimEnd > 0 && duration > 0 && trimEnd < duration));
+      const args: string[] = ['-y'];
+      if (trimEnabledValid) {
+        if (trimStart > 0) args.push('-ss', Math.max(0, trimStart).toString());
+      }
+      args.push('-i', inputName);
+      if (trimEnabledValid && trimEnd > 0) {
+        args.push('-to', Math.max(trimStart + 0.05, Math.min(trimEnd, duration || trimEnd)).toString());
+      }
 
       // Optimize for speed using available threads - Cap at 4 to prevent WASM deadlocks
       const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
@@ -80,16 +141,39 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
 
       args.push('-threads', threads);
 
+      const isVideoTarget = VIDEO_TARGETS.includes(targetFormat);
+      const isAnimTarget = ANIMATED_IMAGE_TARGETS.includes(targetFormat);
+      const isTimingTarget = isVideoTarget || isAnimTarget;
+      const speedChanged = speed !== 1;
+
+      // Mute audio + matching atempo for speed (audio only exists on video targets)
+      if (isVideoTarget && muteAudio) args.push('-an');
+      else if (isVideoTarget && speedChanged) args.push('-af', atempoChain(speed).join(','));
+
+      // Extra video filters: speed setpts + resolution scaling
+      const extraVf: string[] = [];
+      if (isTimingTarget && targetFormat !== 'JPG' && targetFormat !== 'PNG' && speedChanged) {
+        extraVf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
+      }
+      if (isVideoTarget && scalePercent < 100) {
+        extraVf.push(`scale=iw*${(scalePercent / 100).toFixed(4)}:-1`);
+      }
+
       if (targetFormat === 'MP4' || targetFormat === 'MOV' || targetFormat === 'MKV' || targetFormat === 'AVI') {
         args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac');
+        if (extraVf.length) args.push('-vf', extraVf.join(','));
       } else if (targetFormat === 'WEBM') {
+        if (extraVf.length) args.push('-vf', extraVf.join(','));
         args.push('-c:v', 'libvpx', '-quality', 'realtime', '-cpu-used', '5', '-b:v', '1M', '-c:a', 'libvorbis');
       } else if (targetFormat === 'APNG') {
+        if (extraVf.length) args.push('-vf', extraVf.join(','));
         args.push('-f', 'apng', '-plays', '0');
       } else if (targetFormat === 'GIF') {
-        args.push('-vf', 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse');
+        const palette = 'split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse';
+        args.push('-vf', extraVf.length ? `${extraVf.join(',')},${palette}` : palette);
         args.push('-f', 'gif');
       } else if (targetFormat === 'WEBP') {
+        if (extraVf.length) args.push('-vf', extraVf.join(','));
         args.push('-c:v', 'libwebp', '-lossless', '0', '-compression_level', '4', '-q:v', '80', '-loop', '0');
       } else if (targetFormat === 'JPG') {
         args.push('-update', '1'); // For animated input, keep last frame or just process as static
@@ -135,7 +219,8 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         }
       }
 
-      const url = await readFileFromFFmpeg(ffmpeg, outputName, `video/${targetFormat.toLowerCase()}`);
+      const mimeType = EXT_MIMES[targetFormat.toLowerCase()] ?? `video/${targetFormat.toLowerCase()}`;
+      const url = await readFileFromFFmpeg(ffmpeg, outputName, mimeType);
       setConvertedUrl(url);
       setIsDone(true);
       setProgress(100);
@@ -169,6 +254,12 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
     setIsProcessing(false);
     setConvertedUrl(null);
     setLogs('');
+    setTrimEnabled(false);
+    setTrimStart(0);
+    setTrimEnd(0);
+    setMuteAudio(false);
+    setSpeed(1);
+    setScalePercent(100);
   };
 
   if (engineStatus === 'error') {
@@ -289,6 +380,85 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Extra conversion options (all wired into ffmpeg args) */}
+            <div className="space-y-4">
+              <label className="text-xs font-bold text-zinc-400 mb-1 block uppercase tracking-wider">Conversion Options</label>
+              <div className="grid grid-cols-2 gap-3 bg-zinc-900/40 border border-zinc-800 rounded-2xl p-4">
+                {/* Mute */}
+                <div className="flex items-center justify-between col-span-1">
+                  <span className="text-xs text-zinc-300">Mute Audio</span>
+                  <input
+                    type="checkbox"
+                    checked={muteAudio}
+                    disabled={isProcessing || isDone || !VIDEO_TARGETS.includes(targetFormat)}
+                    onChange={(e) => setMuteAudio(e.target.checked)}
+                    className="accent-indigo-500 h-4 w-4 rounded cursor-pointer"
+                    title={VIDEO_TARGETS.includes(targetFormat) ? 'Export without audio (-an)' : 'Audio mute applies to video formats'}
+                  />
+                </div>
+                {/* Speed */}
+                <div className="space-y-1 col-span-1">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Speed</span>
+                  <select
+                    value={speed}
+                    disabled={isProcessing || isDone}
+                    onChange={(e) => setSpeed(Number(e.target.value))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    {[0.25, 0.5, 0.75, 1, 1.5, 2, 4].map(s => <option key={s} value={s}>{s}×</option>)}
+                  </select>
+                </div>
+                {/* Resolution scale */}
+                <div className="space-y-1 col-span-1">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Resolution</span>
+                  <select
+                    value={scalePercent}
+                    disabled={isProcessing || isDone || !VIDEO_TARGETS.includes(targetFormat)}
+                    onChange={(e) => setScalePercent(Number(e.target.value))}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
+                  >
+                    {[100, 75, 50, 25].map(s => <option key={s} value={s}>{s === 100 ? 'Original' : s + '%'}</option>)}
+                  </select>
+                </div>
+                {/* Trim */}
+                <div className="space-y-1 col-span-1 flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Trim</span>
+                    <input
+                      type="checkbox"
+                      checked={trimEnabled}
+                      disabled={isProcessing || isDone}
+                      onChange={(e) => setTrimEnabled(e.target.checked)}
+                      className="accent-indigo-500 h-4 w-4 rounded cursor-pointer"
+                    />
+                  </div>
+                  {trimEnabled && (
+                    <div className="flex gap-2">
+                      <input
+                        type="number" step="0.1" min="0" max={duration || undefined}
+                        value={trimStart.toFixed(1)}
+                        onChange={(e) => setTrimStart(Math.max(0, Math.min(Number(e.target.value), (trimEnd || duration) - 0.1)))}
+                        placeholder="Start"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                        title="Start (seconds)"
+                      />
+                      <input
+                        type="number" step="0.1" min="0" max={duration || undefined}
+                        value={trimEnd.toFixed(1)}
+                        onChange={(e) => setTrimEnd(Math.max(trimStart + 0.1, Number(e.target.value)))}
+                        placeholder="End"
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                        title={`End (seconds${duration ? `, source: ${duration.toFixed(1)}s` : ''})`}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-600 italic px-1">
+                Trim feeds -ss/-to, mute adds -an, speed uses setpts + atempo, resolution scales pixels. Applies to video outputs.
+              </p>
             </div>
 
             {isProcessing && (

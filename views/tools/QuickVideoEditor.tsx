@@ -5,7 +5,7 @@ import {
     Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
-    ZoomIn, Gauge, Music,
+    ZoomIn, Gauge, Music, Camera, Speaker, Crop as CropIcon,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -86,6 +86,17 @@ const generateThumbs = async (file: File, count = 8): Promise<string[]> =>
         v.onerror = () => { URL.revokeObjectURL(url); resolve([]); };
     });
 
+/** Build a chain of atempo filters so the effective speed stays within each filter's 0.5–2 range (0.25x–4x synced) */
+const atempoChain = (speed: number): string[] => {
+    const parts: string[] = [];
+    let s = speed;
+    while (s > 2) { parts.push('2'); s /= 2; }
+    while (s < 0.5) { parts.push('0.5'); s *= 2; }
+    if (parts.length === 0 && s >= 0.5 && s <= 2 && Math.abs(s - 1) > 0.001) parts.push(s.toFixed(4));
+    else if (parts.length > 0 && s !== 1) parts.push(s.toFixed(4));
+    return parts.map(p => `atempo=${p}`);
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const QuickVideoEditor: React.FC = () => {
@@ -126,6 +137,15 @@ export const QuickVideoEditor: React.FC = () => {
     // Audio
     const [volume, setVolume] = useState(100);
     const [globalMuted, setGlobalMuted] = useState(false);
+
+    // Crop (inset percentages — real `crop=w:h:x:y` in export, overlay in preview)
+    const [cropEnabled, setCropEnabled] = useState(false);
+    const [cropInset, setCropInset] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+
+    // Export options
+    const [exportFormat, setExportFormat] = useState<'mp4' | 'webm'>('mp4');
+    const [fps, setFps] = useState(30);
+    const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
 
     // Export
     const [isProcessing, setIsProcessing] = useState(false);
@@ -272,7 +292,18 @@ export const QuickVideoEditor: React.FC = () => {
     };
 
     // ── Build FFmpeg filters ──
-    const buildFilters = () => {
+    const crfForQuality = quality === 'high' ? '18' : quality === 'low' ? '30' : '23';
+
+    /** Video codec args. `final=false` = fast intermediate for per-clip concat passes. */
+    const getVideoCodecArgs = (final: boolean): string[] => {
+        if (!final) return ['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '23', '-c:a', 'aac', '-ar', '44100', '-ac', '2'];
+        if (exportFormat === 'webm') {
+            return ['-c:v', 'libvpx', '-quality', 'realtime', '-cpu-used', '5', '-b:v', '1M', '-r', String(fps), '-c:a', 'libvorbis'];
+        }
+        return ['-c:v', 'libx264', '-preset', 'ultrafast', '-crf', crfForQuality, '-r', String(fps), '-c:a', 'aac', '-ar', '44100', '-ac', '2'];
+    };
+
+    const buildFilters = (clip?: ClipData) => {
         const vf: string[] = [];
         const af: string[] = [];
 
@@ -281,6 +312,14 @@ export const QuickVideoEditor: React.FC = () => {
         else if (rotation === 270) vf.push('transpose=2');
         if (flipH) vf.push('hflip');
         if (flipV) vf.push('vflip');
+
+        // Real crop: inset offsets applied at source resolution
+        if (cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0)) {
+            const w = Math.max(0.1, 1 - cropInset.left / 100 - cropInset.right / 100);
+            const h = Math.max(0.1, 1 - cropInset.top / 100 - cropInset.bottom / 100);
+            vf.push(`crop=iw*${w.toFixed(4)}:ih*${h.toFixed(4)}:iw*${(cropInset.left / 100).toFixed(4)}:ih*${(cropInset.top / 100).toFixed(4)}`);
+        }
+
         if (speed !== 1) vf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
 
         // Apply canvas aspect ratio / scale
@@ -307,16 +346,38 @@ export const QuickVideoEditor: React.FC = () => {
             // No aspect ratio change — scale up and crop center back to original dimensions
             vf.push(`scale=iw*${zoom.toFixed(4)}:ih*${zoom.toFixed(4)}`);
             vf.push(`crop=iw/${zoom.toFixed(4)}:ih/${zoom.toFixed(4)}`);
+        } else {
+            // Crop without a fixed canvas — set SAR so square pixels are preserved
+            if (cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0)) vf.push('setsar=1');
         }
 
-        if (speed !== 1) {
-            const clamped = Math.max(0.5, Math.min(2, speed));
-            af.push(`atempo=${clamped.toFixed(2)}`);
-        }
+        if (speed !== 1) af.push(...atempoChain(speed));
         if (volume !== 100) af.push(`volume=${(volume / 100).toFixed(2)}`);
 
         return { vf, af };
     };
+
+    /** Per-clip args: dynamic filters + mute handling. `intermediate` encodes are always h264/aac for concat safety. */
+    const buildClipArgs = (inName: string, outName: string, trimStart: number, trimEnd: number, muted: boolean, intermediate: boolean): string[] => {
+        const { vf, af } = buildFilters();
+        let audioFilters = [...af];
+        if (muted) {
+            // Intermediate concat passes keep a silent stream so all segments match; single-clip export drops audio entirely.
+            audioFilters = intermediate ? ['volume=0', ...audioFilters] : [];
+        }
+        const args = ['-y', '-ss', String(trimStart), '-to', String(trimEnd), '-i', inName];
+        if (vf.length) args.push('-vf', vf.join(','));
+        if (!muted && audioFilters.length) args.push('-af', audioFilters.join(','));
+        args.push('-threads', threadsArg());
+        if (muted && !intermediate) args.push('-an');
+        args.push(...getVideoCodecArgs(!intermediate), outName);
+        return args;
+    };
+
+    const threadsArg = (): string =>
+        typeof navigator !== 'undefined' && navigator.hardwareConcurrency
+            ? Math.min(navigator.hardwareConcurrency, 4).toString()
+            : '2';
 
     // ── Export ──
     const handleExport = async () => {
@@ -329,35 +390,22 @@ export const QuickVideoEditor: React.FC = () => {
         };
         ffmpeg.on('progress', onProg);
 
-        const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
-            ? Math.min(navigator.hardwareConcurrency, 4).toString()
-            : '2';
-
         try {
-            const { vf, af } = buildFilters();
-
-            const buildClipArgs = (inName: string, outName: string, trimStart: number, trimEnd: number): string[] => {
-                const args = ['-y', '-ss', String(trimStart), '-to', String(trimEnd), '-i', inName];
-                if (vf.length) args.push('-vf', vf.join(','));
-                if (af.length) args.push('-af', af.join(','));
-                args.push('-threads', threads);
-                args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
-                return args;
-            };
-
             if (clips.length === 1) {
                 const clip = clips[0];
                 await writeFileToFFmpeg(ffmpeg, 'inp.mp4', clip.file);
-                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd));
+                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd, clip.muted || globalMuted, false));
                 await ffmpeg.deleteFile('inp.mp4');
             } else {
+                // Intermediate h264/aac pass per clip (muted clips get a volume=0 silent track so streams match),
+                // then one final concat encode with the chosen format + fps.
                 const trimmed: string[] = [];
                 for (let i = 0; i < clips.length; i++) {
                     const clip = clips[i];
                     const inName = `inp_${i}.mp4`;
                     const outName = `tri_${i}.mp4`;
                     await writeFileToFFmpeg(ffmpeg, inName, clip.file);
-                    await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd));
+                    await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd, clip.muted || globalMuted, true));
                     await ffmpeg.deleteFile(inName);
                     trimmed.push(outName);
                 }
@@ -365,15 +413,15 @@ export const QuickVideoEditor: React.FC = () => {
                 await ffmpeg.writeFile('list.txt', new TextEncoder().encode(list));
                 await ffmpeg.exec([
                     '-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt',
-                    '-threads', threads,
-                    '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac',
+                    '-threads', threadsArg(),
+                    ...getVideoCodecArgs(true),
                     'out.mp4',
                 ]);
                 for (const n of trimmed) await ffmpeg.deleteFile(n);
                 await ffmpeg.deleteFile('list.txt');
             }
 
-            const url = await readFileFromFFmpeg(ffmpeg, 'out.mp4', 'video/mp4');
+            const url = await readFileFromFFmpeg(ffmpeg, 'out.mp4', `video/${exportFormat}`);
             setExportUrl(url);
             await ffmpeg.deleteFile('out.mp4');
         } catch (err) {
@@ -389,7 +437,7 @@ export const QuickVideoEditor: React.FC = () => {
         if (!exportUrl) return;
         const a = document.createElement('a');
         a.href = exportUrl;
-        a.download = `edited_${clips[0]?.file.name ?? 'video'}.mp4`;
+        a.download = `edited_${clips[0]?.file.name ?? 'video'}.${exportFormat}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -406,30 +454,20 @@ export const QuickVideoEditor: React.FC = () => {
         };
         ffmpeg.on('progress', onProg);
 
-        const threads = typeof navigator !== 'undefined' && navigator.hardwareConcurrency
-            ? Math.min(navigator.hardwareConcurrency, 4).toString()
-            : '2';
-
         try {
-            const { vf, af } = buildFilters();
             for (let i = 0; i < clips.length; i++) {
                 const clip = clips[i];
                 const inName = `sep_in_${i}.mp4`;
-                const outName = `sep_out_${i}.mp4`;
+                const outName = `sep_out_${i}.${exportFormat}`;
                 await writeFileToFFmpeg(ffmpeg, inName, clip.file);
-                const args = ['-y', '-ss', String(clip.trimStart), '-to', String(clip.trimEnd), '-i', inName];
-                if (vf.length) args.push('-vf', vf.join(','));
-                if (af.length) args.push('-af', af.join(','));
-                args.push('-threads', threads);
-                args.push('-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-ar', '44100', '-ac', '2', outName);
-                await ffmpeg.exec(args);
+                await ffmpeg.exec(buildClipArgs(inName, outName, clip.trimStart, clip.trimEnd, clip.muted || globalMuted, false));
                 await ffmpeg.deleteFile(inName);
-                const url = await readFileFromFFmpeg(ffmpeg, outName, 'video/mp4');
+                const url = await readFileFromFFmpeg(ffmpeg, outName, `video/${exportFormat}`);
                 await ffmpeg.deleteFile(outName);
                 const baseName = clip.file.name.replace(/\.[^.]+$/, '');
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `clip_${i + 1}_${baseName}.mp4`;
+                a.download = `clip_${i + 1}_${baseName}.${exportFormat}`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -442,6 +480,66 @@ export const QuickVideoEditor: React.FC = () => {
             ffmpeg.off('progress', onProg);
             setIsProcessing(false);
         }
+    };
+
+    // ── Extract audio as MP3 (selected clip) ──
+    const handleExtractAudio = async () => {
+        if (!ffmpegRef.current || !selectedClip) return;
+        setIsProcessing(true);
+        setProgress(0);
+        const ffmpeg = ffmpegRef.current;
+        const onProg = ({ progress: p }: { progress: number }) => {
+            if (p >= 0 && p <= 1) setProgress(Math.round(p * 100));
+        };
+        ffmpeg.on('progress', onProg);
+        const inName = 'ext_in.mp4';
+        const outName = 'ext_out.mp3';
+        try {
+            await writeFileToFFmpeg(ffmpeg, inName, selectedClip.file);
+            await ffmpeg.exec([
+                '-y', '-ss', String(selectedClip.trimStart), '-to', String(selectedClip.trimEnd), '-i', inName,
+                '-vn', '-c:a', 'libmp3lame', '-b:a', '192k', outName,
+            ]);
+            await ffmpeg.deleteFile(inName);
+            const url = await readFileFromFFmpeg(ffmpeg, outName, 'audio/mpeg');
+            await ffmpeg.deleteFile(outName);
+            const baseName = selectedClip.file.name.replace(/\.[^.]+$/, '');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${baseName}_audio.mp3`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error('Audio extraction failed:', err);
+            alert('Audio extraction failed. The clip may have no audio track.');
+        } finally {
+            ffmpeg.off('progress', onProg);
+            setIsProcessing(false);
+        }
+    };
+
+    // ── Screenshot current frame ──
+    const handleScreenshot = () => {
+        const v = videoRef.current;
+        if (!v || !v.videoWidth) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        // Undo the CSS preview transform mirrors so the PNG matches export orientation
+        ctx.save();
+        if (flipH || flipV) ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        ctx.restore();
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        const t = Math.max(0, currentTime).toFixed(2).replace('.', '_');
+        a.download = `frame_${t}s.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 
     // ── Progress bar helpers ──
@@ -768,6 +866,50 @@ export const QuickVideoEditor: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* ── CROP ── */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        <CropIcon size={10} /> Crop
+                                    </p>
+                                    <button
+                                        onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${cropEnabled ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        {cropEnabled ? 'On' : 'Off'}
+                                    </button>
+                                </div>
+                                {cropEnabled && (
+                                    <div className="space-y-2 mb-2">
+                                        {([
+                                            { key: 'left', label: 'Left' },
+                                            { key: 'right', label: 'Right' },
+                                            { key: 'top', label: 'Top' },
+                                            { key: 'bottom', label: 'Bottom' },
+                                        ] as const).map(c => (
+                                            <div key={c.key} className="flex items-center gap-2">
+                                                <span className="w-10 text-[10px] text-zinc-500 font-bold uppercase">{c.label}</span>
+                                                <input
+                                                    type="range" min="0" max="45" step="1"
+                                                    value={cropInset[c.key]}
+                                                    onChange={e => { setCropInset(prev => ({ ...prev, [c.key]: parseInt(e.target.value) })); setExportUrl(null); }}
+                                                    className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
+                                                />
+                                                <span className="w-8 text-right text-[10px] font-mono text-indigo-400">{cropInset[c.key]}%</span>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
+                                            className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase font-bold tracking-wider transition-colors"
+                                        >
+                                            Reset insets
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="h-px bg-zinc-800/60" />
+
                             {/* Clip count info */}
                             {clips.length > 1 && (
                                 <p className="text-center text-[11px] text-zinc-500">
@@ -777,7 +919,59 @@ export const QuickVideoEditor: React.FC = () => {
                         </div>
 
                         {/* Export / Download */}
-                        <div className="p-4 border-t border-zinc-800 space-y-2 shrink-0">
+                        <div className="p-4 border-t border-zinc-800 space-y-2.5 shrink-0">
+                            {!exportUrl && (
+                                <>
+                                    {/* Format / FPS / Quality */}
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        <button
+                                            onClick={() => { setExportFormat('mp4'); setExportUrl(null); }}
+                                            className={`py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === 'mp4' ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                        >
+                                            mp4
+                                        </button>
+                                        <button
+                                            onClick={() => { setExportFormat('webm'); setExportUrl(null); }}
+                                            className={`py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === 'webm' ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                        >
+                                            webm
+                                        </button>
+                                        <button
+                                            onClick={handleScreenshot}
+                                            className="py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all flex items-center justify-center gap-1"
+                                            title="Capture current preview frame as PNG"
+                                        >
+                                            <Camera size={11} /> png
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        <select
+                                            value={fps}
+                                            onChange={e => { setFps(Number(e.target.value)); setExportUrl(null); }}
+                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-1.5 py-1.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                                            title="Output frame rate (mp4/webm)"
+                                        >
+                                            {[24, 30, 60].map(f => <option key={f} value={f}>{f} fps</option>)}
+                                        </select>
+                                        <select
+                                            value={quality}
+                                            onChange={e => { setQuality(e.target.value as 'low' | 'medium' | 'high'); setExportUrl(null); }}
+                                            className="bg-zinc-900 border border-zinc-800 rounded-lg px-1.5 py-1.5 text-[10px] font-mono text-zinc-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                                            title="MP4 quality (CRF-based) — applies to mp4 export"
+                                        >
+                                            {(['high', 'medium', 'low'] as const).map(q => <option key={q} value={q}>{q}</option>)}
+                                        </select>
+                                        <button
+                                            onClick={handleExtractAudio}
+                                            disabled={isProcessing || !selectedClip}
+                                            className="py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider border bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all flex items-center justify-center gap-1 disabled:opacity-30"
+                                            title="Extract selected clip's audio as MP3"
+                                        >
+                                            <Speaker size={11} /> mp3
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                             {exportUrl ? (
                                 <>
                                     <Button
@@ -855,6 +1049,19 @@ export const QuickVideoEditor: React.FC = () => {
                                 }
                             }}
                         />
+
+                        {/* Crop region overlay */}
+                        {cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
+                            <div
+                                className="absolute border-2 border-dashed border-indigo-400/80 bg-indigo-500/5 pointer-events-none z-20"
+                                style={{
+                                    left: `${cropInset.left}%`,
+                                    top: `${cropInset.top}%`,
+                                    right: `${cropInset.right}%`,
+                                    bottom: `${cropInset.bottom}%`,
+                                }}
+                            />
+                        )}
 
                         {/* Processing overlay */}
                         {isProcessing && (

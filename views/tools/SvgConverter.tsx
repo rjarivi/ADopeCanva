@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
 import {
     FileCode2, Copy, Check, Trash2, Download, Eye, EyeOff,
-    AlertTriangle, Code2, Maximize2, Minimize2, RefreshCw
+    AlertTriangle, Code2, Maximize2, Minimize2, RefreshCw, Image as ImageIcon
 } from 'lucide-react';
 
 const SAMPLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="200" height="200">
@@ -24,6 +24,13 @@ export const SvgConverter: React.FC = () => {
     const [showPreview, setShowPreview] = useState(true);
     const [previewBg, setPreviewBg] = useState<'dark' | 'light' | 'transparent'>('dark');
     const previewRef = useRef<HTMLDivElement>(null);
+
+    // Raster export state
+    const [rasterFormat, setRasterFormat] = useState<'png' | 'jpeg'>('png');
+    const [rasterWidth, setRasterWidth] = useState('512');
+    const [rasterScale, setRasterScale] = useState(1);
+    const [isRasterizing, setIsRasterizing] = useState(false);
+    const [rasterError, setRasterError] = useState<string | null>(null);
 
     // Validate SVG on code change
     useEffect(() => {
@@ -64,6 +71,76 @@ export const SvgConverter: React.FC = () => {
         URL.revokeObjectURL(url);
     };
 
+    // --- Raster export (SVG → PNG / JPG) ---
+    const handleRasterExport = () => {
+        if (!code.trim() || error) {
+            setRasterError('Fix the SVG errors before exporting.');
+            return;
+        }
+        const outWidth = parseInt(rasterWidth, 10) * rasterScale;
+        if (!outWidth || outWidth < 1 || outWidth > 8192) {
+            setRasterError('Enter an output width between 1 and 8192 px.');
+            return;
+        }
+        setIsRasterizing(true);
+        setRasterError(null);
+
+        const blob = new Blob([code], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+
+        img.onload = () => {
+            try {
+                const inW = img.naturalWidth || img.width || outWidth;
+                const inH = img.naturalHeight || img.height || outWidth;
+                const ratio = inH / inW;
+                const outH = Math.max(1, Math.round(outWidth * ratio));
+
+                const canvas = document.createElement('canvas');
+                canvas.width = outWidth;
+                canvas.height = outH;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) throw new Error('Canvas not supported in this browser.');
+
+                if (rasterFormat === 'jpeg') {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, outWidth, outH);
+                }
+                ctx.drawImage(img, 0, 0, outWidth, outH);
+
+                canvas.toBlob(outBlob => {
+                    URL.revokeObjectURL(url);
+                    if (!outBlob) {
+                        setRasterError('Rasterization failed — try a smaller width.');
+                        setIsRasterizing(false);
+                        return;
+                    }
+                    const outUrl = URL.createObjectURL(outBlob);
+                    const a = document.createElement('a');
+                    a.href = outUrl;
+                    a.download = `output-${outWidth}x${outH}.${rasterFormat}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(outUrl);
+                    setRasterError(null);
+                    setIsRasterizing(false);
+                }, rasterFormat === 'png' ? 'image/png' : 'image/jpeg', rasterFormat === 'jpeg' ? 0.92 : undefined);
+            } catch (e) {
+                URL.revokeObjectURL(url);
+                setRasterError(e instanceof Error ? e.message : 'Rasterization failed.');
+                setIsRasterizing(false);
+            }
+        };
+
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            setRasterError('Could not render this SVG into an image.');
+            setIsRasterizing(false);
+        };
+        img.src = url;
+    };
+
     const handleLoadSample = () => {
         setCode(SAMPLE_SVG);
     };
@@ -83,8 +160,8 @@ export const SvgConverter: React.FC = () => {
                 <div className="flex items-center gap-3">
                     <FileCode2 size={32} className="text-indigo-400" />
                     <div>
-                        <h2 className="text-2xl font-black text-white font-unbounded">SVG Code → SVG</h2>
-                        <p className="text-xs text-zinc-500">Paste SVG markup, preview and download instantly</p>
+                        <h2 className="text-2xl font-black text-white font-unbounded">SVG Code Studio</h2>
+                        <p className="text-xs text-zinc-500">Paste SVG markup, preview and export as .svg, PNG or JPG</p>
                     </div>
                 </div>
 
@@ -237,12 +314,91 @@ export const SvgConverter: React.FC = () => {
                 </div>
             </div>
 
+            {/* Raster Export Strip */}
+            <div className="flex-none mt-4 bg-zinc-900 rounded-2xl border border-zinc-800 p-4 flex flex-col md:flex-row md:items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0">
+                    <ImageIcon size={14} className="text-indigo-400" />
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Raster Export</span>
+                </div>
+
+                {/* Format toggle */}
+                <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800">
+                    {(['png', 'jpeg'] as const).map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setRasterFormat(f)}
+                            className={`px-3 py-1.5 text-xs font-bold rounded-md uppercase transition-all ${
+                                rasterFormat === f
+                                    ? 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30'
+                                    : 'text-zinc-500 hover:text-zinc-300 border border-transparent'
+                            }`}
+                        >
+                            {f}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Width input */}
+                <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Width</label>
+                    <input
+                        type="number"
+                        min={1}
+                        max={8192}
+                        value={rasterWidth}
+                        onChange={e => setRasterWidth(e.target.value)}
+                        className="w-24 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-mono text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500/50"
+                    />
+                    <span className="text-[10px] font-mono text-zinc-600">px</span>
+                </div>
+
+                {/* Scale presets */}
+                <div className="flex gap-1">
+                    {([0.5, 1, 2, 4] as const).map(sc => (
+                        <button
+                            key={sc}
+                            onClick={() => setRasterScale(sc)}
+                            className={`px-2.5 py-1.5 text-[10px] font-bold rounded-lg border transition-all ${
+                                rasterScale === sc
+                                    ? 'border-indigo-500/50 bg-indigo-500/10 text-indigo-400'
+                                    : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                        >
+                            {sc}×
+                        </button>
+                    ))}
+                </div>
+
+                <div className="md:ml-auto flex items-center gap-3">
+                    <span className="text-[10px] font-mono text-zinc-600">
+                        out: {Math.max(1, (parseInt(rasterWidth, 10) || 0) * rasterScale)}px · {rasterFormat === 'jpeg' ? 'white bg' : 'transparent'}
+                    </span>
+                    <Button
+                        onClick={handleRasterExport}
+                        size="sm"
+                        disabled={!isValid || isRasterizing}
+                        className="bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30"
+                    >
+                        <ImageIcon size={14} className="mr-2" />
+                        {isRasterizing ? 'Exporting…' : `Download ${rasterFormat.toUpperCase()}`}
+                    </Button>
+                </div>
+            </div>
+
+            {rasterError && (
+                <div className="flex-none mt-2 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2.5 rounded-xl text-xs font-mono flex items-center gap-2">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span className="break-words">{rasterError}</span>
+                </div>
+            )}
+
             {/* Feature Highlights */}
             <div className="flex-none max-w-full w-full grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
                 {[
                     { icon: Eye, label: 'Live Preview', desc: 'Instant rendering' },
                     { icon: AlertTriangle, label: 'Validation', desc: 'Real-time error check' },
-                    { icon: Download, label: 'Download SVG', desc: 'Export clean .svg file' },
+                    { icon: Download, label: 'SVG Export', desc: 'Clean .svg file' },
+                    { icon: ImageIcon, label: 'PNG / JPG', desc: 'Custom width & scale' },
                     { icon: Maximize2, label: 'Scalable', desc: 'Infinite resolution' },
                 ].map((feat, i) => (
                     <div

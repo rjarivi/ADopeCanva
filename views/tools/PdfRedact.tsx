@@ -406,11 +406,14 @@ export const PdfRedact: React.FC = () => {
     };
 
     const exportTrue = async () => {
-        const first = pages.get(1)!;
+        const first = pages.get(1);
+        if (!first) throw new Error('Page 1 could not be re-rendered — try reloading the file.');
         const pdf   = new jsPDF({ orientation: first.width >= first.height ? 'landscape' : 'portrait', unit: 'px', format: [first.width, first.height] });
         for (let i = 1; i <= pageCount; i++) {
-            if (i > 1) { const pd = pages.get(i)!; pdf.addPage([pd.width, pd.height], pd.width >= pd.height ? 'landscape' : 'portrait'); }
-            const pd = pages.get(i)!; const rects = redactions.get(i) ?? [];
+            const pd = pages.get(i);
+            if (!pd) throw new Error('Some pages are not yet rendered — please wait for loading to finish, then export again.');
+            if (i > 1) { pdf.addPage([pd.width, pd.height], pd.width >= pd.height ? 'landscape' : 'portrait'); }
+            const rects = redactions.get(i) ?? [];
             const off = document.createElement('canvas'); off.width = pd.width; off.height = pd.height;
             const ctx = off.getContext('2d')!;
             await new Promise<void>(resolve => { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0); ctx.fillStyle = '#000'; rects.forEach(r => ctx.fillRect(r.x, r.y, r.w, r.h)); resolve(); }; img.src = pd.dataUrl; });
@@ -423,7 +426,11 @@ export const PdfRedact: React.FC = () => {
         if (!pages.size) return;
         setIsExporting(true); setError('');
         try { if (trueRedact) await exportTrue(); else await exportNormal(); }
-        catch { setError('Export failed. Please try again.'); }
+        catch (e) {
+            setError(e instanceof Error && e.message
+                ? e.message
+                : 'Export failed. Please try again.');
+        }
         finally { setIsExporting(false); }
     };
 

@@ -35,6 +35,23 @@ const PRESET_CHIPS: TrimPreset[] = [
     { label: 'Full Track', apply: (d) => ({ start: 0, end: d }) }
 ];
 
+// Build an atempo chain for rates outside the 0.5–2.0 single-filter range (supports 0.25x–4x)
+function buildTempoChain(rate: number): string[] {
+    if (!rate || rate === 1) return [];
+    const chain: string[] = [];
+    let remaining = rate;
+    while (remaining > 2.0) {
+        chain.push('atempo=2.0');
+        remaining /= 2.0;
+    }
+    while (remaining < 0.5) {
+        chain.push('atempo=0.5');
+        remaining *= 2.0;
+    }
+    chain.push(`atempo=${remaining.toFixed(4)}`);
+    return chain;
+}
+
 function formatTimecode(seconds: number, showMs = true): string {
     if (!seconds || isNaN(seconds) || seconds < 0) {
         return showMs ? '00:00.00' : '00:00';
@@ -63,6 +80,11 @@ export const AudioTrimmer: React.FC = () => {
     const [isLooping, setIsLooping] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1.0);
     const [volume, setVolume] = useState(100);
+
+    // Export processing toggles
+    const [normalize, setNormalize] = useState(false);
+    const [channelMode, setChannelMode] = useState<'auto' | 'stereo' | 'mono'>('auto');
+    const [sampleRate, setSampleRate] = useState<'original' | '44100' | '48000' | '22050'>('original');
 
     // Trimming Range in SECONDS
     const [startTime, setStartTime] = useState(0);
@@ -678,6 +700,9 @@ export const AudioTrimmer: React.FC = () => {
 
             const filters: string[] = [];
 
+            // Tempo chain (honors preview playbackRate, 0.25x–4x via chained steps)
+            filters.push(...buildTempoChain(playbackRate));
+
             if (volume !== 100) {
                 filters.push(`volume=${(volume / 100).toFixed(2)}`);
             }
@@ -693,6 +718,10 @@ export const AudioTrimmer: React.FC = () => {
                 filters.push(`afade=t=out:st=${fadeStartTime.toFixed(2)}:d=${actualFadeOut.toFixed(2)}`);
             }
 
+            if (normalize) {
+                filters.push('loudnorm=I=-16:TP=-1.5:LRA=11');
+            }
+
             const args: string[] = [
                 '-y',
                 '-ss', startTime.toFixed(3),
@@ -704,6 +733,11 @@ export const AudioTrimmer: React.FC = () => {
             if (filters.length > 0) {
                 args.push('-af', filters.join(','));
             }
+
+            // Channel / sample rate remap
+            if (channelMode === 'stereo') args.push('-ac', '2');
+            else if (channelMode === 'mono') args.push('-ac', '1');
+            if (sampleRate !== 'original') args.push('-ar', sampleRate);
 
             switch (exportFormat) {
                 case 'mp3':
@@ -780,8 +814,7 @@ export const AudioTrimmer: React.FC = () => {
         if (selected) {
             setFile({
                 file: selected,
-                preview: URL.createObjectURL(selected),
-                name: selected.name,
+                previewUrl: URL.createObjectURL(selected),
                 size: (selected.size / (1024 * 1024)).toFixed(2) + ' MB',
                 type: selected.type
             });
@@ -1311,8 +1344,8 @@ export const AudioTrimmer: React.FC = () => {
 
                         <div className="space-y-1">
                             <span className="text-[11px] text-zinc-400 block">Playback Speed</span>
-                            <div className="grid grid-cols-6 gap-1">
-                                {[0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((rate) => (
+                            <div className="grid grid-cols-8 gap-1">
+                                {[0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 4.0].map((rate) => (
                                     <button
                                         key={rate}
                                         onClick={() => setPlaybackRate(rate)}
@@ -1376,6 +1409,43 @@ export const AudioTrimmer: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Channel / Sample Rate / Normalize */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div className="space-y-1">
+                                <span className="text-[11px] text-zinc-400 block">Channels</span>
+                                <select
+                                    value={channelMode}
+                                    onChange={(e) => { setChannelMode(e.target.value as typeof channelMode); setTrimmedUrl(null); }}
+                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-lg px-2 py-1.5 text-xs appearance-none cursor-pointer"
+                                >
+                                    <option value="auto">Original</option>
+                                    <option value="stereo">Stereo</option>
+                                    <option value="mono">Mono</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[11px] text-zinc-400 block">Sample Rate</span>
+                                <select
+                                    value={sampleRate}
+                                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setTrimmedUrl(null); }}
+                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-lg px-2 py-1.5 text-xs appearance-none cursor-pointer"
+                                >
+                                    <option value="original">Original</option>
+                                    <option value="44100">44100 Hz</option>
+                                    <option value="48000">48000 Hz</option>
+                                    <option value="22050">22050 Hz</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => { setNormalize(prev => !prev); setTrimmedUrl(null); }}
+                            className={`w-full py-2 mt-0.5 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-2 ${normalize ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
+                        >
+                            <Sparkles size={14} />
+                            Normalize Loudness {normalize ? 'On' : 'Off'}
+                        </button>
                     </section>
 
                 </div>

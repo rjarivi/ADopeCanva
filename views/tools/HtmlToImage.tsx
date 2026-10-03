@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/Button';
 import { SectionLabel } from '../../components/EditorControls';
 import {
     Code2, Download, Copy, Check, RefreshCcw,
-    Eye, MonitorPlay, Zap, Shield, Image
+    Eye, MonitorPlay, Zap, Shield, Image, AlertTriangle
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
@@ -145,6 +145,7 @@ export const HtmlToImage: React.FC = () => {
     const [quality, setQuality] = useState(95);
     const [isCapturing, setIsCapturing] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
 
     const [previewW, setPreviewW] = useState(660);
     const [previewH, setPreviewH] = useState(700);
@@ -211,9 +212,13 @@ export const HtmlToImage: React.FC = () => {
 
     const handleDownload = useCallback(async () => {
         setIsCapturing(true);
+        setExportError(null);
         try {
             const canvas = await captureHtml(code, scale);
-            if (!canvas) return;
+            if (!canvas) {
+                setExportError('Capture failed — check that the HTML is valid and images (if any) allow CORS.');
+                return;
+            }
             const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
             const q = format === 'png' ? 1 : quality / 100;
             const a = document.createElement('a');
@@ -222,6 +227,8 @@ export const HtmlToImage: React.FC = () => {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        } catch (err) {
+            setExportError(err instanceof Error ? err.message : 'Export failed — try again.');
         } finally {
             setIsCapturing(false);
         }
@@ -229,17 +236,28 @@ export const HtmlToImage: React.FC = () => {
 
     const handleCopyImage = useCallback(async () => {
         setIsCapturing(true);
+        setExportError(null);
         try {
             const canvas = await captureHtml(code, scale);
-            if (!canvas) return;
+            if (!canvas) {
+                setExportError('Capture failed — check that the HTML is valid and images (if any) allow CORS.');
+                return;
+            }
             canvas.toBlob(async (blob) => {
-                if (!blob) return;
+                if (!blob) {
+                    setExportError('Could not encode the image for the clipboard.');
+                    return;
+                }
                 try {
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
-                } catch { /* clipboard write may be blocked */ }
+                } catch {
+                    setExportError('Clipboard write was blocked by the browser — try downloading instead.');
+                }
             }, 'image/png');
+        } catch (err) {
+            setExportError(err instanceof Error ? err.message : 'Copy failed — try again.');
         } finally {
             setIsCapturing(false);
         }
@@ -304,6 +322,14 @@ export const HtmlToImage: React.FC = () => {
                     </Button>
                 </div>
             </div>
+
+            {/* Inline export error strip */}
+            {exportError && (
+                <div className="shrink-0 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2.5 rounded-xl text-xs font-mono flex items-center gap-2">
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span className="break-words">{exportError}</span>                    <button onClick={() => setExportError(null)} className="ml-auto text-red-300 hover:text-red-200 font-bold shrink-0">Dismiss</button>
+                </div>
+            )}
 
             {/* 3-column layout */}
             <div className="flex-1 flex gap-3 min-h-0">

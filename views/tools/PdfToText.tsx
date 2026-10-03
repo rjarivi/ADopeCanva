@@ -11,55 +11,121 @@ import * as pdfjsLib from 'pdfjs-dist';
 // Set up PDF.js worker - using local file for privacy (no CDN)
 pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
+interface ExtractResult {
+    fileName: string;
+    text: string;
+    pages: number;
+}
+
+// Parse range string like "1-3,5,7-9" into 0-based indices
+function parsePageRanges(rangeStr: string, maxPages: number): number[] {
+    const indices = new Set<number>();
+    const parts = rangeStr.split(',');
+    for (const part of parts) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const rangeMatch = trimmed.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (rangeMatch) {
+            const start = parseInt(rangeMatch[1], 10);
+            const end = parseInt(rangeMatch[2], 10);
+            for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+                if (i >= 1 && i <= maxPages) indices.add(i - 1);
+            }
+        } else {
+            const num = parseInt(trimmed, 10);
+            if (!isNaN(num) && num >= 1 && num <= maxPages) indices.add(num - 1);
+        }
+    }
+    return Array.from(indices).sort((a, b) => a - b);
+}
+
+const RANGE_PLACEHOLDER = 'e.g. 1-3, 5, 8-10 (blank = all pages)';
+
 export const PdfToText: React.FC = () => {
     const isMobile = useIsMobile();
-    const [file, setFile] = useState<FileData | null>(null);
+    const [files, setFiles] = useState<FileData[]>([]);
+    const [results, setResults] = useState<ExtractResult[]>([]);
     const [extractedText, setExtractedText] = useState<string>('');
+    const [rangeInput, setRangeInput] = useState('');
+    const [rangeError, setRangeError] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [pageCount, setPageCount] = useState(0);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleFileSelect = useCallback((newFile: FileData | FileData[]) => {
-        const selectedFile = Array.isArray(newFile) ? newFile[0] : newFile;
-        setFile(selectedFile);
+    const handleFileSelect = useCallback((newFiles: FileData | FileData[]) => {
+        const arr = Array.isArray(newFiles) ? newFiles : [newFiles];
+        setFiles(arr);
+        setResults([]);
         setExtractedText('');
         setPageCount(0);
+        setRangeInput('');
+        setRangeError('');
         setError(null);
     }, []);
 
     const extractText = useCallback(async () => {
-        if (!file) return;
+        if (files.length === 0) return;
 
         setIsProcessing(true);
         setError(null);
         setExtractedText('');
+        setResults([]);
+        setRangeError('');
 
         try {
-            const arrayBuffer = await file.file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-            setPageCount(pdf.numPages);
+            const out: ExtractResult[] = [];
+            for (const file of files) {
+                const arrayBuffer = await file.file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                if (files.length === 1) setPageCount(pdf.numPages);
 
-            let fullText = '';
+                // Resolve the range against this file's page count
+                let pageIndices: number[] = pdf.numPages
+                    ? Array.from({ length: pdf.numPages }, (_, i) => i)
+                    : [];
+                if (rangeInput.trim()) {
+                    const parsed = parsePageRanges(rangeInput, pdf.numPages);
+                    if (parsed.length === 0) {
+                        setRangeError(`No valid pages in "${rangeInput}" (file has ${pdf.numPages} pages).`);
+                        if (files.length === 1) { setIsProcessing(false); return; }
+                        continue;
+                    }
+                    pageIndices = parsed;
+                }
 
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
-                    .join(' ');
+                let fullText = '';
+                for (const idx of pageIndices) {
+                    const page = await pdf.getPage(idx + 1);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items
+                        .map((item: any) => item.str)
+                        .join(' ');
 
-                fullText += `--- Page ${i} ---\n${pageText}\n\n`;
+                    fullText += `--- Page ${idx + 1} ---\n${pageText}\n\n`;
+                }
+
+                out.push({ fileName: file.file.name, text: fullText.trim(), pages: pdf.numPages });
             }
 
-            setExtractedText(fullText.trim());
+            if (files.length === 1) {
+                setExtractedText(out[0]?.text ?? '');
+                setResults([]);
+            } else {
+                // Combined output with file headers for batch mode
+                const combined = out
+                    .map(r => `===== ${r.fileName} =====\n${r.text}`)
+                    .join('\n\n');
+                setResults(out);
+                setExtractedText(combined);
+            }
         } catch (err) {
             console.error('PDF extraction error:', err);
-            setError('Failed to extract text. The PDF may be scanned or image-based.');
+            setError('Failed to extract text. The PDF may be corrupted or password protected.');
         } finally {
             setIsProcessing(false);
         }
-    }, [file]);
+    }, [files, rangeInput]);
 
     const handleCopy = useCallback(() => {
         navigator.clipboard.writeText(extractedText);
@@ -68,25 +134,32 @@ export const PdfToText: React.FC = () => {
     }, [extractedText]);
 
     const handleDownload = useCallback(() => {
+        if (!extractedText) return;
         const blob = new Blob([extractedText], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${file?.file.name.replace('.pdf', '')}-text.txt`;
+        const base = files.length === 1
+            ? files[0].file.name.replace('.pdf', '') + '-text'
+            : 'batch-text';
+        a.download = `${base}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    }, [extractedText, file]);
+    }, [extractedText, files]);
 
     const handleReset = () => {
-        setFile(null);
+        setFiles([]);
+        setResults([]);
         setExtractedText('');
         setPageCount(0);
+        setRangeInput('');
+        setRangeError('');
         setError(null);
     };
 
-    if (!file) {
+    if (files.length === 0) {
         return (
             <div className="container mx-auto px-6 h-full flex flex-col justify-center animate-fade-in text-center">
                 {/* Header */}
@@ -95,7 +168,7 @@ export const PdfToText: React.FC = () => {
                         <FileText size={32} /> PDF to Text
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Extract text content from PDF documents instantly.
+                        Extract text content from PDF documents instantly — single file or batch.
                     </p>
                 </div>
 
@@ -106,7 +179,8 @@ export const PdfToText: React.FC = () => {
                         onFileSelect={handleFileSelect}
                         accept=".pdf"
                         label="Upload PDF"
-                        description="Select a PDF file to extract text"
+                        description="Select one PDF, or several for batch extraction"
+                        multiple={true}
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
                 </div>
@@ -115,8 +189,8 @@ export const PdfToText: React.FC = () => {
                 <div className="flex-none max-w-4xl mx-auto w-full grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
                     {[
                         { icon: Zap, label: 'Instant Extract', desc: 'Fast processing' },
-                        { icon: Layers, label: 'Multi-Page', desc: 'All pages at once' },
-                        { icon: Copy, label: 'Copy & Paste', desc: 'One-click copy' },
+                        { icon: Layers, label: 'Batch Mode', desc: 'Multi-file support' },
+                        { icon: FileText, label: 'Page Ranges', desc: 'e.g. 1-3, 5' },
                         { icon: FileSearch, label: 'Searchable', desc: 'Full text output' }
                     ].map((feat, i) => (
                         <div key={i} className="flex flex-col items-center text-center space-y-2 p-4 rounded-xl bg-zinc-900/30 border border-zinc-800/30 backdrop-blur-sm hover:bg-zinc-900/50 transition-colors">
@@ -152,19 +226,38 @@ export const PdfToText: React.FC = () => {
                     <div className="space-y-8 animate-in fade-in duration-300">
                         <section className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-900/50 space-y-3">
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-zinc-500 font-medium">File Name</span>
-                                <span className="text-xs text-zinc-300 font-mono truncate max-w-[150px]">{file.file.name}</span>
+                                <span className="text-xs text-zinc-500 font-medium">Files</span>
+                                <span className="text-xs text-indigo-400 font-mono font-bold">{files.length === 1 ? files[0].file.name : `${files.length} files (batch)`}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-xs text-zinc-500 font-medium">File Size</span>
-                                <span className="text-xs text-zinc-300 font-mono">{file.size}</span>
+                                <span className="text-xs text-zinc-500 font-medium">Size</span>
+                                <span className="text-xs text-zinc-300 font-mono">{files.map(f => f.size).join(', ') || '—'}</span>
                             </div>
-                            {pageCount > 0 && (
+                            {pageCount > 0 && files.length === 1 && (
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-zinc-500 font-medium">Pages</span>
                                     <span className="text-xs text-indigo-400 font-mono font-bold">{pageCount}</span>
                                 </div>
                             )}
+                        </section>
+
+                        {/* Page range */}
+                        <section className="space-y-3">
+                            <SectionLabel>Page Range</SectionLabel>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={rangeInput}
+                                    onChange={(e) => { setRangeInput(e.target.value); setRangeError(''); }}
+                                    onKeyDown={(e) => e.key === 'Enter' && extractText()}
+                                    placeholder={RANGE_PLACEHOLDER}
+                                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs focus:ring-1 focus:ring-indigo-500/50 outline-none text-zinc-300 placeholder:text-zinc-700 font-mono"
+                                />
+                            </div>
+                            {rangeError && <p className="text-[10px] text-red-400 font-bold leading-relaxed">{rangeError}</p>}
+                            <p className="text-[10px] text-zinc-600 uppercase font-bold tracking-tight leading-relaxed">
+                                Combine ranges: <span className="text-zinc-500 font-mono normal-case">1-3, 5, 8-10</span>. Leave blank for all pages.
+                            </p>
                         </section>
 
                         {error && (
@@ -177,7 +270,7 @@ export const PdfToText: React.FC = () => {
                             {!extractedText ? (
                                 <Button className="w-full h-12 border-none shadow-lg shadow-red-900/20" onClick={extractText} isLoading={isProcessing} disabled={isProcessing} >
                                     <FileText size={18} className="mr-2" />
-                                    {isProcessing ? 'Extracting...' : 'Extract Text'}
+                                    {isProcessing ? 'Extracting...' : files.length === 1 ? 'Extract Text' : `Extract From ${files.length} Files`}
                                 </Button>
                             ) : (
                                 <div className="space-y-3 animate-slide-up">
@@ -194,6 +287,21 @@ export const PdfToText: React.FC = () => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Per-file batch results */}
+                        {results.length > 0 && (
+                            <section className="space-y-3">
+                                <SectionLabel>Batch Results</SectionLabel>
+                                <div className="space-y-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                                    {results.map(r => (
+                                        <div key={r.fileName} className="bg-[#0e0e11] border border-zinc-800 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+                                            <span className="text-[10px] text-zinc-300 font-mono truncate">{r.fileName}</span>
+                                            <span className="text-[10px] text-zinc-500 font-mono shrink-0">{r.text.length.toLocaleString()} ch</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
                         <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
                             <SectionLabel>About</SectionLabel>

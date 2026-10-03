@@ -1,27 +1,132 @@
 
 import React, { useState, useMemo } from 'react';
-import { Copy, Sparkles, RefreshCcw } from 'lucide-react';
+import { Copy, Check, Download, Sparkles, RefreshCcw, Eraser } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+
+interface CleanerOptions {
+    removeString: string;
+    removeEmptyLines: boolean;
+    trimLines: boolean;
+    removeDuplicateLines: boolean;
+    removeLineBreaks: boolean;
+    smartQuotes: boolean;
+    collapseSpaces: boolean;
+}
+
+function applyCleaning(text: string, opts: CleanerOptions): string {
+    let res = text;
+
+    if (opts.removeString) {
+        res = res.split(opts.removeString).join('');
+    }
+
+    if (opts.smartQuotes) {
+        res = res
+            .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+            .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+            .replace(/[\u2013\u2014]/g, '-')
+            .replace(/\u2026/g, '...');
+    }
+
+    res = res.split('\n').map(line => {
+        let l = line;
+        if (opts.collapseSpaces) l = l.replace(/[ \t]+/g, ' ');
+        if (opts.trimLines) l = l.trim();
+        return l;
+    }).join('\n');
+
+    if (opts.removeDuplicateLines) {
+        const seen = new Set<string>();
+        res = res.split('\n').filter(line => {
+            const key = line.trim();
+            if (key === '') return true; // blank handling is separate
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        }).join('\n');
+    }
+
+    if (opts.removeEmptyLines) {
+        res = res.split('\n').filter(line => line.trim() !== '').join('\n');
+    }
+
+    if (opts.removeLineBreaks) {
+        res = res.split('\n').filter(line => line.trim() !== '').join(' ');
+    }
+
+    return res;
+}
+
+type ToggleKey = 'removeEmptyLines' | 'trimLines' | 'removeDuplicateLines' | 'removeLineBreaks' | 'smartQuotes' | 'collapseSpaces';
+
+const TOGGLES: { key: ToggleKey; label: string }[] = [
+    { key: 'trimLines', label: 'Trim lines (leading/trailing)' },
+    { key: 'removeDuplicateLines', label: 'Remove duplicate lines' },
+    { key: 'removeEmptyLines', label: 'Remove extra blank lines' },
+    { key: 'removeLineBreaks', label: 'Remove line-breaks (single paragraph)' },
+    { key: 'smartQuotes', label: 'Normalize smart quotes & dashes' },
+    { key: 'collapseSpaces', label: 'Collapse multiple spaces' },
+];
 
 export const TextCleaner: React.FC = () => {
     const [cleanerInput, setCleanerInput] = useState('');
     const [removeString, setRemoveString] = useState('');
-    const [removeEmptyLines, setRemoveEmptyLines] = useState(true);
+    const [opts, setOpts] = useState<CleanerOptions>({
+        removeString: '',
+        removeEmptyLines: true,
+        trimLines: false,
+        removeDuplicateLines: false,
+        removeLineBreaks: false,
+        smartQuotes: false,
+        collapseSpaces: false,
+    });
+    const [copied, setCopied] = useState(false);
+
+    const setRemoveStringLocal = (value: string) => {
+        setRemoveString(value);
+        setOpts(prev => ({ ...prev, removeString: value }));
+    };
 
     const cleanedText = useMemo(() => {
         if (!cleanerInput) return '';
-        let res = cleanerInput;
+        return applyCleaning(cleanerInput, { ...opts, removeString });
+    }, [cleanerInput, opts, removeString]);
 
-        if (removeString) {
-            res = res.split(removeString).join('');
-        }
+    // Live stats: what cleaning did
+    const stats = useMemo(() => {
+        const inputLines = cleanerInput ? cleanerInput.split('\n').length : 0;
+        const outputLines = cleanedText ? cleanedText.split('\n').length : 0;
+        return {
+            linesDelta: inputLines - outputLines,
+            charsDelta: cleanerInput.length - cleanedText.length,
+            outputLines,
+        };
+    }, [cleanerInput, cleanedText]);
 
-        if (removeEmptyLines) {
-            res = res.split('\n').filter(line => line.trim() !== '').join('\n');
-        }
+    const handleCopy = () => {
+        navigator.clipboard.writeText(cleanedText);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
-        return res;
-    }, [cleanerInput, removeString, removeEmptyLines]);
+    const handleDownload = () => {
+        if (!cleanedText) return;
+        const blob = new Blob([cleanedText], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'cleaned-text.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleReset = () => {
+        setCleanerInput('');
+        setRemoveString('');
+        setOpts(prev => ({ ...prev, removeString: '' }));
+    };
 
     return (
         <div className="max-w-[1800px] mx-auto p-4 lg:p-6 animate-fade-in h-[calc(100vh-100px)]">
@@ -48,24 +153,33 @@ export const TextCleaner: React.FC = () => {
                                 className="flex-1 w-full bg-zinc-900/50 border border-zinc-800 rounded-xl p-4 text-zinc-300 outline-none focus:ring-1 focus:ring-indigo-500/50 resize-none font-mono text-sm leading-relaxed custom-scrollbar"
                             />
                         </div>
-                        <div className="h-1/3 flex flex-col gap-2">
+                        <div className="h-2/5 flex flex-col gap-2">
                             <label className="text-sm font-medium text-zinc-400">Phrase to Remove (Exact Match)</label>
                             <textarea
                                 value={removeString}
-                                onChange={(e) => setRemoveString(e.target.value)}
+                                onChange={(e) => setRemoveStringLocal(e.target.value)}
                                 placeholder={'e.g. Copy\nAdd to Design'}
                                 className="flex-1 w-full bg-red-900/10 border border-red-500/20 rounded-xl p-4 text-zinc-300 outline-none focus:border-red-500/50 resize-none font-mono text-sm custom-scrollbar"
                             />
-                            <div className="flex items-center gap-2 mt-1">
-                                <input
-                                    id="remove-lines"
-                                    type="checkbox"
-                                    checked={removeEmptyLines}
-                                    onChange={(e) => setRemoveEmptyLines(e.target.checked)}
-                                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-offset-0 focus:ring-indigo-500/50"
-                                />
-                                <label htmlFor="remove-lines" className="text-sm text-zinc-500 cursor-pointer select-none">Remove empty lines</label>
-                            </div>
+                        </div>
+
+                        {/* Operations */}
+                        <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-4 space-y-2.5">
+                            <label className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                                <Eraser size={12} className="inline mr-1.5 text-indigo-400" />Operations
+                            </label>
+                            {TOGGLES.map(t => (
+                                <div key={t.key} className="flex items-center gap-2">
+                                    <input
+                                        id={`tc-${t.key}`}
+                                        type="checkbox"
+                                        checked={opts[t.key]}
+                                        onChange={(e) => setOpts(prev => ({ ...prev, [t.key]: e.target.checked }))}
+                                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-indigo-500 focus:ring-offset-0 focus:ring-indigo-500/50"
+                                    />
+                                    <label htmlFor={`tc-${t.key}`} className="text-xs text-zinc-500 cursor-pointer select-none">{t.label}</label>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
@@ -73,13 +187,15 @@ export const TextCleaner: React.FC = () => {
                     <div className="flex flex-col gap-2 h-full">
                         <div className="flex items-center justify-between">
                             <label className="text-sm font-medium text-zinc-400">Cleaned Result</label>
-                            <Button size="sm" variant="secondary" onClick={() => {
-                                    navigator.clipboard.writeText(cleanedText);
-                                }}
-                                disabled={!cleanedText}
-                            >
-                                <Copy size={14} className="mr-2" /> Copy Result
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                <Button size="sm" variant="secondary" onClick={handleDownload} disabled={!cleanedText}>
+                                    <Download size={14} className="mr-2" /> Download .txt
+                                </Button>
+                                <Button size="sm" variant="secondary" onClick={handleCopy} disabled={!cleanedText}>
+                                    {copied ? <Check size={14} className="mr-2 text-green-500" /> : <Copy size={14} className="mr-2" />}
+                                    {copied ? 'Copied' : 'Copy Result'}
+                                </Button>
+                            </div>
                         </div>
                         <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-4 relative group overflow-hidden">
                             <div className="absolute inset-0 overflow-auto custom-scrollbar p-4">
@@ -93,9 +209,25 @@ export const TextCleaner: React.FC = () => {
                                 )}
                             </div>
                         </div>
+
+                        {/* Live stats */}
+                        {cleanerInput && (
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                                <Stat label="Lines Removed" value={stats.linesDelta > 0 ? stats.linesDelta : 0} />
+                                <Stat label="Chars Removed" value={stats.charsDelta > 0 ? stats.charsDelta : 0} />
+                                <Stat label="Lines Out" value={stats.outputLines} />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
         </div>
     );
 };
+
+const Stat = ({ label, value }: { label: string; value: number }) => (
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg py-2 px-3">
+        <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-black font-unbounded text-indigo-400">{value.toLocaleString()}</p>
+    </div>
+);

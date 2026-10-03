@@ -38,10 +38,8 @@ export const SignatureGenerator: React.FC = () => {
     const [status, setStatus] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [isEncodingMP4, setIsEncodingMP4] = useState(false);
     const [isEncodingGIF, setIsEncodingGIF] = useState(false);
     const [gifUrl, setGifUrl] = useState<string | null>(null);
-    const [mp4Url, setMp4Url] = useState<string | null>(null);
     const [previewFrameId, setPreviewFrameId] = useState<number | null>(null);
     const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
@@ -212,7 +210,6 @@ export const SignatureGenerator: React.FC = () => {
     const generateExports = async () => {
         // Reset states
         setGifUrl(null);
-        setMp4Url(null);
         setError(null);
         setStatus('');
 
@@ -355,13 +352,46 @@ export const SignatureGenerator: React.FC = () => {
             }
         } finally {
             setIsRecording(false);
-            setIsEncodingMP4(false);
             setIsEncodingGIF(false);
             setStatus('');
         }
     };
 
-    const isProcessing = isRecording || isEncodingMP4 || isEncodingGIF;
+    const isProcessing = isRecording || isEncodingGIF;
+
+    // --- Static transparent-PNG export of the drawn signature ---
+    const downloadSignaturePng = () => {
+        if (strokes.length === 0) return;
+        try {
+            const offscreen = document.createElement('canvas');
+            offscreen.width = 800;
+            offscreen.height = 450;
+            const ctx = offscreen.getContext('2d');
+            if (!ctx) {
+                setError('Canvas context failed — PNG export unavailable.');
+                return;
+            }
+            // Always transparent background — the classic signature overlay
+            ctx.clearRect(0, 0, offscreen.width, offscreen.height);
+            drawStrokes(ctx, strokes);
+
+            offscreen.toBlob(blob => {
+                if (!blob) {
+                    setError('PNG export failed — try again.');
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'signature.png';
+                a.click();
+                URL.revokeObjectURL(url);
+                setError(null);
+            }, 'image/png');
+        } catch (e) {
+            setError(e instanceof Error ? e.message : 'PNG export failed.');
+        }
+    };
 
     return (
         <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-primary/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 min-h-[600px]'}`}>
@@ -375,7 +405,6 @@ export const SignatureGenerator: React.FC = () => {
                     <button onClick={() => {
                         setStrokes([]);
                         setGifUrl(null);
-                        setMp4Url(null);
                         setError(null);
                         setView('draw');
                     }} className="text-zinc-600 hover:text-primary transition-colors">
@@ -462,6 +491,16 @@ export const SignatureGenerator: React.FC = () => {
                                         </div>
                                     )}
 
+                                    {/* Static PNG — primary signature download */}
+                                    <Button
+                                        variant="primary"
+                                        className="w-full h-12"
+                                        onClick={downloadSignaturePng}
+                                        disabled={strokes.length === 0}
+                                    >
+                                        <Download size={18} className="mr-2" /> Download PNG (Transparent)
+                                    </Button>
+
                                     {/* Action Buttons */}
                                     <div className="space-y-3">
                                     {/* SIMPLIFIED DOWNLOAD BUTTON */}
@@ -480,8 +519,6 @@ export const SignatureGenerator: React.FC = () => {
                                         >
                                             {isRecording ? (
                                                 <><Loader2 size={16} className="animate-spin mr-2" /> Recording...</>
-                                            ) : isEncodingMP4 ? (
-                                                <><Loader2 size={16} className="animate-spin mr-2" /> Preparing...</>
                                             ) : isEncodingGIF ? (
                                                 <><Loader2 size={16} className="animate-spin mr-2" /> Creating GIF...</>
                                             ) : status === 'Loading engine...' ? (

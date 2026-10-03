@@ -72,12 +72,28 @@ const PRESETS: Preset[] = [
         direction: 'horizontal',
         color: 'from-indigo-500 to-blue-600',
     },
+    {
+        id: 'grid',
+        label: 'Custom Grid',
+        icon: LayoutGrid,
+        sliceWidth: 0,
+        sliceHeight: 0,
+        description: 'Split into rows × columns cells',
+        direction: 'horizontal',
+        color: 'from-teal-500 to-cyan-600',
+    },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function formatSize(w: number, h: number) {
     return `${w} × ${h}px`;
 }
+
+const EXT_BY_MIME: Record<string, string> = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/webp': 'webp',
+};
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export const ImageSplitter: React.FC = () => {
@@ -94,6 +110,10 @@ export const ImageSplitter: React.FC = () => {
     const [customW, setCustomW] = useState(1080);
     const [customH, setCustomH] = useState(1080);
     const [customDir, setCustomDir] = useState<'horizontal' | 'vertical'>('horizontal');
+    const [customRows, setCustomRows] = useState(3);
+    const [customCols, setCustomCols] = useState(2);
+    const [outputFormat, setOutputFormat] = useState<'image/png' | 'image/jpeg' | 'image/webp'>('image/png');
+    const [outputQuality, setOutputQuality] = useState(90);
     const [slices, setSlices] = useState<SliceResult[]>([]);
     const [processing, setProcessing] = useState(false);
     const [downloading, setDownloading] = useState(false);
@@ -104,8 +124,13 @@ export const ImageSplitter: React.FC = () => {
 
     // Active preset config
     const activePreset = PRESETS.find(p => p.id === selectedPreset)!;
-    const sliceW = selectedPreset === 'custom' ? customW : activePreset.sliceWidth;
-    const sliceH = selectedPreset === 'custom' ? customH : activePreset.sliceHeight;
+    const isGridMode = selectedPreset === 'grid';
+    const sliceW = isGridMode
+        ? (imageEl ? Math.ceil(imageEl.naturalWidth / customCols) : 0)
+        : (selectedPreset === 'custom' ? customW : activePreset.sliceWidth);
+    const sliceH = isGridMode
+        ? (imageEl ? Math.ceil(imageEl.naturalHeight / customRows) : 0)
+        : (selectedPreset === 'custom' ? customH : activePreset.sliceHeight);
     const direction = selectedPreset === 'custom' ? customDir : activePreset.direction;
 
     // Load image from FileData
@@ -125,14 +150,16 @@ export const ImageSplitter: React.FC = () => {
     useEffect(() => {
         setSlices([]);
         setSplitDone(false);
-    }, [selectedPreset, customW, customH, customDir]);
+    }, [selectedPreset, customW, customH, customDir, customRows, customCols, outputFormat, outputQuality]);
 
     // ── Compute expected slice count for preview ─────────────────────────────
-    const sliceCount = imageEl
-        ? direction === 'horizontal'
-            ? Math.ceil(imageEl.naturalWidth / sliceW)
-            : Math.ceil(imageEl.naturalHeight / sliceH)
-        : 0;
+    const sliceCount = !imageEl
+        ? 0
+        : isGridMode
+            ? customRows * customCols
+            : direction === 'horizontal'
+                ? Math.ceil(imageEl.naturalWidth / sliceW)
+                : Math.ceil(imageEl.naturalHeight / sliceH);
 
     // ── Split Logic ──────────────────────────────────────────────────────────
     const handleSplit = useCallback(async () => {
@@ -145,8 +172,38 @@ export const ImageSplitter: React.FC = () => {
 
         const results: SliceResult[] = [];
         const canvas = canvasRef.current ?? document.createElement('canvas');
+        const encodeSlice = (sx: number, sy: number, sw: number, sh: number, w: number, h: number, i: number, label: string) => {
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d')!;
+            ctx.clearRect(0, 0, w, h);
+            ctx.drawImage(imageEl, sx, sy, sw, sh, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL(outputFormat, outputFormat === 'image/png' ? undefined : outputQuality / 100);
+            results.push({
+                index: i,
+                dataUrl,
+                width: w,
+                height: h,
+                label: `${label}_${String(i + 1).padStart(2, '0')}`,
+            });
+        };
 
-        if (direction === 'horizontal') {
+        if (isGridMode) {
+            // Even partitions into rows × cols cells
+            const cellW = Math.floor(imageEl.naturalWidth / customCols);
+            const cellH = Math.floor(imageEl.naturalHeight / customRows);
+            let idx = 0;
+            for (let r = 0; r < customRows; r++) {
+                for (let c = 0; c < customCols; c++) {
+                    const sx = c * cellW;
+                    const sy = r * cellH;
+                    const sw = c === customCols - 1 ? imageEl.naturalWidth - sx : cellW;
+                    const sh = r === customRows - 1 ? imageEl.naturalHeight - sy : cellH;
+                    encodeSlice(sx, sy, sw, sh, sw, sh, idx, 'cell');
+                    idx++;
+                }
+            }
+        } else if (direction === 'horizontal') {
             // Split wide image into left-to-right slices of sliceW×sliceH
             const totalCols = Math.ceil(imageEl.naturalWidth / sliceW);
             for (let i = 0; i < totalCols; i++) {
@@ -154,18 +211,7 @@ export const ImageSplitter: React.FC = () => {
                 const sw = Math.min(sliceW, imageEl.naturalWidth - sx);
                 // Scale to exact sliceH, maintaining proportional source height
                 const srcH = Math.min(sliceH, imageEl.naturalHeight);
-                canvas.width = sliceW;
-                canvas.height = sliceH;
-                const ctx = canvas.getContext('2d')!;
-                ctx.clearRect(0, 0, sliceW, sliceH);
-                ctx.drawImage(imageEl, sx, 0, sw, srcH, 0, 0, sw, srcH);
-                results.push({
-                    index: i,
-                    dataUrl: canvas.toDataURL('image/png'),
-                    width: sliceW,
-                    height: sliceH,
-                    label: `slide_${String(i + 1).padStart(2, '0')}`,
-                });
+                encodeSlice(sx, 0, sw, srcH, sliceW, sliceH, i, 'slide');
             }
         } else {
             // Split tall image into top-to-bottom slices of sliceW×sliceH
@@ -174,31 +220,20 @@ export const ImageSplitter: React.FC = () => {
                 const sy = i * sliceH;
                 const sh = Math.min(sliceH, imageEl.naturalHeight - sy);
                 const srcW = Math.min(sliceW, imageEl.naturalWidth);
-                canvas.width = sliceW;
-                canvas.height = sliceH;
-                const ctx = canvas.getContext('2d')!;
-                ctx.clearRect(0, 0, sliceW, sliceH);
-                ctx.drawImage(imageEl, 0, sy, srcW, sh, 0, 0, srcW, sh);
-                results.push({
-                    index: i,
-                    dataUrl: canvas.toDataURL('image/png'),
-                    width: sliceW,
-                    height: sliceH,
-                    label: `slide_${String(i + 1).padStart(2, '0')}`,
-                });
+                encodeSlice(0, sy, srcW, sh, sliceW, sliceH, i, 'slide');
             }
         }
 
         setSlices(results);
         setSplitDone(true);
         setProcessing(false);
-    }, [imageEl, sliceW, sliceH, direction]);
+    }, [imageEl, sliceW, sliceH, direction, isGridMode, customRows, customCols, outputFormat, outputQuality]);
 
     // ── Download Single ──────────────────────────────────────────────────────
     const downloadSingle = (slice: SliceResult) => {
         const a = document.createElement('a');
         a.href = slice.dataUrl;
-        a.download = `${slice.label}.png`;
+        a.download = `${slice.label}.${EXT_BY_MIME[outputFormat]}`;
         a.click();
     };
 
@@ -209,9 +244,10 @@ export const ImageSplitter: React.FC = () => {
         try {
             const zip = new JSZip();
             const folder = zip.folder('image-slices')!;
+            const ext = EXT_BY_MIME[outputFormat];
             for (const s of slices) {
                 const base64 = s.dataUrl.split(',')[1];
-                folder.file(`${s.label}.png`, base64, { base64: true });
+                folder.file(`${s.label}.${ext}`, base64, { base64: true });
             }
             const blob = await zip.generateAsync({ type: 'blob' });
             const url = URL.createObjectURL(blob);
@@ -223,7 +259,7 @@ export const ImageSplitter: React.FC = () => {
         } finally {
             setDownloading(false);
         }
-    }, [slices]);
+    }, [slices, outputFormat]);
 
     // ─── Upload / Empty State ─────────────────────────────────────────────────
     if (!file) {
@@ -408,6 +444,76 @@ export const ImageSplitter: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Grid settings */}
+                    {isGridMode && (
+                        <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-5 space-y-4 animate-fade-in">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Grid Settings</h3>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-zinc-400 mb-1.5 block">Rows</label>
+                                    <input
+                                        type="number"
+                                        value={customRows}
+                                        min={1}
+                                        max={20}
+                                        onChange={e => setCustomRows(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/60 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-zinc-400 mb-1.5 block">Columns</label>
+                                    <input
+                                        type="number"
+                                        value={customCols}
+                                        min={1}
+                                        max={20}
+                                        onChange={e => setCustomCols(Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/60 transition-colors"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Output format */}
+                    <div className="bg-zinc-900/60 border border-zinc-800/60 rounded-2xl p-5 space-y-4">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-500">Output Format</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                            {([
+                                { id: 'image/png', label: 'PNG' },
+                                { id: 'image/jpeg', label: 'JPG' },
+                                { id: 'image/webp', label: 'WEBP' },
+                            ] as const).map(f => (
+                                <button
+                                    key={f.id}
+                                    onClick={() => setOutputFormat(f.id)}
+                                    className={`py-2 rounded-xl border text-xs font-bold transition-all ${outputFormat === f.id
+                                        ? 'border-pink-500/40 bg-pink-500/10 text-white'
+                                        : 'border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white'
+                                    }`}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        {outputFormat !== 'image/png' && (
+                            <div>
+                                <div className="flex justify-between text-xs text-zinc-400 mb-1.5">
+                                    <span>Quality</span>
+                                    <span className="text-zinc-500 font-mono">{outputQuality}%</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={10}
+                                    max={100}
+                                    value={outputQuality}
+                                    onChange={e => setOutputQuality(Number(e.target.value))}
+                                    className="w-full h-1 bg-zinc-800 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-zinc-400 [&::-webkit-slider-thumb]:rounded-full"
+                                />
+                            </div>
+                        )}
+                    </div>
+
                     {/* Info card */}
                     {imageEl && (
                         <div className="bg-zinc-900/40 border border-zinc-800/40 rounded-2xl p-4 space-y-3">
@@ -423,7 +529,7 @@ export const ImageSplitter: React.FC = () => {
                                 </div>
                                 <div className="flex justify-between text-zinc-400">
                                     <span>Direction</span>
-                                    <span className="text-zinc-200 font-medium capitalize">{direction}</span>
+                                    <span className="text-zinc-200 font-medium capitalize">{isGridMode ? `${customRows}×${customCols} grid` : direction}</span>
                                 </div>
                                 <div className="flex justify-between text-zinc-400">
                                     <span>Output slices</span>
@@ -494,7 +600,24 @@ export const ImageSplitter: React.FC = () => {
                                 />
                                 {/* Slice overlay */}
                                 <div className="absolute inset-0 flex pointer-events-none">
-                                    {direction === 'horizontal' && Array.from({ length: sliceCount }).map((_, i) => (
+                                    {isGridMode ? (
+                                        <div className="w-full h-full flex flex-col">
+                                            {Array.from({ length: customRows }).map((_, r) => (
+                                                <div key={r} className="flex-1 flex">
+                                                    {Array.from({ length: customCols }).map((_, c) => (
+                                                        <div
+                                                            key={c}
+                                                            className="flex-1"
+                                                            style={{
+                                                                borderBottom: r < customRows - 1 ? '1px dashed rgba(236,72,153,0.5)' : undefined,
+                                                                borderRight: c < customCols - 1 ? '1px dashed rgba(236,72,153,0.5)' : undefined,
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : direction === 'horizontal' && Array.from({ length: sliceCount }).map((_, i) => (
                                         <div
                                             key={i}
                                             className="flex-1 border-r last:border-r-0"

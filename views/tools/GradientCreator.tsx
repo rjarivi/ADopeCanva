@@ -293,10 +293,42 @@ export const GradientCreator: React.FC = () => {
     const handleDownload = () => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        const isPng = format === 'png';
         const link = document.createElement('a');
-        link.href = canvas.toDataURL(`image/${format}`, 0.95);
+        // quality param is ignored for PNG — only meaningful (and lossy) for JPEG
+        link.href = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', isPng ? 1 : 0.95);
         link.download = `gradient.${format}`;
         link.click();
+    };
+
+    const buildGradientSvg = (): string | null => {
+        if (appMode !== 'css' || type === 'conic') return null;
+        const stopsXml = sortedStops
+            .map(s => `<stop offset="${s.position}%" stop-color="${s.color}"/>`)
+            .join('');
+        const def = type === 'linear'
+            ? (() => {
+                const rad = (angle * Math.PI) / 180;
+                const cx = width / 2, cy = height / 2;
+                const len = Math.sqrt(width * width + height * height) / 2;
+                const x1 = +(cx - Math.cos(rad) * len).toFixed(1), y1 = +(cy - Math.sin(rad) * len).toFixed(1);
+                const x2 = +(cx + Math.cos(rad) * len).toFixed(1), y2 = +(cy + Math.sin(rad) * len).toFixed(1);
+                return `<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${stopsXml}</linearGradient>`;
+            })()
+            : `<radialGradient id="g" gradientUnits="userSpaceOnUse" cx="${width / 2}" cy="${height / 2}" r="${Math.max(width, height) / 2}">${stopsXml}</radialGradient>`;
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs>${def}</defs><rect width="${width}" height="${height}" fill="url(#g)"/></svg>`;
+    };
+
+    const handleDownloadSvg = () => {
+        const svg = buildGradientSvg();
+        if (!svg) return;
+        const blob = new Blob([svg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `gradient-${width}x${height}.svg`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     const copyCSS = () => {
@@ -593,6 +625,17 @@ export const GradientCreator: React.FC = () => {
                     <Button className="w-full border-none shadow-lg shadow-indigo-500/20" onClick={handleDownload}>
                         <Download size={14} className="mr-2" /> Download {format.toUpperCase()}
                     </Button>
+                    {appMode === 'css' && (
+                        <button
+                            onClick={handleDownloadSvg}
+                            disabled={type === 'conic'}
+                            title={type === 'conic' ? 'SVG export supports linear & radial gradients only' : 'Download as vector .svg'}
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 hover:text-white text-xs font-bold transition-all"
+                        >
+                            <Download size={13} />
+                            Download SVG{type === 'conic' ? ' (unavailable)' : ''}
+                        </button>
+                    )}
                     {appMode === 'css' && (
                         <>
                             <button onClick={copyCSS}
