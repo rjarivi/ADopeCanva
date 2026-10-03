@@ -312,7 +312,7 @@ export const DeviceMockup: React.FC = () => {
                 shotUrl = `https://image.thum.io/get/auth/77069-adopecanva.com/width/1280/noanimate/${normalized}`
             }
 
-            if (!shotUrl) throw new Error('Could not capture this URL — try uploading a screenshot directly instead')
+            if (!shotUrl) throw new Error('Could not capture this URL — try adding a screenshot directly instead')
             setFileData({ file: new File([], 'screenshot.png'), size: '—', type: 'image/png', previewUrl: shotUrl })
             setImageUrl(shotUrl)
             setIsExternalImage(true)
@@ -487,7 +487,7 @@ export const DeviceMockup: React.FC = () => {
                                 }`}
                             >
                                 {mode === 'upload' ? <ImageIcon className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-                                {mode === 'upload' ? 'Upload Image' : 'Capture URL'}
+                                {mode === 'upload' ? 'Add Image' : 'Capture URL'}
                             </button>
                         ))}
                     </div>
@@ -496,7 +496,7 @@ export const DeviceMockup: React.FC = () => {
                         <div className="flex-1 bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl" style={{ minHeight: 200 }}>
                             <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
                             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <FileUploader onFileSelect={handleFile} accept="image/*" label="Upload Screenshot" description="PNG, JPG, WebP" icon={ImageIcon}
+                            <FileUploader onFileSelect={handleFile} accept="image/*" label="Add Screenshot" description="PNG, JPG, WebP" icon={ImageIcon}
                                 className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all" />
                         </div>
                     ) : (
@@ -958,7 +958,7 @@ export const DeviceMockup: React.FC = () => {
                     {/* Replace screenshot */}
                     <div className="border-t border-zinc-800 pt-3 flex flex-col gap-2">
                         <p className="text-xs text-zinc-600 font-jakarta">Replace screenshot</p>
-                        <FileUploader onFileSelect={handleFile} accept="image/*" label="Upload new image" compact />
+                        <FileUploader onFileSelect={handleFile} accept="image/*" label="Add new image" compact />
                         <div className="flex gap-2">
                             <div className="flex-1 flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 focus-within:border-indigo-500/50 transition-colors">
                                 <Link className="w-3.5 h-3.5 text-zinc-600 shrink-0" />

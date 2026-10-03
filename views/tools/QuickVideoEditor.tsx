@@ -621,7 +621,7 @@ export const QuickVideoEditor: React.FC = () => {
                         <div className="p-4 rounded-full bg-zinc-800 mb-4 group-hover:bg-zinc-700 transition-colors">
                             <Film size={36} className="text-zinc-400 group-hover:text-indigo-400 transition-colors" />
                         </div>
-                        <p className="text-lg font-bold text-white">Upload Video</p>
+                        <p className="text-lg font-bold text-white">Add Video</p>
                         <p className="text-sm text-zinc-500 mt-1">MP4, MOV, WebM, AVI — add one or more clips</p>
                         <input ref={fileInputRef} type="file" accept="video/*" multiple className="hidden" onChange={handleFileChange} />
                     </div>
@@ -816,6 +816,50 @@ export const QuickVideoEditor: React.FC = () => {
 
                             <div className="h-px bg-zinc-800/60" />
 
+                            {/* ── CROP ── */}
+                            <div>
+                                <div className="flex items-center justify-between mb-2.5">
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        <CropIcon size={10} /> Crop
+                                    </p>
+                                    <button
+                                        onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
+                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${cropEnabled ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                    >
+                                        {cropEnabled ? 'On' : 'Off'}
+                                    </button>
+                                </div>
+                                {cropEnabled && (
+                                    <div className="space-y-2 mb-2">
+                                        {([
+                                            { key: 'left', label: 'Left' },
+                                            { key: 'right', label: 'Right' },
+                                            { key: 'top', label: 'Top' },
+                                            { key: 'bottom', label: 'Bottom' },
+                                        ] as const).map(c => (
+                                            <div key={c.key} className="flex items-center gap-2">
+                                                <span className="w-10 text-[10px] text-zinc-500 font-bold uppercase">{c.label}</span>
+                                                <input
+                                                    type="range" min="0" max="45" step="1"
+                                                    value={cropInset[c.key]}
+                                                    onChange={e => { setCropInset(prev => ({ ...prev, [c.key]: parseInt(e.target.value) })); setExportUrl(null); }}
+                                                    className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
+                                                />
+                                                <span className="w-8 text-right text-[10px] font-mono text-indigo-400">{cropInset[c.key]}%</span>
+                                            </div>
+                                        ))}
+                                        <button
+                                            onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
+                                            className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase font-bold tracking-wider transition-colors"
+                                        >
+                                            Reset insets
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="h-px bg-zinc-800/60" />
+
                             {/* ── PLAYBACK SPEED ── */}
                             <div>
                                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
@@ -864,48 +908,6 @@ export const QuickVideoEditor: React.FC = () => {
                                         className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
                                     />
                                 </div>
-                            </div>
-
-                            {/* ── CROP ── */}
-                            <div>
-                                <div className="flex items-center justify-between mb-2.5">
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <CropIcon size={10} /> Crop
-                                    </p>
-                                    <button
-                                        onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
-                                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border transition-all ${cropEnabled ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                    >
-                                        {cropEnabled ? 'On' : 'Off'}
-                                    </button>
-                                </div>
-                                {cropEnabled && (
-                                    <div className="space-y-2 mb-2">
-                                        {([
-                                            { key: 'left', label: 'Left' },
-                                            { key: 'right', label: 'Right' },
-                                            { key: 'top', label: 'Top' },
-                                            { key: 'bottom', label: 'Bottom' },
-                                        ] as const).map(c => (
-                                            <div key={c.key} className="flex items-center gap-2">
-                                                <span className="w-10 text-[10px] text-zinc-500 font-bold uppercase">{c.label}</span>
-                                                <input
-                                                    type="range" min="0" max="45" step="1"
-                                                    value={cropInset[c.key]}
-                                                    onChange={e => { setCropInset(prev => ({ ...prev, [c.key]: parseInt(e.target.value) })); setExportUrl(null); }}
-                                                    className="flex-1 h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
-                                                />
-                                                <span className="w-8 text-right text-[10px] font-mono text-indigo-400">{cropInset[c.key]}%</span>
-                                            </div>
-                                        ))}
-                                        <button
-                                            onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
-                                            className="text-[10px] text-zinc-600 hover:text-zinc-400 uppercase font-bold tracking-wider transition-colors"
-                                        >
-                                            Reset insets
-                                        </button>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="h-px bg-zinc-800/60" />

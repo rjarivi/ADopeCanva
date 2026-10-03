@@ -160,7 +160,7 @@ export const TOOLS: ToolItem[] = [
         guideContent: 'Easily transform Word documents, Markdown files, or plain text into polished PDFs or clean HTML code. Our universal converter maintains formatting and structure, making it ideal for creating resumes, reports, or web content.',
         faqs: [
             { question: 'Does it support Markdown?', answer: 'Yes, it perfectly converts Markdown syntax into styled PDF or HTML output.' },
-            { question: 'Can I convert images to PDF?', answer: 'Yes, you can upload images to generate an image-only PDF document.' }
+            { question: 'Can I convert images to PDF?', answer: 'Yes, you can add images to generate an image-only PDF document.' }
         ],
         specs: [
             { label: 'Engine', value: 'jsPDF & Marked' },
@@ -200,7 +200,7 @@ export const TOOLS: ToolItem[] = [
         popular: true,
         swapId: 'mockup-3d',
         guideTitle: 'How to create device mockups from screenshots',
-        guideContent: 'Upload any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3× resolution — all client-side with no uploads required.',
+        guideContent: 'Add any screenshot and instantly wrap it in a polished device frame. Choose from iPhone 15 Pro, Android, iPad Pro, MacBook, browser window, or app window frames. Customize the frame finish, pick a background gradient, toggle the drop shadow, and export at up to 3× resolution — all client-side with no uploads required.',
         faqs: [
             { question: 'What image formats are supported?', answer: 'PNG, JPG, and WebP screenshots are all supported. Any aspect ratio will be cover-fitted to the device screen.' },
             { question: 'Can I export with a transparent background?', answer: 'Yes — choose the "None" background preset and export as PNG to get a transparent background behind the device frame.' },

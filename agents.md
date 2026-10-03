@@ -43,4 +43,10 @@ Every tool that requires an initial upload state must use the following structur
 ## 6. Project Maintenance & Updates
 *   **Changelog / Updates Page:** Whenever a new tool, feature, or significant structural change is added, you MUST append these updates to the Changelog/Updates component (e.g., `Changelog.tsx` or similar updates page) so users know what's new. NEVER add a tool without documenting its release natively in the app!
 
+## 7. Privacy-First Terminology (CRITICAL)
+AdopeCanva processes files **entirely in the user's browser** — nothing is ever sent to a server. Words matter:
+*   **NEVER use "Upload" as the action verb** for file selection. Use **"Add"** ("Add Files", "Add Video", "Add Music", "Add Another"), with "Drag & drop, browse, or paste" as affordance copy, and "Load" for editor contexts ("Load into editor").
+*   Negative privacy claims are exempt and encouraged: "never uploaded", "No Server Uploads", "0 server bytes" — these ASSERT the architecture.
+*   File-upload UI wording: "processed in your browser", "runs entirely in your browser". Buttons that send data off-device (e.g., Gemini API calls) may honestly say what leaves the device.
+
 *Remember: Simplicity is the ultimate sophistication. When in doubt, strip it back, darken it down, and add just a 15% opacity leak of indigo.*

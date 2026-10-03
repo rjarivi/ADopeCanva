@@ -909,7 +909,7 @@ export const Mockup3D: React.FC = () => {
                     <div className="flex-1 bg-zinc-900/50 border border-zinc-800/50 rounded-3xl p-2 flex flex-col items-center justify-center relative overflow-hidden group hover:border-indigo-500/50 transition-colors shadow-2xl" style={{ minHeight: 220 }}>
                         <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.05] pointer-events-none" />
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-indigo-600/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <FileUploader onFileSelect={handleFile} accept="image/*,video/*" label="Upload Screenshot or Video" description="PNG, JPG, WebP, MP4 — plays live on both foldable displays" icon={ImageIcon}
+                        <FileUploader onFileSelect={handleFile} accept="image/*,video/*" label="Add Screenshot or Video" description="PNG, JPG, WebP, MP4 — plays live on both foldable displays" icon={ImageIcon}
                             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all" />
                     </div>
                 </div>

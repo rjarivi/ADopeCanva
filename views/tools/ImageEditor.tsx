@@ -1949,7 +1949,7 @@ export const ImageEditor: React.FC = () => {
                                                         onClick={() => fontInputRef.current?.click()}
                                                         className="text-[10px] text-indigo-500 hover:text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-1 transition-colors"
                                                     >
-                                                        <Plus size={10} /> Upload
+                                                        <Plus size={10} /> Add
                                                     </button>
                                                     <input
                                                         type="file"
@@ -2968,7 +2968,7 @@ export const ImageEditor: React.FC = () => {
                                         <Upload size={24} />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-bold text-white">Click to Upload Image</p>
+                                        <p className="text-sm font-bold text-white">Click to Add Image</p>
                                         <p className="text-xs text-zinc-400">or drop file here</p>
                                     </div>
                                 </button>

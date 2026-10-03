@@ -166,7 +166,7 @@ export const MagicImageEditor: React.FC = () => {
           <FileUploader
             onFileSelect={handleFileSelect}
             accept="image/*, .heic, .heif, .avif"
-            label="Upload Image to Edit"
+            label="Add Image to Edit"
             description="Supports JPG, PNG, WEBP, AVIF, HEIC"
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />

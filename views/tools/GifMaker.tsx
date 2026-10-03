@@ -380,7 +380,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
           // But processImage uses canvas which needs URL.createObjectURL or Image.src.
           // If the browser revoked permission, we are in trouble.
           // However, we can try to "re-read" the file if we wrote it earlier.
-          throw new Error(`Frame ${i + 1} could not be read. Please try re-uploading the images.`);
+          throw new Error(`Frame ${i + 1} could not be read. Please try re-adding the images.`);
         }
 
         const currentName = `f_${frameCounter.toString().padStart(4, '0')}.png`;
@@ -520,7 +520,7 @@ export const GifMaker: React.FC<GifMakerProps> = ({ initialOutputFormat = 'gif' 
           <FileUploader
             onFilesSelect={handleFilesSelect}
             accept="image/*"
-            label="Upload Images"
+            label="Add Images"
             description="Select multiple PNG, JPG files"
             multiple={true}
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"

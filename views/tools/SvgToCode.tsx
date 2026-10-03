@@ -83,7 +83,7 @@ export const SvgToCode: React.FC = () => {
                         <FileSearch size={32} /> SVG to Code
                     </h2>
                     <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                        Upload an SVG file and instantly extract its raw source markup.
+                        Add an SVG file and instantly extract its raw source markup.
                     </p>
                 </div>
 
@@ -93,7 +93,7 @@ export const SvgToCode: React.FC = () => {
                     <FileUploader
                         onFileSelect={handleFile}
                         accept="image/svg+xml,.svg"
-                        label="Upload SVG File"
+                        label="Add SVG File"
                         description=".svg files only"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-violet-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -141,7 +141,7 @@ export const SvgToCode: React.FC = () => {
                         onClick={() => { setCode(''); setFileName(''); }}
                     >
                         <Upload size={14} className="md:mr-2" />
-                        <span className="hidden md:inline">Upload New</span>
+                        <span className="hidden md:inline">Add New</span>
                     </Button>
                     <Button variant="secondary" size="sm" onClick={() => setPreviewVisible(v => !v)}>
                         <Eye size={14} className="md:mr-2" />

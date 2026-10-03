@@ -308,7 +308,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
           <FileUploader
             onFileSelect={setFile}
             accept={accept}
-            label="Upload Video"
+            label="Add Video"
             description={description}
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />

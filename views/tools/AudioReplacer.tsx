@@ -195,7 +195,7 @@ export const AudioReplacer: React.FC = () => {
                     <FileUploader
                         onFileSelect={setVideoFile}
                         accept="video/*"
-                        label="Upload Source Video"
+                        label="Add Source Video"
                         description="Select the video you want to edit (MP4, MOV, AVI)"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -255,7 +255,7 @@ export const AudioReplacer: React.FC = () => {
                     <FileUploader
                         onFileSelect={setAudioFile}
                         accept="audio/*"
-                        label="Upload New Audio Track"
+                        label="Add New Audio Track"
                         description="Select the audio to insert (MP3, WAV, AAC)"
                     />
                 </div>

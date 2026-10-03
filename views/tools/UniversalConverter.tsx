@@ -227,7 +227,7 @@ export const UniversalConverter: React.FC = () => {
                                 title="Load a text file (.json, .xml, .csv, .yaml, .txt)"
                                 className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold px-3 py-1.5 rounded-lg border border-zinc-700 transition-all"
                             >
-                                <Upload size={14} /> Upload
+                                <Upload size={14} /> Add
                             </button>
                             <input
                                 ref={fileInputRef}
@@ -272,7 +272,7 @@ export const UniversalConverter: React.FC = () => {
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={`Paste or upload your ${inputFormat.toUpperCase()} here...`}
+                        placeholder={`Paste or add your ${inputFormat.toUpperCase()} here...`}
                         className="flex-1 w-full bg-zinc-950/50 p-6 text-sm font-mono text-zinc-300 outline-none resize-none placeholder:text-zinc-700"
                         spellCheck={false}
                     />

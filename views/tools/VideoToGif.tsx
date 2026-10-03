@@ -327,7 +327,7 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
           <FileUploader
             onFileSelect={setFile}
             accept="video/*"
-            label="Upload Video"
+            label="Add Video"
             description="MP4, MOV, AVI"
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />

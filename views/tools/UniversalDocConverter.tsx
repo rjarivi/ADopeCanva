@@ -465,7 +465,7 @@ export const UniversalDocConverter: React.FC = () => {
                     <FileUploader
                         onFileSelect={handleFileSelect}
                         accept=".docx, .md, .html, .jpg, .png, .webp, .xlsx, .xls, .csv, .pdf, .epub, .azw, .azw3, .mobi, .fb2, .heic"
-                        label="Upload Document"
+                        label="Add Document"
                         description="DOCX, PDF, EPUB, HEIC, and more..."
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -507,7 +507,7 @@ export const UniversalDocConverter: React.FC = () => {
                     onClick={() => setFile(null)}
                     className="text-indigo-400 text-sm hover:text-indigo-300 transition-colors bg-indigo-500/10 px-3 py-1 rounded-full uppercase font-bold tracking-widest text-[10px]"
                 >
-                    Back to Upload
+                    Add Another File
                 </button>
             </div>
 

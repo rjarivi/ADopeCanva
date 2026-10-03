@@ -166,7 +166,7 @@ export const PdfToJpg: React.FC = () => {
                     <FileUploader
                         onFileSelect={handleFileSelect}
                         accept=".pdf"
-                        label="Upload PDF"
+                        label="Add PDF"
                         description="Select a PDF to convert to images"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />

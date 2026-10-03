@@ -255,7 +255,7 @@ export const AudioConverter: React.FC = () => {
           <FileUploader
             onFileSelect={setFile}
             accept="audio/*,video/*"
-            label="Upload Audio or Video"
+            label="Add Audio or Video"
             description="Extract audio from video or convert audio files"
             className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
           />

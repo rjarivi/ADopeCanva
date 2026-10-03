@@ -878,7 +878,7 @@ export const AudioTrimmer: React.FC = () => {
                     <FileUploader
                         onFileSelect={setFile}
                         accept="audio/*"
-                        label="Upload Audio Track"
+                        label="Add Audio Track"
                         description="MP3, WAV, AAC, FLAC, M4A, OGG up to 250MB"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -970,7 +970,7 @@ export const AudioTrimmer: React.FC = () => {
                             size="sm"
                             onClick={() => replaceInputRef.current?.click()}
                             className="text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-indigo-500/50 rounded-xl px-3 py-1.5 flex items-center gap-1.5"
-                            title="Upload New Audio"
+                            title="Add New Audio"
                         >
                             <RefreshCcw size={14} className="text-indigo-400" />
                             <span>Change Audio</span>

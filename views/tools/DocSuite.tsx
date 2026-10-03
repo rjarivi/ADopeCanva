@@ -482,7 +482,7 @@ export const PdfSuite: React.FC = () => {
                         onFilesSelect={handleFileSelect}
                         onFileSelect={handleFileSelect}
                         accept=".pdf"
-                        label={`Upload PDF${mode === 'merge' ? 's' : ''}`}
+                        label={`Add PDF${mode === 'merge' ? 's' : ''}`}
                         description={mode === 'merge' ? 'Select multiple documents to combine' : 'Select a document to process pages'}
                         multiple={mode === 'merge'}
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-transparent rounded-2xl transition-all"

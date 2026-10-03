@@ -751,7 +751,7 @@ export const AudioWaveformExporter: React.FC = () => {
                                 <div>
                                     <button onClick={() => maskInputRef.current?.click()}
                                         className="flex items-center gap-2 px-3 py-2 w-full rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 text-xs font-semibold transition-all">
-                                        <ImageIcon size={12} /> {maskImageSrc ? 'Change mask image' : 'Upload mask image'}
+                                        <ImageIcon size={12} /> {maskImageSrc ? 'Change mask image' : 'Add mask image'}
                                     </button>
                                     <input ref={maskInputRef} type="file" accept="image/*" onChange={handleMaskImage} className="hidden" />
                                     {maskImageSrc && (

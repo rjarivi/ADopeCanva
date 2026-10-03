@@ -19,8 +19,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
   onFilesSelect,
   accept = "*",
-  label = "Upload File",
-  description = "Drag & drop or click to browse",
+  label = "Add Files",
+  description = "Drag & drop, browse, or paste — processed in your browser",
   multiple = false,
   className = "",
   icon: Icon = Upload,
@@ -180,7 +180,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
           {isDragging && (
             <div className="absolute inset-0 flex items-center justify-center bg-indigo-600/80 backdrop-blur-sm transition-opacity">
-              <p className="text-white font-bold text-xl tracking-tight">Drop to upload</p>
+              <p className="text-white font-bold text-xl tracking-tight">Drop to add</p>
             </div>
           )}
         </div>

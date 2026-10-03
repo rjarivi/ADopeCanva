@@ -198,7 +198,7 @@ export const ImageCompressor: React.FC = () => {
                         multiple={true}
                         onFileSelect={handleFileSelect}
                         accept="image/*, .heic, .heif, .avif"
-                        label="Upload Images"
+                        label="Add Images"
                         description="Supports JPG, PNG, WEBP, AVIF, HEIC · batch supported"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />

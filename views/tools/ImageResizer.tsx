@@ -264,7 +264,7 @@ export const ImageResizer: React.FC = () => {
                         multiple={true}
                         onFileSelect={handleFileSelect}
                         accept="image/*, .heic, .heif, .avif"
-                        label="Upload Images"
+                        label="Add Images"
                         description="Supports JPG, PNG, WEBP, GIF, AVIF, HEIC · paste or drop multiple"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -544,7 +544,7 @@ export const ImageResizer: React.FC = () => {
                     ) : (
                         <div className="flex flex-col items-center justify-center text-zinc-600">
                             <ImageIcon size={48} className="mb-4 opacity-50" />
-                            <p className="text-sm">Upload an image to start</p>
+                            <p className="text-sm">Add an image to start</p>
                         </div>
                     )}
                 </div>

@@ -261,7 +261,7 @@ export const SpreadsheetTools: React.FC = () => {
                 <FileUploader
                     onFileSelect={handleFileSelect}
                     accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
-                    label={mode === 'excel-to-other' ? "Upload Spreadsheet" : "Upload JSON/CSV"}
+                    label={mode === 'excel-to-other' ? "Add Spreadsheet" : "Add JSON/CSV"}
                     description={mode === 'excel-to-other' ? "Supports XLSX, XLS, ODS, CSV" : "Supports JSON arrays or CSV text"}
                     className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                 />
@@ -359,7 +359,7 @@ export const SpreadsheetTools: React.FC = () => {
                             onFileSelect={handleFileSelect}
                             accept={mode === 'excel-to-other' ? ".xlsx, .xls, .csv, .ods" : ".json, .csv, .txt"}
                             label="Change File"
-                            description="Upload new file"
+                            description="Add new file"
                             compact={true}
                         />
                     </div>

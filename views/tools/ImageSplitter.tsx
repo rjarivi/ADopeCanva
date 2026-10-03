@@ -701,7 +701,7 @@ export const ImageSplitter: React.FC = () => {
                             <div className="flex items-center gap-3 p-4 rounded-xl bg-pink-500/5 border border-pink-500/15">
                                 <Instagram size={16} className="text-pink-400 shrink-0" />
                                 <p className="text-xs text-zinc-400 leading-relaxed">
-                                    <span className="text-zinc-200 font-semibold">Instagram tip:</span> Upload slides from <strong className="text-pink-300">right to left</strong> so they display in the correct left-to-right order in your carousel.
+                                    <span className="text-zinc-200 font-semibold">Instagram tip:</span> Add slides from <strong className="text-pink-300">right to left</strong> so they display in the correct left-to-right order in your carousel.
                                 </p>
                             </div>
                         </div>

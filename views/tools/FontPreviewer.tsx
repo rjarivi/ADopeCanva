@@ -137,7 +137,7 @@ export const FontPreviewer: React.FC = () => {
                         <button onClick={() => setSelectedFont(null)} className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors text-xs font-bold">← Back</button>
                         <div>
                             <h2 className="text-2xl font-black text-white" style={{ fontFamily: `'${selectedFont}', sans-serif` }}>{selectedFont}</h2>
-                            <p className="text-xs text-zinc-500">{isCustomFont ? 'Your uploaded font' : 'Google Fonts'}</p>
+                            <p className="text-xs text-zinc-500">{isCustomFont ? 'Your custom font' : 'Google Fonts'}</p>
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -239,7 +239,7 @@ export const FontPreviewer: React.FC = () => {
                     <div>
                         <h2 className="text-2xl font-black text-white font-unbounded">Font Previewer</h2>
                         <p className="text-xs text-zinc-500">
-                            {GOOGLE_FONTS.length} Google Fonts{customFonts.length > 0 ? ` · ${customFonts.length} uploaded` : ''} · click any to inspect
+                            {GOOGLE_FONTS.length} Google Fonts{customFonts.length > 0 ? ` · ${customFonts.length} custom` : ''} · click any to inspect
                         </p>
                     </div>
                 </div>
@@ -273,7 +273,7 @@ export const FontPreviewer: React.FC = () => {
                 <FileUploader
                     onFileSelect={handleCustomFont}
                     accept=".ttf,.otf,.woff,.woff2"
-                    label="Upload Font"
+                    label="Add Font"
                     description=".ttf · .otf · .woff · .woff2"
                     icon={Upload}
                     compact

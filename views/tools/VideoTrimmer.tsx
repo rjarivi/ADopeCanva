@@ -694,7 +694,7 @@ export const VideoTrimmer: React.FC = () => {
                     <FileUploader
                         onFileSelect={setFile}
                         accept="video/*"
-                        label="Upload Video Clip"
+                        label="Add Video Clip"
                         description="MP4, MOV, WEBM, MKV up to 500MB"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
@@ -763,7 +763,7 @@ export const VideoTrimmer: React.FC = () => {
                             size="sm"
                             onClick={() => setFile(null)}
                             className="text-xs bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white hover:border-indigo-500/50 rounded-xl px-3 py-1.5 flex items-center gap-1.5"
-                            title="Upload New Video"
+                            title="Add New Video"
                         >
                             <RotateCcw size={14} className="text-indigo-400" />
                             <span>Change Video</span>

@@ -193,7 +193,7 @@ export const GifCompressor: React.FC = () => {
                     <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     <FileUploader
                         onFileSelect={setFile}
-                        label="Upload GIF"
+                        label="Add GIF"
                         accept="image/gif"
                         className="w-full h-full border-2 border-dashed border-zinc-800 hover:border-indigo-500/50 bg-zinc-950/50 rounded-2xl transition-all"
                     />
