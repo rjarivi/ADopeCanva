@@ -5,7 +5,7 @@ import {
     Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
-    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon,
+    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -200,7 +200,8 @@ export const QuickVideoEditor: React.FC = () => {
     // Export options
     const [exportFormat, setExportFormat] = useState<'mp4' | 'webm'>('mp4');
     const [fps, setFps] = useState(30);
-    const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('medium');
+    const [quality, setQuality] = useState<'low' | 'medium' | 'high'>('high');
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
     // Export
     const [isProcessing, setIsProcessing] = useState(false);
@@ -900,82 +901,9 @@ export const QuickVideoEditor: React.FC = () => {
                         </div>
 
                         {/* Export / Download */}
-                        <div className="p-4 border-t border-zinc-800 space-y-3 shrink-0">
-                            {!exportUrl && (
-                                <>
-                                    {/* Format */}
-                                    <div>
-                                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                                            <span>Export Format</span>
-                                            <span className="text-zinc-700 normal-case tracking-normal">video</span>
-                                        </p>
-                                        <div className="grid grid-cols-2 gap-1.5">
-                                            {(['mp4', 'webm'] as const).map(f => (
-                                                <button
-                                                    key={f}
-                                                    onClick={() => { setExportFormat(f); setExportUrl(null); }}
-                                                    className={`py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
-                                                >
-                                                    {f}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Frame rate + Quality */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Frame Rate</p>
-                                            <div className="grid grid-cols-3 gap-1">
-                                                {[24, 30, 60].map(f => (
-                                                    <button
-                                                        key={f}
-                                                        onClick={() => { setFps(f); setExportUrl(null); }}
-                                                        className={`py-1.5 rounded-lg text-[10px] font-bold font-mono border transition-all ${fps === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                                    >
-                                                        {f}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Quality</p>
-                                            <div className="grid grid-cols-3 gap-1">
-                                                {(['high', 'medium', 'low'] as const).map(q => (
-                                                    <button
-                                                        key={q}
-                                                        onClick={() => { setQuality(q); setExportUrl(null); }}
-                                                        className={`py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all ${quality === q ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
-                                                    >
-                                                        {q}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Secondary captures */}
-                                    <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-                                        <button
-                                            onClick={handleScreenshot}
-                                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all"
-                                            title="Save the current preview frame as a PNG image"
-                                        >
-                                            <Camera size={11} /> PNG Frame
-                                        </button>
-                                        <button
-                                            onClick={handleExtractAudio}
-                                            disabled={isProcessing || !selectedClip}
-                                            className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all disabled:opacity-30"
-                                            title="Extract the selected clip's audio as an MP3 file"
-                                        >
-                                            <Speaker size={11} /> MP3 Audio
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                        <div className="p-4 border-t border-zinc-800 shrink-0">
                             {exportUrl ? (
-                                <>
+                                <div className="space-y-2.5">
                                     <Button
                                         className="w-full h-11 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl font-bold border-none shadow-lg shadow-indigo-500/20"
                                         onClick={handleDownload}
@@ -988,11 +916,89 @@ export const QuickVideoEditor: React.FC = () => {
                                     >
                                         Re-export
                                     </button>
-                                </>
+                                </div>
                             ) : (
-                                <>
+                                <div className="relative flex gap-1.5">
+                                    {/* Settings dropup */}
+                                    {exportMenuOpen && (
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
+                                            <div className="absolute bottom-[calc(100%+6px)] left-0 right-0 z-50 bg-zinc-900 border border-zinc-800 rounded-2xl p-3.5 space-y-3 shadow-2xl shadow-black/60 origin-bottom">
+                                                {/* Format */}
+                                                <div>
+                                                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                                                        <span>Export Format</span>
+                                                        <span className="text-zinc-700 normal-case tracking-normal">video</span>
+                                                    </p>
+                                                    <div className="grid grid-cols-2 gap-1.5">
+                                                        {(['mp4', 'webm'] as const).map(f => (
+                                                            <button
+                                                                key={f}
+                                                                onClick={() => { setExportFormat(f); setExportUrl(null); }}
+                                                                className={`py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all ${exportFormat === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:text-white'}`}
+                                                            >
+                                                                {f}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Frame rate + Quality */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Frame Rate</p>
+                                                        <div className="grid grid-cols-3 gap-1">
+                                                            {[24, 30, 60].map(f => (
+                                                                <button
+                                                                    key={f}
+                                                                    onClick={() => { setFps(f); setExportUrl(null); }}
+                                                                    className={`py-1.5 rounded-lg text-[10px] font-bold font-mono border transition-all ${fps === f ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                                                >
+                                                                    {f}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest mb-1.5">Quality</p>
+                                                        <div className="grid grid-cols-3 gap-1">
+                                                            {(['high', 'medium', 'low'] as const).map(q => (
+                                                                <button
+                                                                    key={q}
+                                                                    onClick={() => { setQuality(q); setExportUrl(null); }}
+                                                                    className={`py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border transition-all ${quality === q ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}
+                                                                >
+                                                                    {q}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Secondary captures */}
+                                                <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                                                    <button
+                                                        onClick={() => { handleScreenshot(); setExportMenuOpen(false); }}
+                                                        className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all"
+                                                        title="Save the current preview frame as a PNG image"
+                                                    >
+                                                        <Camera size={11} /> PNG Frame
+                                                    </button>
+                                                    <button
+                                                        onClick={handleExtractAudio}
+                                                        disabled={isProcessing || !selectedClip}
+                                                        className="flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-zinc-950 border border-zinc-800 text-zinc-400 hover:text-indigo-300 hover:border-indigo-500/40 transition-all disabled:opacity-30"
+                                                        title="Extract the selected clip's audio as an MP3 file"
+                                                    >
+                                                        <Speaker size={11} /> MP3 Audio
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
                                     <Button
-                                        className="w-full h-11 shadow-lg shadow-indigo-500/20 rounded-xl font-bold border-none"
+                                        className="flex-1 h-11 shadow-lg shadow-indigo-500/20 rounded-xl font-bold border-none"
                                         onClick={handleExport}
                                         isLoading={isProcessing}
                                         disabled={isProcessing}
@@ -1001,18 +1007,27 @@ export const QuickVideoEditor: React.FC = () => {
                                             ? <><Film size={15} className="mr-2" /> Merge & Export</>
                                             : <><Scissors size={15} className="mr-2" /> Export Video</>}
                                     </Button>
+                                    {!isProcessing && (
+                                        <button
+                                            onClick={() => setExportMenuOpen(o => !o)}
+                                            className={`shrink-0 w-11 h-11 rounded-xl border flex items-center justify-center transition-all ${exportMenuOpen ? 'bg-indigo-500/15 border-indigo-500 text-indigo-300' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
+                                            title="Export settings"
+                                        >
+                                            <ChevronUp size={15} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                    )}
                                     {clips.length > 1 && (
                                         <button
                                             onClick={handleExportSeparate}
                                             disabled={isProcessing}
-                                            className="w-full flex items-center justify-center gap-1.5 py-1 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors disabled:opacity-30"
+                                            className="absolute -top-5 left-0 w-full flex items-center justify-center gap-1.5 py-0.5 text-[9px] text-zinc-700 hover:text-zinc-400 transition-colors disabled:opacity-30"
                                             title="Process and download each clip as a separate file"
                                         >
-                                            <Layers size={11} />
+                                            <Layers size={10} />
                                             export clips separately
                                         </button>
                                     )}
-                                </>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1052,25 +1067,16 @@ export const QuickVideoEditor: React.FC = () => {
                             }}
                         />
 
-                        {/* Crop toggle (on-canvas) */}
-                        {selectedClip && !isProcessing && !isPlaying && (
-                            <div className="absolute top-3 left-3 z-30 flex gap-1.5 group/pill">
+                        {/* Crop reset (on-canvas, only after cropping) */}
+                        {selectedClip && !isProcessing && !isPlaying && cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
+                            <div className="absolute top-3 left-3 z-30">
                                 <button
-                                    onClick={() => { setCropEnabled(c => !c); setExportUrl(null); }}
-                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md transition-all ${cropEnabled ? 'bg-indigo-600/80 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-black/60 border-white/10 text-zinc-300 hover:text-white hover:bg-black/80'}`}
-                                    title="Crop the video by dragging the frame corners and edges"
+                                    onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
+                                    className="px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 border border-white/10 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all"
+                                    title="Remove the crop"
                                 >
-                                    <CropIcon size={11} /> Crop
+                                    Reset
                                 </button>
-                                {cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
-                                    <button
-                                        onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
-                                        className="px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 border border-white/10 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all"
-                                        title="Remove the crop"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
                             </div>
                         )}
 
@@ -1323,6 +1329,7 @@ export const QuickVideoEditor: React.FC = () => {
                                     <div className="inline-flex gap-0.5 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
                                         {[
                                             { icon: Scissors, label: 'Trim', action: enterTrimMode, danger: false },
+                                            { icon: CropIcon, label: cropEnabled ? 'Cropping' : 'Crop', action: () => { setCropEnabled(c => !c); setExportUrl(null); }, danger: false, active: cropEnabled },
                                             { icon: selectedClip.muted ? VolumeX : Volume2, label: selectedClip.muted ? 'Unmute' : 'Mute', action: () => updateClip(selectedClip.id, { muted: !selectedClip.muted }), danger: false },
                                             { icon: Copy, label: 'Duplicate', action: () => duplicateClip(selectedClip.id), danger: false },
                                             { icon: Trash2, label: 'Delete', action: () => deleteClip(selectedClip.id), danger: true },
@@ -1330,7 +1337,8 @@ export const QuickVideoEditor: React.FC = () => {
                                             <button
                                                 key={a.label}
                                                 onClick={a.action}
-                                                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all text-[10px] font-bold ${a.danger ? 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                                                title={a.label === 'Crop' ? 'Toggle crop — drag the frame corners and edges on the video' : undefined}
+                                                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all text-[10px] font-bold ${a.danger ? 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10' : (a as any).active ? 'text-indigo-300 bg-indigo-500/15' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                                             >
                                                 <a.icon size={13} />
                                                 {a.label}
