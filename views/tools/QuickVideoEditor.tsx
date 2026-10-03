@@ -142,6 +142,9 @@ export const QuickVideoEditor: React.FC = () => {
     // Crop (inset percentages — real `crop=w:h:x:y` in export, overlay in preview)
     const [cropEnabled, setCropEnabled] = useState(false);
     const [cropInset, setCropInset] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+    // Committed crop (percent of the ORIGINAL frame). New crop edits compose on top of this.
+    const [appliedCrop, setAppliedCrop] = useState({ left: 0, right: 0, top: 0, bottom: 0 });
+    const [videoDims, setVideoDims] = useState({ w: 0, h: 0 });
     const cropDragRef = useRef<{ type: string; startX: number; startY: number; boxW: number; boxH: number; insets: { left: number; right: number; top: number; bottom: number } } | null>(null);
     const MIN_CROP_PCT = 15; // keep at least 15% of each axis on screen when windowing
     const MAX_CROP_SUM = 100 - MIN_CROP_PCT; // left+right (or top+bottom) may not exceed this
@@ -204,10 +207,42 @@ export const QuickVideoEditor: React.FC = () => {
 
     const handleCropPointerUp = (e: React.PointerEvent) => {
         e.stopPropagation();
-        const overlay = (e.currentTarget as HTMLElement).closest('[data-crop-overlay]');
-        if (overlay) delete (overlay as HTMLElement).dataset.cropActive;
         cropDragRef.current = null;
     };
+
+    // ── Crop compose/apply ──
+    // `appliedCrop` is a percent-of-full-frame window. `cropInset` (the live overlay)
+    // is a percent of the VISIBLE (already-cropped) area. Combined on export/apply.
+    const rowFrac = Math.max(0.05, 1 - appliedCrop.left / 100 - appliedCrop.right / 100);
+    const colFrac = Math.max(0.05, 1 - appliedCrop.top / 100 - appliedCrop.bottom / 100);
+    const appliedActive = (appliedCrop.left + appliedCrop.right + appliedCrop.top + appliedCrop.bottom) > 0.5;
+
+    const combineCrop = (a: typeof appliedCrop, o: typeof cropInset) => {
+        const rF = Math.max(0.05, 1 - a.left / 100 - a.right / 100);
+        const cF = Math.max(0.05, 1 - a.top / 100 - a.bottom / 100);
+        return {
+            left: a.left + (o.left / 100) * rF * 100,
+            right: a.right + (o.right / 100) * rF * 100,
+            top: a.top + (o.top / 100) * cF * 100,
+            bottom: a.bottom + (o.bottom / 100) * cF * 100,
+        };
+    };
+
+    const applyCropNow = () => {
+        setAppliedCrop(combineCrop(appliedCrop, cropInset));
+        setCropInset({ left: 0, right: 0, top: 0, bottom: 0 });
+        setCropEnabled(false);
+        setExportUrl(null);
+    };
+
+    const cancelCrop = () => {
+        setCropInset({ left: 0, right: 0, top: 0, bottom: 0 });
+        setCropEnabled(false);
+        setExportUrl(null);
+    };
+
+    const combinedCrop = combineCrop(appliedCrop, cropEnabled ? cropInset : { left: 0, right: 0, top: 0, bottom: 0 });
+    const combinedActive = (combinedCrop.left + combinedCrop.right + combinedCrop.top + combinedCrop.bottom) > 0.5;
 
     // Export options
     const [exportFormat, setExportFormat] = useState<'mp4' | 'webm'>('mp4');
@@ -381,11 +416,11 @@ export const QuickVideoEditor: React.FC = () => {
         if (flipH) vf.push('hflip');
         if (flipV) vf.push('vflip');
 
-        // Real crop: inset offsets applied at source resolution
-        if (cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0)) {
-            const w = Math.max(0.1, 1 - cropInset.left / 100 - cropInset.right / 100);
-            const h = Math.max(0.1, 1 - cropInset.top / 100 - cropInset.bottom / 100);
-            vf.push(`crop=iw*${w.toFixed(4)}:ih*${h.toFixed(4)}:iw*${(cropInset.left / 100).toFixed(4)}:ih*${(cropInset.top / 100).toFixed(4)}`);
+        // Real crop: baked applied crop + live overlay, composed on the full-frame
+        if (combinedActive) {
+            const w = Math.max(0.1, 1 - combinedCrop.left / 100 - combinedCrop.right / 100);
+            const h = Math.max(0.1, 1 - combinedCrop.top / 100 - combinedCrop.bottom / 100);
+            vf.push(`crop=iw*${w.toFixed(4)}:ih*${h.toFixed(4)}:iw*${(combinedCrop.left / 100).toFixed(4)}:ih*${(combinedCrop.top / 100).toFixed(4)}`);
         }
 
         if (speed !== 1) vf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
@@ -416,7 +451,7 @@ export const QuickVideoEditor: React.FC = () => {
             vf.push(`crop=iw/${zoom.toFixed(4)}:ih/${zoom.toFixed(4)}`);
         } else {
             // Crop without a fixed canvas — set SAR so square pixels are preserved
-            if (cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0)) vf.push('setsar=1');
+            if (combinedActive) vf.push('setsar=1');
         }
 
         if (speed !== 1) af.push(...atempoChain(speed));
@@ -591,15 +626,21 @@ export const QuickVideoEditor: React.FC = () => {
     const handleScreenshot = () => {
         const v = videoRef.current;
         if (!v || !v.videoWidth) return;
+        // Honor the effective crop (applied + live) so the PNG matches the export framing
+        const c = combinedCrop;
+        const sx = (c.left / 100) * v.videoWidth;
+        const sy = (c.top / 100) * v.videoHeight;
+        const sw = v.videoWidth * Math.max(0.1, 1 - c.left / 100 - c.right / 100);
+        const sh = v.videoHeight * Math.max(0.1, 1 - c.top / 100 - c.bottom / 100);
         const canvas = document.createElement('canvas');
-        canvas.width = v.videoWidth;
-        canvas.height = v.videoHeight;
+        canvas.width = Math.round(sw) || v.videoWidth;
+        canvas.height = Math.round(sh) || v.videoHeight;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         // Undo the CSS preview transform mirrors so the PNG matches export orientation
         ctx.save();
         if (flipH || flipV) ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(v, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
         ctx.restore();
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
@@ -630,10 +671,29 @@ export const QuickVideoEditor: React.FC = () => {
         : aspectRatio === '9:16' ? { aspectRatio: '9/16' }
         : aspectRatio === '1:1' ? { aspectRatio: '1/1' }
         : {};
+    // After an applied crop, the "original" canvas becomes the cropped frame's own aspect
+    const canvasStyle = appliedActive && aspectRatio === 'original' && videoDims.w > 0
+        ? { ...arStyle, aspectRatio: `${((videoDims.w / videoDims.h) * (rowFrac / colFrac)).toFixed(4)}` }
+        : arStyle;
 
     // ── Video transform style ──
+    // With an applied crop, the video is magnified so the crop region fills the
+    // canvas exactly (WYSIWYG with the ffmpeg crop), and pre-translated so the
+    // crop region is centered before flips/rotation/zoom pivot about its center.
+    const cropStageStyle = appliedActive
+        ? {
+            position: 'absolute' as const,
+            width: `${(1 / rowFrac) * 100}%`,
+            height: `${(1 / colFrac) * 100}%`,
+            left: `${-(appliedCrop.left / 100) * (1 / rowFrac) * 100}%`,
+            top: `${-(appliedCrop.top / 100) * (1 / colFrac) * 100}%`,
+        }
+        : {};
+    const pivotShiftX = appliedActive ? (0.5 * rowFrac - 0.5 + appliedCrop.left / 100) * 100 : 0;
+    const pivotShiftY = appliedActive ? (0.5 * colFrac - 0.5 + appliedCrop.top / 100) * 100 : 0;
     const videoTransformStyle = {
-        transform: `scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1}) rotate(${rotation}deg) scale(${zoom})`,
+        ...cropStageStyle,
+        transform: `translate(${pivotShiftX.toFixed(2)}%, ${pivotShiftY.toFixed(2)}%) scaleX(${flipH ? -1 : 1}) scaleY(${flipV ? -1 : 1}) rotate(${rotation}deg) scale(${zoom})`,
         objectFit: scaleMode === 'cover' ? 'cover' as const : 'contain' as const,
     };
 
@@ -1060,7 +1120,7 @@ export const QuickVideoEditor: React.FC = () => {
                     />
                     <div
                         className="relative h-full max-h-full bg-black rounded-xl overflow-hidden border border-zinc-800/80 shadow-2xl group"
-                        style={arStyle}
+                        style={canvasStyle}
                     >
                         <video
                             ref={videoRef}
@@ -1074,29 +1134,37 @@ export const QuickVideoEditor: React.FC = () => {
                                     videoRef.current.currentTime = selectedClip.trimStart;
                                     videoRef.current.playbackRate = speed;
                                     videoRef.current.volume = volume / 100;
+                                    setVideoDims({ w: videoRef.current.videoWidth, h: videoRef.current.videoHeight });
                                     setCurrentTime(selectedClip.trimStart);
                                 }
                             }}
                         />
 
-                        {/* Crop reset (on-canvas, only after cropping) */}
-                        {selectedClip && !isProcessing && !isPlaying && cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0) && (
+                        {/* Crop reset (on-canvas) — clears live edits while cropping, or reverts the applied crop otherwise */}
+                        {selectedClip && !isProcessing && !isPlaying && ((cropEnabled && (cropInset.left > 0 || cropInset.right > 0 || cropInset.top > 0 || cropInset.bottom > 0)) || (!cropEnabled && appliedActive)) && (
                             <div className="absolute top-3 left-3 z-30">
                                 <button
-                                    onClick={() => { setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }}
+                                    onClick={() => {
+                                        if (cropEnabled) setCropInset({ left: 0, right: 0, top: 0, bottom: 0 });
+                                        else { setAppliedCrop({ left: 0, right: 0, top: 0, bottom: 0 }); setExportUrl(null); }
+                                    }}
                                     className="px-2.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 border border-white/10 text-zinc-300 hover:text-white hover:bg-black/80 backdrop-blur-md transition-all"
-                                    title="Remove the crop"
+                                    title={cropEnabled ? 'Clear this crop adjustment' : 'Remove the applied crop'}
                                 >
                                     Reset
                                 </button>
                             </div>
                         )}
 
-                        {/* Interactive crop overlay */}
+                        {/* Interactive crop overlay — lives inside the already-applied crop region */}
                         {cropEnabled && !isProcessing && (
                             <div
                                 data-crop-overlay
-                                className="absolute inset-0 z-20"
+                                className="absolute z-20"
+                                style={{
+                                    left: `${appliedCrop.left}%`, top: `${appliedCrop.top}%`,
+                                    right: `${appliedCrop.right}%`, bottom: `${appliedCrop.bottom}%`,
+                                }}
                                 onPointerMove={handleCropPointerMove}
                                 onPointerUp={handleCropPointerUp}
                                 onPointerLeave={handleCropPointerUp}
@@ -1147,6 +1215,25 @@ export const QuickVideoEditor: React.FC = () => {
                                         </div>
                                     );
                                 })}
+                                {/* Apply / Cancel */}
+                                <div className="absolute top-3 right-3 z-40 flex gap-1.5" onPointerDown={e => e.stopPropagation()}>
+                                    <button
+                                        onClick={cancelCrop}
+                                        className="px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider bg-black/70 border border-white/10 text-zinc-300 hover:text-white hover:bg-black/90 backdrop-blur-md transition-all"
+                                        title="Discard this crop adjustment"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={applyCropNow}
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider border backdrop-blur-md transition-all ${(cropInset.left || cropInset.right || cropInset.top || cropInset.bottom)
+                                            ? 'bg-indigo-600/90 border-indigo-400/60 text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-500'
+                                            : 'bg-black/70 border-white/10 text-zinc-400'}`}
+                                        title="Commit the crop — the preview shows the final cropped video from now on"
+                                    >
+                                        <Check size={11} /> Apply Crop
+                                    </button>
+                                </div>
                             </div>
                         )}
 
@@ -1346,7 +1433,7 @@ export const QuickVideoEditor: React.FC = () => {
                                     <div className="inline-flex gap-0.5 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
                                         {[
                                             { icon: Scissors, label: 'Trim', action: enterTrimMode, danger: false },
-                                            { icon: CropIcon, label: cropEnabled ? 'Cropping' : 'Crop', action: () => { setCropEnabled(c => !c); setExportUrl(null); }, danger: false, active: cropEnabled },
+                                            { icon: CropIcon, label: cropEnabled ? 'Cropping' : 'Crop', action: () => { if (!cropEnabled) setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setCropEnabled(c => !c); setExportUrl(null); }, danger: false, active: cropEnabled },
                                             { icon: selectedClip.muted ? VolumeX : Volume2, label: selectedClip.muted ? 'Unmute' : 'Mute', action: () => updateClip(selectedClip.id, { muted: !selectedClip.muted }), danger: false },
                                             { icon: Copy, label: 'Duplicate', action: () => duplicateClip(selectedClip.id), danger: false },
                                             { icon: Trash2, label: 'Delete', action: () => deleteClip(selectedClip.id), danger: true },
