@@ -211,6 +211,12 @@ const App = () => {
 
     // Embed Mode detection: ?embed=true
     const isEmbed = new URLSearchParams(location.search).get('embed') === 'true';
+    // Studio Phase 0 gate: ?beta=studio unlocks once, then persists locally.
+    let studioBeta = false;
+    try {
+        studioBeta = new URLSearchParams(location.search).get('beta') === 'studio'
+            || localStorage.getItem('studio_beta') === '1';
+    } catch { /* private mode */ }
 
     // Sync loading state during render phase to prevent single-frame content flash
     if (location.pathname !== prevPath) {
@@ -436,7 +442,7 @@ const App = () => {
 
                 {/* Competitor Comparisons */}
                 <Route path="/vs/:competitor" element={<Comparison />} />
-                <Route path="/studio" element={<ComingSoon />} />
+                <Route path="/studio" element={<ComingSoon studioBeta={studioBeta} />} />
                 <Route path="/guides" element={<Guides />} />
 
                 {/* Remove.bg Alternative Blog & Pillar */}

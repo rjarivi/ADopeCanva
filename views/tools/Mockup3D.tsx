@@ -433,7 +433,10 @@ export const Mockup3D: React.FC = () => {
                 const introClip = THREE.AnimationClip.findByName(pvCache.animations, 'Intro')
                 const introDuration = introClip ? introClip.duration : 0
                 const introAction = introClip ? mixer.clipAction(introClip) : null
-                if (introAction) introAction.clampWhenFinished = true
+                if (introAction) {
+                    introAction.clampWhenFinished = true
+                    introAction.play()
+                }
                 s.introAction = introAction
                 s.introDuration = introDuration
 
@@ -445,7 +448,8 @@ export const Mockup3D: React.FC = () => {
                 const halfFov = (s.camera.fov * Math.PI) / 180 / 2
                 frameDistRef.current = closedH / (2 * Math.tan(halfFov) * 0.72)
                 foldAppliedRef.current = 0
-                modeRef.current = 'hold'
+                s.introStartDist = s.camera.position.distanceTo(s.center)
+                modeRef.current = s.introAction ? 'intro' : 'hold'
 
                 const box = new THREE.Box3().setFromObject(s.model)
                 s.center = box.getCenter(new THREE.Vector3())

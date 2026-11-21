@@ -1,9 +1,46 @@
-import React from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Construction, Wand2 } from 'lucide-react';
+import { ArrowLeft, Construction, Wand2, Loader2 } from 'lucide-react';
 
-export const ComingSoon: React.FC = () => {
+// Studio (player + parsers + Gemini) is beta-gated — keep it out of the
+// eager bundle so first paint doesn't pay for it.
+const StudioBeta = lazy(() => import('./Studio').then(m => ({ default: m.Studio })));
+
+export const ComingSoon: React.FC<{ studioBeta?: boolean }> = ({ studioBeta }) => {
     const navigate = useNavigate();
+    const [showStudio, setShowStudio] = useState(() => {
+        try { return localStorage.getItem('studio_beta') === '1'; } catch { return false; }
+    });
+
+    if (studioBeta && showStudio) {
+        return (
+            <Suspense fallback={
+                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] gap-4">
+                    <Loader2 className="text-indigo-400 animate-spin" size={28} />
+                    <p className="text-zinc-500 text-xs uppercase tracking-widest font-bold">Loading Studio…</p>
+                </div>
+            }>
+                <StudioBeta />
+            </Suspense>
+        );
+    }
+
+    if (studioBeta) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-6 text-center animate-fade-in">
+                <div className="relative z-10 flex flex-col items-center max-w-lg">
+                    <button
+                        onClick={() => setShowStudio(true)}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold transition-all shadow-lg shadow-indigo-500/20"
+                    >
+                        <Wand2 size={18} />
+                        Enter Studio Phase 0 (beta)
+                    </button>
+                    <p className="text-zinc-600 text-xs mt-4">Internal preview — not listed publicly. Exit: clear the "studio_beta" localStorage flag.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-6 text-center animate-fade-in">

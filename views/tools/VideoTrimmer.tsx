@@ -8,7 +8,7 @@ import {
     Play, Pause, Scissors, Film, Volume2, VolumeX, RotateCcw, Loader2,
     AlertCircle, Download, Settings, Trash2, Undo2, Maximize, Clock,
     ArrowLeftToLine, ArrowRightToLine, FastForward, Repeat, Keyboard,
-    Check, Sparkles, Sliders, ChevronRight, Camera
+    Check, Sparkles, Sliders, ChevronLeft, ChevronRight, Camera
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -375,13 +375,13 @@ export const VideoTrimmer: React.FC = () => {
         const startX = (startTime / dur) * rect.width;
         const endX = (endTime / dur) * rect.width;
 
-        const handleWidth = 20;
+        const handleWidth = 28;
 
         const startDist = Math.abs(x - startX);
         const endDist = Math.abs(x - endX);
-        if (startDist <= endDist && x >= startX - 16 && x <= startX + handleWidth + 16) {
+        if (startDist <= endDist && (startDist <= 28 || (x >= startX - 14 && x <= startX + handleWidth + 14))) {
             setDragType('start');
-        } else if (x >= endX - handleWidth - 16 && x <= endX + 16) {
+        } else if (endDist <= 28 || (x >= endX - handleWidth - 14 && x <= endX + 14)) {
             setDragType('end');
         } else if (x > startX && x < endX) {
             if (e.clientY - rect.top <= 16) {
@@ -867,32 +867,64 @@ export const VideoTrimmer: React.FC = () => {
                         className="absolute top-0 bottom-0 border-t-2 border-b-2 border-indigo-500 pointer-events-none z-20"
                         style={{ left: `${startPerc}%`, width: `${endPerc - startPerc}%` }}
                     >
-                        {/* Left Handle [In] - Thick, Prominent Solid Handle */}
+                        {/* Left Handle [In] - Prominent, tactile Apple/CapCut-style Grab Handle */}
                         <div
                             onPointerDown={(e) => {
                                 e.stopPropagation();
                                 setDragType('start');
                                 timelineRef.current?.setPointerCapture(e.pointerId);
                             }}
-                            className="absolute top-0 bottom-0 left-0 w-5 sm:w-6 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-md flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-colors"
-                            title="Drag to trim start"
+                            className={`absolute top-0 bottom-0 left-0 w-7 sm:w-8 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-xl flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-all z-30 ${
+                                dragType === 'start' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105 bg-indigo-500' : ''
+                            }`}
+                            title="Drag to trim start (In-point)"
                         >
-                            <div className="h-7 w-1 bg-white rounded-full shadow-sm pointer-events-none" />
-                            <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                            {/* Visual Grip Affordance: Chevron + Dual Grip Ridges */}
+                            <div className="flex items-center gap-0.5 pointer-events-none">
+                                <ChevronRight size={11} className="text-white/80 -mr-0.5" />
+                                <div className="flex items-center gap-0.5">
+                                    <div className="w-[3px] h-6 bg-white rounded-full shadow-sm" />
+                                    <div className="w-[3px] h-6 bg-white/70 rounded-full shadow-sm" />
+                                </div>
+                            </div>
+                            {/* Extended Invisible Hit Area: 48px wide so grabbing is effortless */}
+                            <div className="absolute -inset-x-3 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                            {/* Floating Live Time Badge when dragging */}
+                            {dragType === 'start' && (
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 border border-white/20 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shadow-2xl pointer-events-none z-50 whitespace-nowrap">
+                                    IN: {startTime.toFixed(2)}s
+                                </div>
+                            )}
                         </div>
 
-                        {/* Right Handle [Out] - Thick, Prominent Solid Handle */}
+                        {/* Right Handle [Out] - Prominent, tactile Apple/CapCut-style Grab Handle */}
                         <div
                             onPointerDown={(e) => {
                                 e.stopPropagation();
                                 setDragType('end');
                                 timelineRef.current?.setPointerCapture(e.pointerId);
                             }}
-                            className="absolute top-0 bottom-0 right-0 w-5 sm:w-6 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-md flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-colors"
-                            title="Drag to trim end"
+                            className={`absolute top-0 bottom-0 right-0 w-7 sm:w-8 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-xl flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-all z-30 ${
+                                dragType === 'end' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105 bg-indigo-500' : ''
+                            }`}
+                            title="Drag to trim end (Out-point)"
                         >
-                            <div className="h-7 w-1 bg-white rounded-full shadow-sm pointer-events-none" />
-                            <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                            {/* Visual Grip Affordance: Dual Grip Ridges + Chevron */}
+                            <div className="flex items-center gap-0.5 pointer-events-none">
+                                <div className="flex items-center gap-0.5">
+                                    <div className="w-[3px] h-6 bg-white/70 rounded-full shadow-sm" />
+                                    <div className="w-[3px] h-6 bg-white rounded-full shadow-sm" />
+                                </div>
+                                <ChevronLeft size={11} className="text-white/80 -ml-0.5" />
+                            </div>
+                            {/* Extended Invisible Hit Area: 48px wide so grabbing is effortless */}
+                            <div className="absolute -inset-x-3 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                            {/* Floating Live Time Badge when dragging */}
+                            {dragType === 'end' && (
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 border border-white/20 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shadow-2xl pointer-events-none z-50 whitespace-nowrap">
+                                    OUT: {endTime.toFixed(2)}s
+                                </div>
+                            )}
                         </div>
                     </div>
 

@@ -25,6 +25,9 @@
     "@ffmpeg/util": "^0.12.1",
     "@google/genai": "^2.27.0",
     "@huggingface/transformers": "^4.2.0",
+    "@hyperframes/player": "0.8.137",
+    "@hyperframes/sdk": "0.8.137",
+    "@hyperframes/studio": "0.8.137",
     "@types/js-yaml": "^4.0.9",
     "@types/papaparse": "^5.5.2",
     "docx": "^9.5.1",
@@ -42,6 +45,7 @@
     "lucide-react": "^0.555.0",
     "mammoth": "^1.11.0",
     "marked": "^17.0.1",
+    "mediabunny": "1.61.3",
     "papaparse": "^5.5.3",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "5.7.284",
@@ -56,10 +60,12 @@
     "tailwind-merge": "^3.5.0",
     "three": "^0.186.0",
     "util": "^0.12.5",
-    "xml-js": "^1.6.11"
+    "xml-js": "^1.6.11",
+    "zustand": "5.0.15"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260722.1",
+    "@hyperframes/parsers": "0.8.137",
     "@tailwindcss/vite": "^4.2.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",

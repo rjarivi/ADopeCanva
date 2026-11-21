@@ -14,6 +14,24 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.6',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Scissors,
+                title: 'Video Trimmer: Tactile Apple/CapCut-Style Handles & Precision Scrubbing',
+                description: 'Completely overhauled timeline trim handles in Quick Video Editor and Video Trimmer with 28px tactile grab pills, dual grip ridges, directional chevrons (▶ / ◀), live floating timecode tooltips during drag, active ring highlights, and generous 48px hit areas for effortless grabbing even at 0% or 100% boundaries. Resolved accidental selection-body shifts by isolating the top window drag bar from filmstrip seeking.',
+                type: 'feature'
+            },
+            {
+                icon: Maximize2,
+                title: 'Platform-Wide Viewport Containment: Zero Truncated Action Buttons',
+                description: 'Enforced h-full min-h-0 containment and internal scrollbars across Image Cropper, Image Compressor, Image Resizer, Background Remover, GIF Compressor, Upscale Image, Magic Image Editor, Signature Generator, Video to GIF, and Video Compressor. Primary "Download", "Convert", and "Apply" buttons now remain permanently accessible in viewport without outer page scrollbars.',
+                type: 'update'
+            }
+        ]
+    },
+    {
         version: '1.23.5',
         date: 'Nov 21, 2026',
         items: [

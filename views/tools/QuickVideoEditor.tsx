@@ -137,7 +137,7 @@ export const QuickVideoEditor: React.FC = () => {
     const [pendingStart, setPendingStart] = useState('00:00:00');
     const [pendingEnd, setPendingEnd] = useState('00:00:00');
     const trimTimelineRef = useRef<HTMLDivElement>(null);
-    const [trimDragType, setTrimDragType] = useState<'start' | 'end' | 'body' | null>(null);
+    const [trimDragType, setTrimDragType] = useState<'start' | 'end' | 'body' | 'seek' | null>(null);
     const trimDragStartPosRef = useRef<{ clientX: number; initialStart: number; initialEnd: number }>({ clientX: 0, initialStart: 0, initialEnd: 0 });
     const [trimHoverTime, setTrimHoverTime] = useState<number | null>(null);
 
@@ -518,35 +518,39 @@ export const QuickVideoEditor: React.FC = () => {
         const startX = (curStart / dur) * rect.width;
         const endX = (curEnd / dur) * rect.width;
 
-        const HIT_THRESHOLD = 18;
+        // Generous handle hit targets (30px reach)
+        const HANDLE_HIT = 30;
         const distToStart = Math.abs(x - startX);
         const distToEnd = Math.abs(x - endX);
 
-        if (distToStart <= HIT_THRESHOLD && distToStart <= distToEnd) {
+        if ((distToStart <= HANDLE_HIT || (x >= startX - 14 && x <= startX + HANDLE_HIT)) && distToStart <= distToEnd) {
             setTrimDragType('start');
-        } else if (distToEnd <= HIT_THRESHOLD) {
+        } else if (distToEnd <= HANDLE_HIT || (x >= endX - HANDLE_HIT && x <= endX + 14)) {
             setTrimDragType('end');
-        } else if (x > startX && x < endX) {
-            setTrimDragType('body');
-            trimDragStartPosRef.current = {
-                clientX,
-                initialStart: curStart,
-                initialEnd: curEnd,
-            };
-        } else {
-            if (x < startX) {
-                const newStart = Math.max(0, (x / rect.width) * dur);
-                setPendingStart(fmtTimecode(newStart));
-                if (videoRef.current) videoRef.current.currentTime = newStart;
-                setCurrentTime(newStart);
-                setTrimDragType('start');
+        } else if (x > startX + HANDLE_HIT && x < endX - HANDLE_HIT) {
+            // Inside the selection window:
+            // If clicking top 18px (top drag indicator), drag the whole window
+            const yFromTop = e.clientY - rect.top;
+            if (yFromTop <= 18) {
+                setTrimDragType('body');
+                trimDragStartPosRef.current = {
+                    clientX,
+                    initialStart: curStart,
+                    initialEnd: curEnd,
+                };
             } else {
-                const newEnd = Math.min(dur, (x / rect.width) * dur);
-                setPendingEnd(fmtTimecode(newEnd));
-                if (videoRef.current) videoRef.current.currentTime = newEnd;
-                setCurrentTime(newEnd);
-                setTrimDragType('end');
+                // Clicking in the video filmstrip seeks playback smoothly without altering trim in/out
+                const seekSec = Math.max(0, Math.min(dur, (x / rect.width) * dur));
+                setTrimDragType('seek');
+                if (videoRef.current) videoRef.current.currentTime = seekSec;
+                setCurrentTime(seekSec);
             }
+        } else {
+            // Clicking outside the selection window seeks playback
+            const seekSec = Math.max(0, Math.min(dur, (x / rect.width) * dur));
+            setTrimDragType('seek');
+            if (videoRef.current) videoRef.current.currentTime = seekSec;
+            setCurrentTime(seekSec);
         }
     }, [selectedClip, pendingStart, pendingEnd]);
 
@@ -597,6 +601,10 @@ export const QuickVideoEditor: React.FC = () => {
             setPendingEnd(fmtTimecode(newEnd));
             if (videoRef.current) videoRef.current.currentTime = newStart;
             setCurrentTime(newStart);
+        } else if (trimDragType === 'seek') {
+            const seekSec = Math.max(0, Math.min(dur, hoveredSec));
+            if (videoRef.current) videoRef.current.currentTime = seekSec;
+            setCurrentTime(seekSec);
         }
     }, [selectedClip, trimDragType, pendingStart, pendingEnd]);
 
@@ -1896,36 +1904,64 @@ export const QuickVideoEditor: React.FC = () => {
                                                     <div className="w-10 h-1 bg-white/70 rounded-full shadow" />
                                                 </div>
 
-                                                {/* Left Handle [In] - Thick, Prominent, Easy to Grab */}
+                                                {/* Left Handle [In] - Prominent, tactile Apple/CapCut-style Grab Handle */}
                                                 <div
                                                     onPointerDown={(e) => {
                                                         e.stopPropagation();
                                                         setTrimDragType('start');
                                                         trimTimelineRef.current?.setPointerCapture(e.pointerId);
                                                     }}
-                                                    className="absolute top-0 bottom-0 left-0 w-5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-md z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/50 select-none touch-none transition-colors"
-                                                    title="Drag to trim start"
+                                                    className={`absolute top-0 bottom-0 left-0 w-7 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-xl z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto select-none touch-none transition-all shadow-xl shadow-indigo-600/40 ${
+                                                        trimDragType === 'start' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105 bg-indigo-500' : ''
+                                                    }`}
+                                                    title="Drag to trim start (In-point)"
                                                 >
-                                                    {/* Vertical grip bar */}
-                                                    <div className="w-1 h-7 bg-white rounded-full shadow pointer-events-none" />
-                                                    {/* Extended hit area: 36px wide so clicking near edge always grabs */}
-                                                    <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                    {/* Visual Grip Affordance: Chevron + Dual Grip Ridges */}
+                                                    <div className="flex items-center gap-0.5 pointer-events-none">
+                                                        <ChevronRight size={11} className="text-white/80 -mr-0.5" />
+                                                        <div className="flex items-center gap-0.5">
+                                                            <div className="w-[3px] h-6 bg-white rounded-full shadow-sm" />
+                                                            <div className="w-[3px] h-6 bg-white/70 rounded-full shadow-sm" />
+                                                        </div>
+                                                    </div>
+                                                    {/* Extended Invisible Hit Area: 48px wide so grabbing is effortless */}
+                                                    <div className="absolute -inset-x-3 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                    {/* Floating Live Time Badge when dragging */}
+                                                    {trimDragType === 'start' && (
+                                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 border border-white/20 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shadow-2xl pointer-events-none z-50 whitespace-nowrap">
+                                                            IN: {pendingStart}
+                                                        </div>
+                                                    )}
                                                 </div>
 
-                                                {/* Right Handle [Out] - Thick, Prominent, Easy to Grab */}
+                                                {/* Right Handle [Out] - Prominent, tactile Apple/CapCut-style Grab Handle */}
                                                 <div
                                                     onPointerDown={(e) => {
                                                         e.stopPropagation();
                                                         setTrimDragType('end');
                                                         trimTimelineRef.current?.setPointerCapture(e.pointerId);
                                                     }}
-                                                    className="absolute top-0 bottom-0 right-0 w-5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-md z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/50 select-none touch-none transition-colors"
-                                                    title="Drag to trim end"
+                                                    className={`absolute top-0 bottom-0 right-0 w-7 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-xl z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto select-none touch-none transition-all shadow-xl shadow-indigo-600/40 ${
+                                                        trimDragType === 'end' ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-105 bg-indigo-500' : ''
+                                                    }`}
+                                                    title="Drag to trim end (Out-point)"
                                                 >
-                                                    {/* Vertical grip bar */}
-                                                    <div className="w-1 h-7 bg-white rounded-full shadow pointer-events-none" />
-                                                    {/* Extended hit area: 36px wide so clicking near edge always grabs */}
-                                                    <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                    {/* Visual Grip Affordance: Dual Grip Ridges + Chevron */}
+                                                    <div className="flex items-center gap-0.5 pointer-events-none">
+                                                        <div className="flex items-center gap-0.5">
+                                                            <div className="w-[3px] h-6 bg-white/70 rounded-full shadow-sm" />
+                                                            <div className="w-[3px] h-6 bg-white rounded-full shadow-sm" />
+                                                        </div>
+                                                        <ChevronLeft size={11} className="text-white/80 -ml-0.5" />
+                                                    </div>
+                                                    {/* Extended Invisible Hit Area: 48px wide so grabbing is effortless */}
+                                                    <div className="absolute -inset-x-3 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                    {/* Floating Live Time Badge when dragging */}
+                                                    {trimDragType === 'end' && (
+                                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 border border-white/20 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md shadow-2xl pointer-events-none z-50 whitespace-nowrap">
+                                                            OUT: {pendingEnd}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 

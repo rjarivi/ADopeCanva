@@ -185,10 +185,10 @@ export const VideoCompressor: React.FC = () => {
     }
 
     return (
-        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800 shadow-2xl'}`}>
+        <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'h-full max-w-6xl mx-auto rounded-3xl border border-zinc-800 shadow-2xl'}`}>
 
             {/* 1. Settings Panel */}
-            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-1 w-85 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-1 w-85 border-r border-zinc-800 h-full min-h-0'} bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
                     <h2 className="font-black text-[10px] text-indigo-400 uppercase tracking-[0.2em] flex items-center gap-2 font-unbounded">
                         <Zap size={18} /> Configuration
@@ -198,7 +198,7 @@ export const VideoCompressor: React.FC = () => {
                     </Button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-8">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 custom-scrollbar space-y-5">
                     {/* Compression Intensity */}
                     <section className="space-y-4">
                         <div className="flex justify-between text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
@@ -371,7 +371,7 @@ export const VideoCompressor: React.FC = () => {
             </aside>
 
             {/* 3. Preview Area */}
-            <main className={`order-1 ${isMobile ? 'h-[40vh]' : 'flex-1'} relative bg-[#050507] flex flex-col items-center justify-center p-6 md:p-12 overflow-hidden shrink-0 shadow-inner`}>
+            <main className={`order-1 ${isMobile ? 'h-[40vh]' : 'flex-1'} h-full min-h-0 relative bg-[#050507] flex flex-col items-center justify-center p-4 md:p-8 overflow-hidden shrink-0 shadow-inner`}>
                 {/* Background Decor */}
                 <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }} />

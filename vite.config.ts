@@ -26,7 +26,32 @@ export default defineConfig(({ mode }) => {
       exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/core', '@ffmpeg/util'],
       include: ['util', 'stream-browserify', 'events', 'xml-js']
     },
-    plugins: [tailwindcss(), react(), crossOriginIsolation()],
+    plugins: [
+      tailwindcss(),
+      react(),
+      crossOriginIsolation(),
+      // Studio embed (studio.html + SW-served preview documents) must NOT be
+      // COEP/COOP-isolated: the HyperFrames Studio app reaches into its preview
+      // iframe DOM (same-origin), which Chrome blocks across different agent
+      // clusters. Override the global isolation headers for that entry.
+      {
+        name: 'studio-embed-isolation-override',
+        // Runs first (before Vite sets server.headers on the response), so the
+        // embed entry's COOP/COEP headers are replaced after global headers land.
+        enforce: 'pre',
+        configureServer(server) {
+          server.middlewares.use((req, res, next) => {
+            if (req.url && (req.url.startsWith('/studio.html') || req.url.startsWith('/studio-embed'))) {
+              res.removeHeader('Cross-Origin-Opener-Policy');
+              res.removeHeader('Cross-Origin-Embedder-Policy');
+              res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+              res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+            }
+            next();
+          });
+        },
+      },
+    ],
     build: {
       rollupOptions: {
         // Phase 2 sandbox: standalone entry so community tools can run at
@@ -34,6 +59,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           sandbox: path.resolve(__dirname, 'sandbox.html'),
+          studio: path.resolve(__dirname, 'studio.html'),
         },
         output: {
           // Deterministic chunk names: vendors keep their URLs across
