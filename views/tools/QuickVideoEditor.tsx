@@ -7,7 +7,7 @@ import {
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, RotateCw, RotateCcw,
     FlipHorizontal2, FlipVertical2,
-    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp,
+    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp, ChevronDown,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -127,6 +127,8 @@ export const QuickVideoEditor: React.FC = () => {
 
     // Canvas (aspect ratio)
     const [aspectRatio, setAspectRatio] = useState('original');
+    const [customW, setCustomW] = useState(1920);
+    const [customH, setCustomH] = useState(1080);
 
     // Layout
     const [scaleMode, setScaleMode] = useState<'fit' | 'cover'>('fit');
@@ -563,10 +565,17 @@ export const QuickVideoEditor: React.FC = () => {
 
         // Apply canvas aspect ratio / scale
         if (aspectRatio !== 'original') {
+            const safeCustomW = Math.max(16, Math.min(3840, Math.round(customW / 2) * 2 || 1920));
+            const safeCustomH = Math.max(16, Math.min(3840, Math.round(customH / 2) * 2 || 1080));
             const canvasDims: Record<string, [number, number]> = {
                 '16:9': [1920, 1080],
                 '9:16': [1080, 1920],
                 '1:1': [1080, 1080],
+                '4:5': [1080, 1350],
+                '4:3': [1440, 1080],
+                '21:9': [2560, 1080],
+                '9:21': [1080, 2520],
+                'custom': [safeCustomW, safeCustomH],
             };
             const [tw, th] = canvasDims[aspectRatio] ?? [1920, 1080];
             if (scaleMode === 'fit') {
@@ -807,6 +816,11 @@ export const QuickVideoEditor: React.FC = () => {
     const arStyle = aspectRatio === '16:9' ? { aspectRatio: '16/9' }
         : aspectRatio === '9:16' ? { aspectRatio: '9/16' }
         : aspectRatio === '1:1' ? { aspectRatio: '1/1' }
+        : aspectRatio === '4:5' ? { aspectRatio: '4/5' }
+        : aspectRatio === '4:3' ? { aspectRatio: '4/3' }
+        : aspectRatio === '21:9' ? { aspectRatio: '21/9' }
+        : aspectRatio === '9:21' ? { aspectRatio: '9/21' }
+        : aspectRatio === 'custom' && customW > 0 && customH > 0 ? { aspectRatio: `${customW}/${customH}` }
         : {};
     // After an applied crop, the "original" canvas becomes the cropped frame's own aspect
     const canvasStyle = appliedActive && aspectRatio === 'original' && videoDims.w > 0
@@ -969,85 +983,135 @@ export const QuickVideoEditor: React.FC = () => {
 
                             {/* ── CANVAS ── */}
                             <div>
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                                    <Monitor size={10} /> Canvas
-                                </p>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { id: 'original', label: 'Original', icon: Maximize2 },
-                                        { id: '16:9', label: '16:9', icon: Monitor },
-                                        { id: '9:16', label: '9:16', icon: Smartphone },
-                                        { id: '1:1', label: '1:1', icon: Square },
-                                    ].map(opt => (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => setAspectRatio(opt.id)}
-                                            className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${aspectRatio === opt.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-900/30' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300'}`}
-                                        >
-                                            <opt.icon size={15} />
-                                            <span className="text-[10px] font-bold">{opt.label}</span>
-                                        </button>
-                                    ))}
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Monitor size={10} /> Canvas Aspect
+                                    </p>
+                                    <span className="text-[10px] font-mono text-indigo-400">
+                                        {aspectRatio === 'custom' ? `${customW}×${customH}` : aspectRatio === 'original' ? 'Source' : aspectRatio}
+                                    </span>
                                 </div>
+                                <div className="relative">
+                                    <select
+                                        value={aspectRatio}
+                                        onChange={e => setAspectRatio(e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none font-medium"
+                                    >
+                                        <option value="original">Original (Match Source)</option>
+                                        <option value="16:9">16:9 · Landscape (YouTube, Twitch)</option>
+                                        <option value="9:16">9:16 · Vertical (Shorts, TikTok, Reels)</option>
+                                        <option value="1:1">1:1 · Square (Instagram Post)</option>
+                                        <option value="4:5">4:5 · Portrait (Instagram Feed)</option>
+                                        <option value="4:3">4:3 · Classic (Standard TV)</option>
+                                        <option value="21:9">21:9 · Ultrawide (Cinematic)</option>
+                                        <option value="9:21">9:21 · Tall Cinematic</option>
+                                        <option value="custom">Custom (Width × Height)</option>
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                                </div>
+
+                                {aspectRatio === 'custom' && (
+                                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-800/40">
+                                        <div>
+                                            <label className="text-[9px] font-semibold text-zinc-500 block mb-1">Width (px)</label>
+                                            <input
+                                                type="number"
+                                                min="64"
+                                                max="3840"
+                                                step="2"
+                                                value={customW}
+                                                onChange={e => setCustomW(Math.max(16, parseInt(e.target.value) || 0))}
+                                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                                                placeholder="1920"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[9px] font-semibold text-zinc-500 block mb-1">Height (px)</label>
+                                            <input
+                                                type="number"
+                                                min="64"
+                                                max="3840"
+                                                step="2"
+                                                value={customH}
+                                                onChange={e => setCustomH(Math.max(16, parseInt(e.target.value) || 0))}
+                                                className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500"
+                                                placeholder="1080"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="h-px bg-zinc-800/60" />
 
                             {/* ── LAYOUT ── */}
                             <div>
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                                    <ZoomIn size={10} /> Layout
-                                </p>
-
-                                {/* Fit / Cover */}
-                                <div className="flex bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-3">
-                                    {(['fit', 'cover'] as const).map(mode => (
-                                        <button
-                                            key={mode}
-                                            onClick={() => setScaleMode(mode)}
-                                            className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all ${scaleMode === mode ? 'bg-indigo-500/10 border border-indigo-500 text-indigo-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                                        >
-                                            {mode}
-                                        </button>
-                                    ))}
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                        <ZoomIn size={10} /> Layout
+                                    </p>
+                                    {/* Fit / Cover inline toggle */}
+                                    <div className="flex bg-zinc-900 rounded-lg border border-zinc-800 p-0.5">
+                                        {(['fit', 'cover'] as const).map(mode => (
+                                            <button
+                                                key={mode}
+                                                onClick={() => setScaleMode(mode)}
+                                                className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${scaleMode === mode ? 'bg-indigo-600 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                            >
+                                                {mode}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
-                                {/* Zoom */}
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <span className="text-[11px] text-zinc-400">Zoom</span>
-                                    <span className="text-[11px] font-bold text-indigo-400">{zoom.toFixed(1)}x</span>
+                                {/* Zoom compact */}
+                                <div className="bg-zinc-900/60 rounded-xl p-2.5 border border-zinc-800/60 mb-2.5 space-y-1.5">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-zinc-400 font-medium">Zoom</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[10px] font-mono font-bold text-indigo-400">{zoom.toFixed(1)}x</span>
+                                            {zoom !== 1 && (
+                                                <button
+                                                    onClick={() => setZoom(1)}
+                                                    className="text-[9px] text-zinc-500 hover:text-zinc-300 underline"
+                                                >
+                                                    Reset
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="range" min="0.5" max="3" step="0.1"
+                                        value={zoom}
+                                        onChange={e => setZoom(parseFloat(e.target.value))}
+                                        className="w-full h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer"
+                                    />
                                 </div>
-                                <input
-                                    type="range" min="0.5" max="3" step="0.1"
-                                    value={zoom}
-                                    onChange={e => setZoom(parseFloat(e.target.value))}
-                                    className="w-full h-1.5 rounded-full appearance-none bg-zinc-800 accent-indigo-500 cursor-pointer mb-3"
-                                />
 
-                                {/* Transform buttons */}
-                                <div className="flex gap-2">
+                                {/* Transform buttons compact row */}
+                                <div className="grid grid-cols-3 gap-1.5">
                                     <button
                                         onClick={() => setRotation(r => (r + 90) % 360)}
-                                        title="Rotate 90°"
-                                        className="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all text-[9px] font-bold"
+                                        title={`Rotate 90° (current: ${rotation}°)`}
+                                        className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg border transition-all text-[10px] font-bold ${rotation !== 0 ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                                     >
-                                        <RotateCw size={14} />
-                                        <span>Rotate</span>
+                                        <RotateCw size={12} />
+                                        <span>{rotation ? `${rotation}°` : 'Rotate'}</span>
                                     </button>
                                     <button
                                         onClick={() => setFlipH(h => !h)}
                                         title="Flip Horizontal"
-                                        className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all text-[9px] font-bold ${flipH ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                                        className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg border transition-all text-[10px] font-bold ${flipH ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                                     >
-                                        <FlipHorizontal2 size={14} />
+                                        <FlipHorizontal2 size={12} />
                                         <span>Flip H</span>
                                     </button>
                                     <button
                                         onClick={() => setFlipV(v => !v)}
                                         title="Flip Vertical"
-                                        className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl border transition-all text-[9px] font-bold ${flipV ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                                        className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg border transition-all text-[10px] font-bold ${flipV ? 'bg-indigo-600/20 border-indigo-500/40 text-indigo-400' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
                                     >
-                                        <FlipVertical2 size={14} />
+                                        <FlipVertical2 size={12} />
                                         <span>Flip V</span>
                                     </button>
                                 </div>
