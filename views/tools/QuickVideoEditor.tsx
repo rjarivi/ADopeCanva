@@ -5,7 +5,8 @@ import {
     Play, Pause, Scissors, Download, AlertCircle, Loader2,
     Film, Plus, Trash2, Copy, VolumeX, Volume2, Layers,
     Monitor, Smartphone, Square, Maximize2, Video,
-    Check, ArrowLeft, RotateCw, FlipHorizontal2, FlipVertical2,
+    Check, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, RotateCw, RotateCcw,
+    FlipHorizontal2, FlipVertical2,
     ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
@@ -355,6 +356,102 @@ export const QuickVideoEditor: React.FC = () => {
         setExportUrl(null);
     };
 
+    // ── Reorder clip ──
+    const moveClip = useCallback((id: string, direction: 'left' | 'right') => {
+        setClips(prev => {
+            const idx = prev.findIndex(c => c.id === id);
+            if (idx === -1) return prev;
+            const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
+            if (targetIdx < 0 || targetIdx >= prev.length) return prev;
+            const next = [...prev];
+            const [moved] = next.splice(idx, 1);
+            next.splice(targetIdx, 0, moved);
+            return next;
+        });
+        setExportUrl(null);
+    }, [setExportUrl]);
+
+    // ── Split clip at current playhead ──
+    const splitClip = useCallback(() => {
+        if (!selectedClip || !videoRef.current) return;
+        const cur = videoRef.current.currentTime || currentTime;
+        // Require split point to be at least 0.08s inside the clip boundaries
+        if (cur <= selectedClip.trimStart + 0.08 || cur >= selectedClip.trimEnd - 0.08) {
+            return;
+        }
+
+        const newId = genId();
+        const firstPart: ClipData = {
+            ...selectedClip,
+            trimEnd: cur,
+        };
+        const secondPart: ClipData = {
+            ...selectedClip,
+            id: newId,
+            url: URL.createObjectURL(selectedClip.file),
+            trimStart: cur,
+            trimEnd: selectedClip.trimEnd,
+        };
+
+        setClips(prev => {
+            const idx = prev.findIndex(c => c.id === selectedClip.id);
+            if (idx === -1) return prev;
+            const next = [...prev];
+            next.splice(idx, 1, firstPart, secondPart);
+            return next;
+        });
+
+        setSelectedId(newId);
+        setExportUrl(null);
+    }, [selectedClip, currentTime, setExportUrl]);
+
+    // Check if the current playhead is in a valid splittable range
+    const canSplit = Boolean(
+        selectedClip &&
+        currentTime > selectedClip.trimStart + 0.08 &&
+        currentTime < selectedClip.trimEnd - 0.08
+    );
+
+    // ── Nudge and navigation helpers ──
+    const nudgeTime = useCallback((delta: number) => {
+        if (!videoRef.current || !selectedClip) return;
+        const cur = videoRef.current.currentTime || currentTime;
+        const newTime = Math.max(selectedClip.trimStart, Math.min(selectedClip.trimEnd, cur + delta));
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+    }, [selectedClip, currentTime]);
+
+    const jumpToStart = useCallback(() => {
+        if (!videoRef.current || !selectedClip) return;
+        videoRef.current.currentTime = selectedClip.trimStart;
+        setCurrentTime(selectedClip.trimStart);
+    }, [selectedClip]);
+
+    // ── Seek across the entire merged sequence ──
+    const handleTimelineSeek = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (totalDuration <= 0) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const targetTotalSec = (x / rect.width) * totalDuration;
+
+        let accum = 0;
+        for (const clip of clips) {
+            const clipLen = clip.trimEnd - clip.trimStart;
+            if (targetTotalSec <= accum + clipLen || clip === clips[clips.length - 1]) {
+                const timeInClip = Math.max(clip.trimStart, Math.min(clip.trimEnd, clip.trimStart + (targetTotalSec - accum)));
+                if (selectedId !== clip.id) {
+                    setSelectedId(clip.id);
+                }
+                if (videoRef.current) {
+                    videoRef.current.currentTime = timeInClip;
+                }
+                setCurrentTime(timeInClip);
+                break;
+            }
+            accum += clipLen;
+        }
+    }, [totalDuration, clips, selectedId]);
+
     // ── Trim mode ──
     const enterTrimMode = () => {
         if (!selectedClip) return;
@@ -374,19 +471,53 @@ export const QuickVideoEditor: React.FC = () => {
     };
 
     // ── Playback ──
-    const togglePlay = () => {
+    const togglePlay = useCallback(() => {
         if (!videoRef.current || !selectedClip) return;
         if (isPlaying) {
             videoRef.current.pause();
+            setIsPlaying(false);
         } else {
             if (videoRef.current.currentTime >= selectedClip.trimEnd ||
                 videoRef.current.currentTime < selectedClip.trimStart) {
                 videoRef.current.currentTime = selectedClip.trimStart;
             }
-            videoRef.current.play();
+            videoRef.current.play().catch(console.error);
+            setIsPlaying(true);
         }
-        setIsPlaying(!isPlaying);
-    };
+    }, [isPlaying, selectedClip]);
+
+    // ── Keyboard shortcuts ──
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || (e.target as HTMLElement)?.isContentEditable) {
+                return;
+            }
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowLeft') {
+                e.preventDefault();
+                nudgeTime(e.shiftKey ? -1 : -0.04);
+            } else if (e.code === 'ArrowRight') {
+                e.preventDefault();
+                nudgeTime(e.shiftKey ? 1 : 0.04);
+            } else if (e.code === 'KeyS' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                splitClip();
+            } else if (e.code === 'KeyM' && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                setGlobalMuted(m => !m);
+            } else if (e.code === 'Home') {
+                e.preventDefault();
+                jumpToStart();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [togglePlay, nudgeTime, splitClip, jumpToStart]);
 
     const handleTimeUpdate = (e: React.SyntheticEvent<HTMLVideoElement>) => {
         const t = e.currentTarget.currentTime;
@@ -499,10 +630,11 @@ export const QuickVideoEditor: React.FC = () => {
         ffmpeg.on('progress', onProg);
 
         try {
+            const outputName = `out.${exportFormat}`;
             if (clips.length === 1) {
                 const clip = clips[0];
                 await writeFileToFFmpeg(ffmpeg, 'inp.mp4', clip.file);
-                await ffmpeg.exec(buildClipArgs('inp.mp4', 'out.mp4', clip.trimStart, clip.trimEnd, clip.muted || globalMuted, false));
+                await ffmpeg.exec(buildClipArgs('inp.mp4', outputName, clip.trimStart, clip.trimEnd, clip.muted || globalMuted, false));
                 await ffmpeg.deleteFile('inp.mp4');
             } else {
                 // Intermediate h264/aac pass per clip (muted clips get a volume=0 silent track so streams match),
@@ -523,15 +655,15 @@ export const QuickVideoEditor: React.FC = () => {
                     '-y', '-f', 'concat', '-safe', '0', '-i', 'list.txt',
                     '-threads', threadsArg(),
                     ...getVideoCodecArgs(true),
-                    'out.mp4',
+                    outputName,
                 ]);
                 for (const n of trimmed) await ffmpeg.deleteFile(n);
                 await ffmpeg.deleteFile('list.txt');
             }
 
-            const url = await readFileFromFFmpeg(ffmpeg, 'out.mp4', `video/${exportFormat}`);
+            const url = await readFileFromFFmpeg(ffmpeg, outputName, `video/${exportFormat}`);
             setExportUrl(url);
-            await ffmpeg.deleteFile('out.mp4');
+            await ffmpeg.deleteFile(outputName);
         } catch (err) {
             console.error('Export failed:', err);
             alert('Export failed. See console for details.');
@@ -1279,6 +1411,86 @@ export const QuickVideoEditor: React.FC = () => {
                     </div>
                 </div>
 
+                {/* ── Video Transport Toolbar ── */}
+                {selectedClip && !isProcessing && (
+                    <div className="flex flex-wrap items-center justify-between px-3 md:px-5 py-2 bg-zinc-950/95 border-t border-zinc-900 gap-2 shrink-0">
+                        {/* Left: Jump to start and backward nudges */}
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={jumpToStart}
+                                className="p-1.5 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all text-xs"
+                                title="Jump to Clip Start (Home)"
+                            >
+                                <RotateCcw size={13} />
+                            </button>
+                            <button
+                                onClick={() => nudgeTime(-1)}
+                                className="px-2 py-1 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white text-[11px] font-mono font-bold transition-all"
+                                title="Nudge -1s (Shift+Left)"
+                            >
+                                -1s
+                            </button>
+                            <button
+                                onClick={() => nudgeTime(-0.04)}
+                                className="px-2 py-1 rounded-lg bg-zinc-900/80 border border-zinc-800 text-indigo-400 hover:text-indigo-300 text-[11px] font-mono font-bold transition-all"
+                                title="Step Back 1 Frame (-0.04s, Left Arrow)"
+                            >
+                                -1f
+                            </button>
+                        </div>
+
+                        {/* Center: Play/Pause and Timecode HUD */}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={togglePlay}
+                                className="w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
+                                title="Play / Pause (Space)"
+                            >
+                                {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
+                            </button>
+                            <div className="text-center">
+                                <span className="text-xs font-mono font-bold text-white block">
+                                    {fmtTimecode(currentTime)}
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500 block">
+                                    Clip: {(selectedClip.trimEnd - selectedClip.trimStart).toFixed(2)}s · Total: {fmtDuration(totalDuration)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Right: Step forward, nudge +1s, and Split button */}
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => nudgeTime(0.04)}
+                                className="px-2 py-1 rounded-lg bg-zinc-900/80 border border-zinc-800 text-indigo-400 hover:text-indigo-300 text-[11px] font-mono font-bold transition-all"
+                                title="Step Forward 1 Frame (+0.04s, Right Arrow)"
+                            >
+                                +1f
+                            </button>
+                            <button
+                                onClick={() => nudgeTime(1)}
+                                className="px-2 py-1 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white text-[11px] font-mono font-bold transition-all"
+                                title="Nudge +1s (Shift+Right)"
+                            >
+                                +1s
+                            </button>
+                            <button
+                                onClick={splitClip}
+                                disabled={!canSplit}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                    canSplit
+                                        ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 hover:bg-indigo-600 hover:text-white shadow-sm'
+                                        : 'bg-zinc-900 border-zinc-800/60 text-zinc-600 cursor-not-allowed opacity-50'
+                                }`}
+                                title="Split Clip at Current Playhead (S)"
+                            >
+                                <Scissors size={13} />
+                                <span className="hidden sm:inline">Split</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Bottom Bar ── */}
                 <div className="bg-zinc-950 border-t border-zinc-900 shrink-0">
                     {trimMode ? (
@@ -1342,19 +1554,23 @@ export const QuickVideoEditor: React.FC = () => {
                     ) : (
                         /* ── Normal Bottom ── */
                         <>
-                            {/* Progress bar */}
+                            {/* Interactive Scrubbable Timeline */}
                             <div className="px-4 pt-3 pb-2">
                                 <div className="flex items-center gap-3">
-                                    <span className="text-[11px] font-mono text-zinc-500 shrink-0 tabular-nums">
+                                    <span className="text-[11px] font-mono text-zinc-400 shrink-0 tabular-nums">
                                         {fmtDuration(Math.max(0, currentTime - (selectedClip?.trimStart ?? 0)))} / {fmtDuration(totalDuration)}
                                     </span>
-                                    <div className="flex-1 relative h-1.5 bg-zinc-800 rounded-full overflow-visible">
+                                    <div
+                                        className="flex-1 relative h-3 bg-zinc-900 rounded-full border border-zinc-800 cursor-pointer overflow-visible group select-none touch-none"
+                                        onPointerDown={handleTimelineSeek}
+                                        title="Click or drag to scrub playhead across project"
+                                    >
                                         {/* Clip segments */}
                                         <div className="absolute inset-0 flex rounded-full overflow-hidden">
                                             {clips.map((clip, i) => (
                                                 <div
                                                     key={clip.id}
-                                                    className={`h-full transition-colors ${clip.id === selectedId ? 'bg-indigo-500' : 'bg-zinc-600/60'}`}
+                                                    className={`h-full transition-colors ${clip.id === selectedId ? 'bg-indigo-500' : 'bg-zinc-700/60 hover:bg-zinc-600/70'}`}
                                                     style={{
                                                         width: `${totalDuration > 0 ? ((clip.trimEnd - clip.trimStart) / totalDuration) * 100 : 0}%`,
                                                         borderRight: i < clips.length - 1 ? '1.5px solid #09090b' : undefined,
@@ -1362,9 +1578,9 @@ export const QuickVideoEditor: React.FC = () => {
                                                 />
                                             ))}
                                         </div>
-                                        {/* Playhead dot */}
+                                        {/* Playhead marker */}
                                         <div
-                                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-md pointer-events-none z-10"
+                                            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-2 border-indigo-600 rounded-full shadow-lg pointer-events-none z-10 transition-transform group-hover:scale-125"
                                             style={{ left: `${playheadPercent}%` }}
                                         />
                                     </div>
@@ -1374,32 +1590,54 @@ export const QuickVideoEditor: React.FC = () => {
                             {/* Clip strip */}
                             <div className="px-4 pb-2 flex gap-2.5 overflow-x-auto">
                                 {clips.map(clip => (
-                                    <button
-                                        key={clip.id}
-                                        onClick={() => { setSelectedId(clip.id); setIsPlaying(false); }}
-                                        className={`relative flex-shrink-0 w-[88px] h-[58px] rounded-lg overflow-hidden border-2 transition-all ${selectedId === clip.id ? 'border-indigo-500 shadow-md shadow-indigo-500/20' : 'border-zinc-700 hover:border-zinc-500'}`}
-                                    >
-                                        {clip.thumbnails.length > 0
-                                            ? <img src={clip.thumbnails[Math.floor(clip.thumbnails.length / 2)]} className="w-full h-full object-cover" alt="" />
-                                            : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Film size={16} className="text-zinc-600" /></div>
-                                        }
-                                        {/* Duration badge */}
-                                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-px rounded-full whitespace-nowrap">
-                                            {(clip.trimEnd - clip.trimStart).toFixed(1)}s
-                                        </div>
-                                        {/* Muted icon */}
-                                        {clip.muted && (
-                                            <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center">
-                                                <VolumeX size={9} className="text-zinc-300" />
+                                    <div key={clip.id} className="relative flex-shrink-0 group/clip">
+                                        <button
+                                            onClick={() => { setSelectedId(clip.id); setIsPlaying(false); }}
+                                            className={`relative w-[92px] h-[60px] rounded-lg overflow-hidden border-2 transition-all block ${selectedId === clip.id ? 'border-indigo-500 shadow-md shadow-indigo-500/20' : 'border-zinc-700 hover:border-zinc-500'}`}
+                                        >
+                                            {clip.thumbnails.length > 0
+                                                ? <img src={clip.thumbnails[Math.floor(clip.thumbnails.length / 2)]} className="w-full h-full object-cover" alt="" />
+                                                : <div className="w-full h-full bg-zinc-800 flex items-center justify-center"><Film size={16} className="text-zinc-600" /></div>
+                                            }
+                                            {/* Duration badge */}
+                                            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 bg-black/75 backdrop-blur-sm text-white text-[9px] font-bold px-1.5 py-px rounded-full whitespace-nowrap">
+                                                {(clip.trimEnd - clip.trimStart).toFixed(1)}s
+                                            </div>
+                                            {/* Muted icon */}
+                                            {clip.muted && (
+                                                <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center">
+                                                    <VolumeX size={9} className="text-zinc-300" />
+                                                </div>
+                                            )}
+                                        </button>
+                                        {/* Quick Reorder Arrows */}
+                                        {clips.length > 1 && (
+                                            <div className="absolute -top-1.5 left-0.5 right-0.5 flex justify-between pointer-events-none opacity-0 group-hover/clip:opacity-100 transition-opacity z-20">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); moveClip(clip.id, 'left'); }}
+                                                    disabled={clips[0].id === clip.id}
+                                                    className="w-4 h-4 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500 flex items-center justify-center shadow-md pointer-events-auto disabled:opacity-20 disabled:pointer-events-none transition-all"
+                                                    title="Move earlier in sequence"
+                                                >
+                                                    <ChevronLeft size={10} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); moveClip(clip.id, 'right'); }}
+                                                    disabled={clips[clips.length - 1].id === clip.id}
+                                                    className="w-4 h-4 rounded-full bg-zinc-900 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500 flex items-center justify-center shadow-md pointer-events-auto disabled:opacity-20 disabled:pointer-events-none transition-all"
+                                                    title="Move later in sequence"
+                                                >
+                                                    <ChevronRight size={10} />
+                                                </button>
                                             </div>
                                         )}
-                                    </button>
+                                    </div>
                                 ))}
 
                                 {/* + Add Media */}
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="flex-shrink-0 w-[88px] h-[58px] rounded-lg border-2 border-dashed border-zinc-700 hover:border-indigo-500/60 hover:bg-zinc-900/60 flex flex-col items-center justify-center gap-1 transition-all text-zinc-500 hover:text-indigo-400"
+                                    className="flex-shrink-0 w-[92px] h-[60px] rounded-lg border-2 border-dashed border-zinc-700 hover:border-indigo-500/60 hover:bg-zinc-900/60 flex flex-col items-center justify-center gap-1 transition-all text-zinc-500 hover:text-indigo-400"
                                 >
                                     <Plus size={15} />
                                     <span className="text-[9px] font-bold uppercase tracking-wide">Add Media</span>
@@ -1409,19 +1647,30 @@ export const QuickVideoEditor: React.FC = () => {
                             {/* Per-clip action bar */}
                             {selectedClip && (
                                 <div className="px-4 pb-3 flex justify-center">
-                                    <div className="inline-flex gap-0.5 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+                                    <div className="inline-flex flex-wrap gap-0.5 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
                                         {[
-                                            { icon: Scissors, label: 'Trim', action: enterTrimMode, danger: false },
-                                            { icon: CropIcon, label: cropEnabled ? 'Cropping' : 'Crop', action: () => { if (!cropEnabled) setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setCropEnabled(c => !c); setExportUrl(null); }, danger: false, active: cropEnabled },
-                                            { icon: selectedClip.muted ? VolumeX : Volume2, label: selectedClip.muted ? 'Unmute' : 'Mute', action: () => updateClip(selectedClip.id, { muted: !selectedClip.muted }), danger: false },
-                                            { icon: Copy, label: 'Duplicate', action: () => duplicateClip(selectedClip.id), danger: false },
-                                            { icon: Trash2, label: 'Delete', action: () => deleteClip(selectedClip.id), danger: true },
+                                            { icon: Scissors, label: 'Split', action: splitClip, disabled: !canSplit, danger: false, title: 'Split clip at current playhead (S)' },
+                                            { icon: Film, label: 'Trim', action: enterTrimMode, danger: false, title: 'Adjust start and end time' },
+                                            { icon: CropIcon, label: cropEnabled ? 'Cropping' : 'Crop', action: () => { if (!cropEnabled) setCropInset({ left: 0, right: 0, top: 0, bottom: 0 }); setCropEnabled(c => !c); setExportUrl(null); }, danger: false, active: cropEnabled, title: 'Adjust crop boundaries' },
+                                            ...(clips.length > 1 ? [
+                                                { icon: ArrowLeft, label: 'Move <', action: () => moveClip(selectedClip.id, 'left'), disabled: clips[0].id === selectedClip.id, danger: false, title: 'Move clip earlier' },
+                                                { icon: ArrowRight, label: 'Move >', action: () => moveClip(selectedClip.id, 'right'), disabled: clips[clips.length - 1].id === selectedClip.id, danger: false, title: 'Move clip later' },
+                                            ] : []),
+                                            { icon: selectedClip.muted ? VolumeX : Volume2, label: selectedClip.muted ? 'Unmute' : 'Mute', action: () => updateClip(selectedClip.id, { muted: !selectedClip.muted }), danger: false, title: 'Mute/unmute clip' },
+                                            { icon: Copy, label: 'Duplicate', action: () => duplicateClip(selectedClip.id), danger: false, title: 'Duplicate clip' },
+                                            { icon: Trash2, label: 'Delete', action: () => deleteClip(selectedClip.id), danger: true, title: 'Delete clip' },
                                         ].map(a => (
                                             <button
                                                 key={a.label}
                                                 onClick={a.action}
-                                                title={a.label === 'Crop' ? 'Toggle crop — drag the frame corners and edges on the video' : undefined}
-                                                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all text-[10px] font-bold ${a.danger ? 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10' : (a as any).active ? 'text-indigo-300 bg-indigo-500/15' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                                                disabled={a.disabled}
+                                                title={a.title}
+                                                className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all text-[10px] font-bold ${
+                                                    a.disabled ? 'opacity-30 cursor-not-allowed text-zinc-600' :
+                                                    a.danger ? 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10' :
+                                                    (a as any).active ? 'text-indigo-300 bg-indigo-500/15' :
+                                                    'text-zinc-400 hover:text-white hover:bg-zinc-800'
+                                                }`}
                                             >
                                                 <a.icon size={13} />
                                                 {a.label}

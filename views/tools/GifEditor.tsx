@@ -768,7 +768,7 @@ export const GifEditor: React.FC = () => {
                         <button
                             onClick={() => handleProcess('gif', true)}
                             disabled={isProcessing}
-                            className="flex-1 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-extrabold text-sm shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                            className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold text-sm shadow-xl shadow-indigo-600/25 border-none hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                         >
                             <Download size={18} />
                             {isProcessing && !isSpriteWorker ? 'Processing...' : 'Download'}

@@ -156,7 +156,7 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
         extraVf.push(`setpts=${(1 / speed).toFixed(4)}*PTS`);
       }
       if (isVideoTarget && scalePercent < 100) {
-        extraVf.push(`scale=iw*${(scalePercent / 100).toFixed(4)}:-1`);
+        extraVf.push(`scale=trunc(iw*${(scalePercent / 100).toFixed(4)}/2)*2:-2`);
       }
 
       if (targetFormat === 'AVI') {

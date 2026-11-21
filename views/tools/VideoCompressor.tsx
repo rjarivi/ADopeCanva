@@ -89,8 +89,8 @@ export const VideoCompressor: React.FC = () => {
                 args.push('-c:a', 'aac', '-b:a', '128k');
             }
 
-            // FPS cap option
-            if (fpsCap < 100) {
+            // FPS cap option: 0 = Source frame rate (don't force -r)
+            if (fpsCap > 0) {
                 args.push('-r', String(fpsCap));
             }
 

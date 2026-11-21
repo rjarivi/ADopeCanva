@@ -14,6 +14,36 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.0',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Scissors,
+                title: 'Quick Video Editor — Split at Playhead & Video Transport Bar',
+                description: "Major editor upgrade: added Split Clip at Playhead (Scissors button & 'S' hotkey), dedicated video transport controls (Jump to Start, Nudge -1s/+1s, Frame Step -1f/+1f, Play/Pause with Space), interactive scrubbable multi-clip timeline, and Move Earlier / Move Later clip reordering.",
+                type: 'feature'
+            },
+            {
+                icon: Zap,
+                title: 'Video Engine & Compression Bug Fixes',
+                description: "Fixed critical FFmpeg arguments: corrected Video Compressor auto-FPS bug where default source frame rate pushed '-r 0'; resolved WebM export container extension in Quick Video Editor; and enforced even-dimension scaling in Video Converter to eliminate libx264 crashes on odd resolutions.",
+                type: 'fix'
+            }
+        ]
+    },
+    {
+        version: '1.22.0',
+        date: 'Oct 6, 2026',
+        items: [
+            {
+                icon: Rocket,
+                title: 'Studio Phase 0 — Agentic Video Creation (Internal Beta)',
+                description: "New /studio foundation on the open-source HyperFrames composition engine (Apache-2.0, used via npm — see THIRD_PARTY_NOTICES.md). Describe a video and an AI model writes a HyperFrames composition; it is parsed and validated in-browser with @hyperframes/core and previewed on a real timeline with @hyperframes/player. Bring-your-own-key with two providers: Google Gemini (AI Studio key) or OpenRouter (one key, any model — Gemini 3.8 Flash and Claude Opus 5.5 recommended). Export today ships the standalone .html composition; in-browser MP4 export (mediabunny + WebCodecs) is on the roadmap. Behind the Coming Soon gate — open /studio?beta=studio to try it.",
+                type: 'feature'
+            },
+        ],
+    },
+    {
         version: '1.21.0',
         date: 'Oct 3, 2026',
         items: [
