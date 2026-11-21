@@ -7,7 +7,7 @@ import {
     Monitor, Smartphone, Square, Maximize2, Video,
     Check, ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, RotateCw, RotateCcw,
     FlipHorizontal2, FlipVertical2,
-    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp, ChevronDown,
+    ZoomIn, Gauge, Camera, Speaker, Crop as CropIcon, ChevronUp, ChevronDown, Sliders,
 } from 'lucide-react';
 import { getFFmpeg, writeFileToFFmpeg, readFileFromFFmpeg } from '../../utils/ffmpeg';
 import { FFmpeg } from '@ffmpeg/ffmpeg';
@@ -101,6 +101,18 @@ const atempoChain = (speed: number): string[] => {
     return parts.map(p => `atempo=${p}`);
 };
 
+const ASPECT_OPTIONS = [
+    { id: 'original', label: 'Original', desc: 'Match Source Frame', icon: Maximize2 },
+    { id: '16:9', label: '16:9', desc: 'Landscape · YouTube, Twitch', icon: Monitor },
+    { id: '9:16', label: '9:16', desc: 'Vertical · Shorts, Reels, TikTok', icon: Smartphone },
+    { id: '1:1', label: '1:1', desc: 'Square · Feed Post', icon: Square },
+    { id: '4:5', label: '4:5', desc: 'Portrait · Instagram Feed', icon: Smartphone },
+    { id: '4:3', label: '4:3', desc: 'Standard · Classic TV', icon: Monitor },
+    { id: '21:9', label: '21:9', desc: 'Ultrawide · Cinematic', icon: Film },
+    { id: '9:21', label: '9:21', desc: 'Tall Cinematic', icon: Smartphone },
+    { id: 'custom', label: 'Custom', desc: 'Custom Resolution (W×H)', icon: Sliders },
+] as const;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const QuickVideoEditor: React.FC = () => {
@@ -129,6 +141,20 @@ export const QuickVideoEditor: React.FC = () => {
     const [aspectRatio, setAspectRatio] = useState('original');
     const [customW, setCustomW] = useState(1920);
     const [customH, setCustomH] = useState(1080);
+    const [aspectDropdownOpen, setAspectDropdownOpen] = useState(false);
+    const aspectDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (aspectDropdownRef.current && !aspectDropdownRef.current.contains(e.target as Node)) {
+                setAspectDropdownOpen(false);
+            }
+        };
+        if (aspectDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [aspectDropdownOpen]);
 
     // Layout
     const [scaleMode, setScaleMode] = useState<'fit' | 'cover'>('fit');
@@ -991,23 +1017,71 @@ export const QuickVideoEditor: React.FC = () => {
                                         {aspectRatio === 'custom' ? `${customW}×${customH}` : aspectRatio === 'original' ? 'Source' : aspectRatio}
                                     </span>
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        value={aspectRatio}
-                                        onChange={e => setAspectRatio(e.target.value)}
-                                        className="w-full bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs rounded-xl px-3 py-2 pr-8 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer appearance-none font-medium"
-                                    >
-                                        <option value="original">Original (Match Source)</option>
-                                        <option value="16:9">16:9 · Landscape (YouTube, Twitch)</option>
-                                        <option value="9:16">9:16 · Vertical (Shorts, TikTok, Reels)</option>
-                                        <option value="1:1">1:1 · Square (Instagram Post)</option>
-                                        <option value="4:5">4:5 · Portrait (Instagram Feed)</option>
-                                        <option value="4:3">4:3 · Classic (Standard TV)</option>
-                                        <option value="21:9">21:9 · Ultrawide (Cinematic)</option>
-                                        <option value="9:21">9:21 · Tall Cinematic</option>
-                                        <option value="custom">Custom (Width × Height)</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+                                {/* Custom Dropdown */}
+                                <div className="relative" ref={aspectDropdownRef}>
+                                    {(() => {
+                                        const currentOpt = ASPECT_OPTIONS.find(o => o.id === aspectRatio) ?? ASPECT_OPTIONS[0];
+                                        const CurrentIcon = currentOpt.icon;
+                                        return (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setAspectDropdownOpen(v => !v)}
+                                                    className="w-full flex items-center justify-between bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl px-3 py-2 text-xs text-zinc-200 transition-all focus:outline-none focus:border-indigo-500/60 group"
+                                                >
+                                                    <div className="flex items-center gap-2 truncate min-w-0">
+                                                        <CurrentIcon size={13} className="text-indigo-400 shrink-0" />
+                                                        <span className="font-semibold text-zinc-200 truncate">{currentOpt.label}</span>
+                                                        <span className="text-[10px] text-zinc-500 truncate hidden sm:inline">
+                                                            · {currentOpt.desc.split('·')[0]}
+                                                        </span>
+                                                    </div>
+                                                    <ChevronDown
+                                                        size={14}
+                                                        className={`text-zinc-500 group-hover:text-zinc-300 transition-transform duration-200 shrink-0 ml-1 ${aspectDropdownOpen ? 'rotate-180 text-indigo-400' : ''}`}
+                                                    />
+                                                </button>
+
+                                                {aspectDropdownOpen && (
+                                                    <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1 max-h-60 overflow-y-auto custom-scrollbar animate-fade-in">
+                                                        {ASPECT_OPTIONS.map(opt => {
+                                                            const isSelected = aspectRatio === opt.id;
+                                                            const OptIcon = opt.icon;
+                                                            return (
+                                                                <button
+                                                                    key={opt.id}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        setAspectRatio(opt.id);
+                                                                        setAspectDropdownOpen(false);
+                                                                    }}
+                                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-all ${
+                                                                        isSelected
+                                                                            ? 'bg-indigo-600/15 border border-indigo-500/30 text-white'
+                                                                            : 'text-zinc-400 hover:bg-zinc-800/70 hover:text-zinc-200 border border-transparent'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <OptIcon size={13} className={isSelected ? 'text-indigo-400' : 'text-zinc-500'} />
+                                                                        <div className="truncate">
+                                                                            <div className="text-[11px] font-bold leading-tight flex items-center gap-1.5">
+                                                                                <span>{opt.label}</span>
+                                                                                {opt.id === 'custom' && customW > 0 && customH > 0 && (
+                                                                                    <span className="text-[9px] font-mono text-zinc-500">({customW}×{customH})</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="text-[9px] text-zinc-500 truncate leading-tight">{opt.desc}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    {isSelected && <Check size={12} className="text-indigo-400 shrink-0 ml-1.5" />}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
                                 </div>
 
                                 {aspectRatio === 'custom' && (

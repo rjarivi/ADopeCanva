@@ -19,8 +19,8 @@ const CHANGES: ChangeEntry[] = [
         items: [
             {
                 icon: Maximize2,
-                title: 'Quick Video Editor — High-Density Canvas Aspect & Custom Resolutions',
-                description: 'Replaced the bulky 4-card canvas grid with an ultra-compact aspect ratio selector supporting 8 platform presets (Original, 16:9 Landscape, 9:16 Shorts/Reels/TikTok, 1:1 Square, 4:5 Instagram Portrait, 4:3 Classic, 21:9 Ultrawide, 9:21 Tall) plus custom width × height resolutions with even-dimension ffmpeg scaling. Streamlined Layout sidebar saving >120px of vertical space.',
+                title: 'Quick Video Editor — Custom Aspect Ratio Dropdown & High-Density Layout',
+                description: 'Replaced native HTML select and bulky cards with our bespoke dark minimalist dropdown menu. Features crisp icons per aspect ratio, platform descriptions (YouTube, Shorts/Reels, IG Feed, Cinematic), active state indigo leaks, click-outside dismissal, and custom resolution W×H inputs. Streamlined Layout sidebar saving >120px of vertical space.',
                 type: 'feature'
             }
         ]
