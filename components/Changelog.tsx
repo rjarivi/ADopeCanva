@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.4',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Maximize2,
+                title: 'Text & Document Tools: Viewport Fitting & Resizable Text Editor',
+                description: 'Locked tool container heights to the viewport (h-full) across Text to PDF, PDF to Text, and PDF to JPG, eliminating awkward window scrollbar overflows and cut-off action buttons. Added customizable text sizing (A- / A+ zoom controls) and resizable textarea handles with a one-click "Fit Viewport" reset button, allowing users to comfortably write and inspect documents without outer page scrolling.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.23.3',
         date: 'Nov 21, 2026',
         items: [

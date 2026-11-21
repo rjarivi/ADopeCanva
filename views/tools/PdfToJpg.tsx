@@ -207,10 +207,10 @@ export const PdfToJpg: React.FC = () => {
             onFileSelect={handleFileSelect}
             error={error}
         >
-            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'h-full max-w-6xl mx-auto rounded-3xl border border-zinc-800 shadow-2xl'}`}>
 
             {/* Settings Panel */}
-            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 lg:w-84 border-l border-zinc-800 h-full min-h-0'} bg-zinc-950 flex flex-col z-20`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
                     <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <FileImage size={20} /> PDF to JPG
@@ -220,8 +220,8 @@ export const PdfToJpg: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                    <div className="space-y-8 animate-in fade-in duration-300">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 custom-scrollbar">
+                    <div className="space-y-4 animate-in fade-in duration-300">
                         <section className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-900/50 space-y-3">
                             <div className="flex justify-between items-center">
                                 <span className="text-xs text-zinc-500 font-medium">File Name</span>
@@ -354,11 +354,11 @@ export const PdfToJpg: React.FC = () => {
             </aside>
 
             {/* Preview Area */}
-            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex flex-col p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900`}>
+            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} h-full min-h-0 relative bg-[#09090b] flex flex-col p-4 md:p-6 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900`}>
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
-                <div className="relative flex-1 overflow-auto custom-scrollbar">
+                <div className="relative flex-1 min-h-0 overflow-auto custom-scrollbar">
                     {pageImages.length > 0 ? (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {pageImages.map((image) => (

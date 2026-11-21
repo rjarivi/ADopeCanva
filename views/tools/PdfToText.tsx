@@ -55,6 +55,7 @@ export const PdfToText: React.FC = () => {
     const [pageCount, setPageCount] = useState(0);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [editorFontSize, setEditorFontSize] = useState<number>(14);
 
     const handleFileSelect = useCallback((newFiles: FileData | FileData[]) => {
         const arr = Array.isArray(newFiles) ? newFiles : [newFiles];
@@ -204,10 +205,10 @@ export const PdfToText: React.FC = () => {
             onFileSelect={handleFileSelect}
             error={error}
         >
-            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'max-w-6xl mx-auto rounded-3xl border border-zinc-800'}`}>
+            <div className={`w-full bg-zinc-950 text-zinc-200 flex flex-col md:flex-row overflow-hidden font-sans selection:bg-indigo-500/30 ${isMobile ? 'h-[100vh]' : 'h-full max-w-6xl mx-auto rounded-3xl border border-zinc-800 shadow-2xl'}`}>
 
             {/* Settings Panel */}
-            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 border-r'} border-zinc-800 bg-zinc-950 flex flex-col z-20`}>
+            <aside className={`${isMobile ? 'order-2 flex-1 overflow-hidden' : 'order-2 w-80 lg:w-84 border-l'} border-zinc-800 bg-zinc-950 flex flex-col z-20 h-full min-h-0`}>
                 <div className="h-14 px-5 border-b border-zinc-900 flex items-center justify-between shrink-0 bg-zinc-950/80 backdrop-blur-sm">
                     <h2 className="font-black text-xs text-indigo-400 uppercase tracking-widest flex items-center gap-2 font-unbounded">
                         <FileText size={20} /> PDF to Text
@@ -217,12 +218,12 @@ export const PdfToText: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 custom-scrollbar">
-                    <div className="space-y-8 animate-in fade-in duration-300">
-                        <section className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-900/50 space-y-3">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 custom-scrollbar">
+                    <div className="space-y-4 animate-in fade-in duration-300">
+                        <section className="bg-zinc-900/50 p-4 rounded-xl border border-zinc-900/50 space-y-2.5">
                             <div className="flex justify-between items-center">
                                 <span className="text-xs text-zinc-500 font-medium">Files</span>
-                                <span className="text-xs text-indigo-400 font-mono font-bold">{files.length === 1 ? files[0].file.name : `${files.length} files (batch)`}</span>
+                                <span className="text-xs text-indigo-400 font-mono font-bold truncate max-w-[170px]">{files.length === 1 ? files[0].file.name : `${files.length} files (batch)`}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-xs text-zinc-500 font-medium">Size</span>
@@ -237,7 +238,7 @@ export const PdfToText: React.FC = () => {
                         </section>
 
                         {/* Page range */}
-                        <section className="space-y-3">
+                        <section className="space-y-2.5">
                             <SectionLabel>Page Range</SectionLabel>
                             <div className="flex gap-2">
                                 <input
@@ -256,28 +257,28 @@ export const PdfToText: React.FC = () => {
                         </section>
 
                         {error && (
-                            <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl">
+                            <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-xl">
                                 <p className="text-xs text-red-400">{error}</p>
                             </div>
                         )}
 
-                        <div className="space-y-3">
+                        <div className="space-y-2.5 pt-1">
                             {!extractedText ? (
-                                <Button className="w-full h-12 border-none shadow-lg shadow-red-900/20" onClick={extractText} isLoading={isProcessing} disabled={isProcessing} >
-                                    <FileText size={18} className="mr-2" />
+                                <Button className="w-full h-11 border-none shadow-lg shadow-indigo-900/20" onClick={extractText} isLoading={isProcessing} disabled={isProcessing} >
+                                    <FileText size={16} className="mr-2" />
                                     {isProcessing ? 'Extracting...' : files.length === 1 ? 'Extract Text' : `Extract From ${files.length} Files`}
                                 </Button>
                             ) : (
-                                <div className="space-y-3 animate-slide-up">
-                                    <Button className="w-full h-12 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={handleCopy} >
-                                        {copied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
+                                <div className="space-y-2.5 animate-slide-up">
+                                    <Button className="w-full h-11 bg-indigo-600 text-white hover:bg-indigo-500 border-none shadow-lg" onClick={handleCopy} >
+                                        {copied ? <Check size={16} className="mr-2" /> : <Copy size={16} className="mr-2" />}
                                         {copied ? 'Copied!' : 'Copy to Clipboard'}
                                     </Button>
-                                    <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleDownload} >
-                                        <Download size={16} className="mr-2" /> Download .txt
+                                    <Button variant="secondary" className="w-full h-10 border-zinc-800" onClick={handleDownload} >
+                                        <Download size={15} className="mr-2" /> Download .txt
                                     </Button>
-                                    <Button variant="secondary" className="w-full h-12 border-zinc-800" onClick={handleReset}>
-                                        <RefreshCcw size={16} className="mr-2" /> Start New
+                                    <Button variant="secondary" className="w-full h-10 border-zinc-800" onClick={handleReset}>
+                                        <RefreshCcw size={15} className="mr-2" /> Start New
                                     </Button>
                                 </div>
                             )}
@@ -285,9 +286,9 @@ export const PdfToText: React.FC = () => {
 
                         {/* Per-file batch results */}
                         {results.length > 0 && (
-                            <section className="space-y-3">
+                            <section className="space-y-2.5">
                                 <SectionLabel>Batch Results</SectionLabel>
-                                <div className="space-y-1.5 max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                                <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                                     {results.map(r => (
                                         <div key={r.fileName} className="bg-[#0e0e11] border border-zinc-800 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
                                             <span className="text-[10px] text-zinc-300 font-mono truncate">{r.fileName}</span>
@@ -298,7 +299,7 @@ export const PdfToText: React.FC = () => {
                             </section>
                         )}
 
-                        <section className="bg-zinc-900/30 p-4 rounded-xl border border-zinc-800">
+                        <section className="bg-zinc-900/30 p-3 rounded-xl border border-zinc-800">
                             <SectionLabel>About</SectionLabel>
                             <p className="text-[10px] text-zinc-500 leading-relaxed uppercase font-bold tracking-tight">
                                 Text extraction works best on digital PDFs. Scanned documents or image-based PDFs may not yield results.
@@ -309,18 +310,47 @@ export const PdfToText: React.FC = () => {
             </aside>
 
             {/* Preview Area */}
-            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} relative bg-[#09090b] flex flex-col p-4 md:p-8 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900`}>
+            <main className={`order-1 ${isMobile ? 'h-[45vh]' : 'flex-1'} h-full min-h-0 relative bg-[#09090b] flex flex-col p-4 md:p-6 overflow-hidden shrink-0 border-b md:border-b-0 border-zinc-900`}>
                 <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
-                <div className="relative flex-1 bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="relative flex-1 min-h-0 bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col">
                     {extractedText ? (
-                        <textarea
-                            readOnly
-                            value={extractedText}
-                            className="w-full h-full bg-transparent text-zinc-300 text-sm font-mono p-6 resize-none focus:outline-none custom-scrollbar"
-                            placeholder="Extracted text will appear here..."
-                        />
+                        <>
+                            {/* Toolbar for text size */}
+                            <div className="h-10 px-4 border-b border-zinc-800/80 bg-zinc-950/60 flex items-center justify-between shrink-0">
+                                <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Extracted Text</span>
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider px-1">Text Size</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditorFontSize(prev => Math.max(11, prev - 1))}
+                                        className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 flex items-center justify-center text-[10px] font-bold"
+                                        title="Decrease text size"
+                                    >
+                                        A-
+                                    </button>
+                                    <span className="text-[10px] font-mono font-bold text-indigo-400 px-1 min-w-[24px] text-center">
+                                        {editorFontSize}px
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditorFontSize(prev => Math.min(24, prev + 1))}
+                                        className="w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 flex items-center justify-center text-[10px] font-bold"
+                                        title="Increase text size"
+                                    >
+                                        A+
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea
+                                readOnly
+                                value={extractedText}
+                                style={{ fontSize: `${editorFontSize}px` }}
+                                className="flex-1 w-full bg-transparent text-zinc-300 font-mono p-5 md:p-6 resize-none focus:outline-none custom-scrollbar leading-relaxed"
+                                placeholder="Extracted text will appear here..."
+                            />
+                        </>
                     ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-zinc-600">
                             <FileText size={48} className="mb-4 opacity-50" />
@@ -330,7 +360,7 @@ export const PdfToText: React.FC = () => {
                 </div>
 
                 {extractedText && (
-                    <div className="mt-4 flex items-center justify-between text-xs text-zinc-500">
+                    <div className="mt-2.5 flex items-center justify-between text-[11px] text-zinc-500 px-1">
                         <span>{extractedText.length.toLocaleString()} characters</span>
                         <span>{extractedText.split(/\s+/).filter(w => w).length.toLocaleString()} words</span>
                     </div>
