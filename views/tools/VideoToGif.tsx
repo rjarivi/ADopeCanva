@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
@@ -448,27 +449,23 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <SectionLabel>FPS</SectionLabel>
-                  <select
+                  <Select
+                    size="sm"
                     value={fps}
-                    onChange={(e) => { setFps(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                  >
-                    {FRAME_RATES.map(f => <option key={f} value={f}>{f} fps</option>)}
-                  </select>
+                    onChange={(val) => { setFps(Number(val)); setIsDone(false); setGifUrl(null); }}
+                    options={FRAME_RATES.map(f => ({ value: f, label: `${f} fps` }))}
+                  />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <SectionLabel>Width</SectionLabel>
-                  <select
+                  <Select
+                    size="sm"
                     value={width}
-                    onChange={(e) => { setWidth(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
-                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                  >
-                    {WIDTHS.map(w => <option key={w} value={w}>{w}px</option>)}
-                  </select>
+                    onChange={(val) => { setWidth(Number(val)); setIsDone(false); setGifUrl(null); }}
+                    options={WIDTHS.map(w => ({ value: w, label: `${w}px` }))}
+                  />
                 </div>
               </div>
             </div>
@@ -477,27 +474,29 @@ export const VideoToGif: React.FC<VideoToGifProps> = ({ outputFormat = 'gif' }) 
             <div className="space-y-4 pt-4 border-t border-zinc-900">
               <SectionLabel>Playback & Framing</SectionLabel>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Loop</span>
-                  <select
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Loop</span>
+                  <Select
+                    size="sm"
                     value={loopCount}
-                    onChange={(e) => { setLoopCount(Number(e.target.value)); setIsDone(false); setGifUrl(null); }}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
-                  >
-                    <option value={0}>Infinite</option>
-                    {[1, 2, 3, 5].map(n => <option key={n} value={n}>{n} play{n > 1 ? 's' : ''}</option>)}
-                  </select>
+                    onChange={(val) => { setLoopCount(Number(val)); setIsDone(false); setGifUrl(null); }}
+                    options={[
+                      { value: 0, label: 'Infinite' },
+                      ...[1, 2, 3, 5].map(n => ({ value: n, label: `${n} play${n > 1 ? 's' : ''}` }))
+                    ]}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Crop Aspect</span>
-                  <select
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-1">Crop Aspect</span>
+                  <Select
+                    size="sm"
                     value={cropAspect}
-                    onChange={(e) => { setCropAspect(e.target.value as typeof cropAspect); setIsDone(false); setGifUrl(null); }}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none rounded-xl px-3 py-2.5 text-white text-xs font-mono transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="none">None</option>
-                    {(['1:1', '4:3', '16:9', '9:16'] as const).map(a => <option key={a} value={a}>{a}</option>)}
-                  </select>
+                    onChange={(val) => { setCropAspect(val as typeof cropAspect); setIsDone(false); setGifUrl(null); }}
+                    options={[
+                      { value: 'none', label: 'None' },
+                      ...(['1:1', '4:3', '16:9', '9:16'] as const).map(a => ({ value: a, label: a }))
+                    ]}
+                  />
                 </div>
               </div>
               <button

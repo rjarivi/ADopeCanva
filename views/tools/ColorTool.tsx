@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Pipette, Copy, Check, Download, CheckCircle2, AlertCircle, ArrowUpDown } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 // --- Types ---
@@ -535,18 +536,21 @@ export const ColorTool: React.FC = () => {
                                     <p className="text-xs text-zinc-500 mt-1 font-medium">Automatic palettes generated using color wheels.</p>
                                 </div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <select 
-                                        value={harmonyStrategy}
-                                        onChange={(e) => setHarmonyStrategy(e.target.value as HarmonyStrategy)}
-                                        className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-xs font-bold text-zinc-300 outline-none focus:border-indigo-500 transition-colors"
-                                    >
-                                        <option value="complementary">Complementary (2 colors)</option>
-                                        <option value="analogous">Analogous (3 colors)</option>
-                                        <option value="triadic">Triadic (3 colors)</option>
-                                        <option value="split-complementary">Split-Complementary (3 colors)</option>
-                                        <option value="tetradic">Tetradic / Double (4 colors)</option>
-                                        <option value="monochromatic">Monochromatic (5 colors)</option>
-                                    </select>
+                                    <div className="w-56">
+                                        <Select 
+                                            size="sm"
+                                            value={harmonyStrategy}
+                                            onChange={(val) => setHarmonyStrategy(val as HarmonyStrategy)}
+                                            options={[
+                                                { value: 'complementary', label: 'Complementary (2 colors)' },
+                                                { value: 'analogous', label: 'Analogous (3 colors)' },
+                                                { value: 'triadic', label: 'Triadic (3 colors)' },
+                                                { value: 'split-complementary', label: 'Split-Complementary (3)' },
+                                                { value: 'tetradic', label: 'Tetradic / Double (4)' },
+                                                { value: 'monochromatic', label: 'Monochromatic (5 colors)' }
+                                            ]}
+                                        />
+                                    </div>
                                     <Button onClick={copyAsCssVars} variant="secondary" size="sm" className="h-9 font-bold text-[10px] uppercase tracking-wider rounded-xl">
                                         {copiedExport === 'css-vars' ? <Check size={14} className="mr-1.5 text-green-400" /> : <Copy size={14} className="mr-1.5" />}
                                         CSS Vars

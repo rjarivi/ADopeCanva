@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { ArrowRightLeft, FileVideo, Download, CheckCircle, RefreshCcw, Loader2, AlertCircle } from 'lucide-react';
 import { ToolShell } from '../../components/ToolShell';
@@ -389,27 +390,25 @@ export const VideoConverter: React.FC<VideoConverterProps> = ({
                 </div>
                 {/* Speed */}
                 <div className="space-y-1 col-span-1">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Speed</span>
-                  <select
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Speed</span>
+                  <Select
+                    size="sm"
                     value={speed}
                     disabled={isProcessing || isDone}
-                    onChange={(e) => setSpeed(Number(e.target.value))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                    {[0.25, 0.5, 0.75, 1, 1.5, 2, 4].map(s => <option key={s} value={s}>{s}×</option>)}
-                  </select>
+                    onChange={(val) => setSpeed(Number(val))}
+                    options={[0.25, 0.5, 0.75, 1, 1.5, 2, 4].map(s => ({ value: s, label: `${s}×` }))}
+                  />
                 </div>
                 {/* Resolution scale */}
                 <div className="space-y-1 col-span-1">
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Resolution</span>
-                  <select
+                  <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Resolution</span>
+                  <Select
+                    size="sm"
                     value={scalePercent}
                     disabled={isProcessing || isDone || !VIDEO_TARGETS.includes(targetFormat)}
-                    onChange={(e) => setScalePercent(Number(e.target.value))}
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 cursor-pointer"
-                  >
-                    {[100, 75, 50, 25].map(s => <option key={s} value={s}>{s === 100 ? 'Original' : s + '%'}</option>)}
-                  </select>
+                    onChange={(val) => setScalePercent(Number(val))}
+                    options={[100, 75, 50, 25].map(s => ({ value: s, label: s === 100 ? 'Original' : `${s}%` }))}
+                  />
                 </div>
                 {/* Trim */}
                 <div className="space-y-1 col-span-1 flex flex-col">

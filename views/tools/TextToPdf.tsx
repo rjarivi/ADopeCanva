@@ -1,14 +1,11 @@
 /// <reference lib="dom" />
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileText, Download, RefreshCcw, Type, Zap, Copy, Check, Trash2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { jsPDF } from 'jspdf';
-
-const SELECT_ARROW_STYLE = { backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' } as const;
-
-const SELECT_CLASS = "w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-8 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none appearance-none hover:border-indigo-500/50 transition-colors cursor-pointer";
 
 export const TextToPdf: React.FC = () => {
     const isMobile = useIsMobile();
@@ -194,32 +191,44 @@ export const TextToPdf: React.FC = () => {
                                 <div className="flex justify-between items-center mb-1.5">
                                     <span className="text-xs text-zinc-400">Paper Size</span>
                                 </div>
-                                <select value={paperSize} onChange={(e) => setPaperSize(e.target.value as 'a4' | 'letter' | 'legal')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
-                                    <option value="a4">A4 (210 × 297 mm)</option>
-                                    <option value="letter">Letter (8.5 × 11 in)</option>
-                                    <option value="legal">Legal (8.5 × 14 in)</option>
-                                </select>
+                                <Select
+                                    value={paperSize}
+                                    onChange={(val) => setPaperSize(val as any)}
+                                    options={[
+                                        { value: 'a4', label: 'A4 (210 × 297 mm)' },
+                                        { value: 'letter', label: 'Letter (8.5 × 11 in)' },
+                                        { value: 'legal', label: 'Legal (8.5 × 14 in)' }
+                                    ]}
+                                />
                             </div>
 
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1.5">
                                     <span className="text-xs text-zinc-400">Orientation</span>
                                 </div>
-                                <select value={orientation} onChange={(e) => setOrientation(e.target.value as 'portrait' | 'landscape')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
-                                    <option value="portrait">Portrait</option>
-                                    <option value="landscape">Landscape</option>
-                                </select>
+                                <Select
+                                    value={orientation}
+                                    onChange={(val) => setOrientation(val as any)}
+                                    options={[
+                                        { value: 'portrait', label: 'Portrait' },
+                                        { value: 'landscape', label: 'Landscape' }
+                                    ]}
+                                />
                             </div>
 
                             <div className="group">
                                 <div className="flex justify-between items-center mb-1.5">
                                     <span className="text-xs text-zinc-400">Font Family</span>
                                 </div>
-                                <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value as 'helvetica' | 'times' | 'courier')} className={SELECT_CLASS} style={SELECT_ARROW_STYLE}>
-                                    <option value="helvetica">Helvetica (Sans)</option>
-                                    <option value="times">Times (Serif)</option>
-                                    <option value="courier">Courier (Mono)</option>
-                                </select>
+                                <Select
+                                    value={fontFamily}
+                                    onChange={(val) => setFontFamily(val as any)}
+                                    options={[
+                                        { value: 'helvetica', label: 'Helvetica (Sans)' },
+                                        { value: 'times', label: 'Times (Serif)' },
+                                        { value: 'courier', label: 'Courier (Mono)' }
+                                    ]}
+                                />
                             </div>
 
                             <div className="flex items-center gap-2 pt-1">
@@ -258,18 +267,17 @@ export const TextToPdf: React.FC = () => {
                                     <span className="text-xs text-zinc-400">Line Spacing</span>
                                     <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded">{lineSpacing}×</span>
                                 </div>
-                                <select
+                                <Select
                                     value={lineSpacing}
-                                    onChange={(e) => setLineSpacing(parseFloat(e.target.value))}
-                                    className={SELECT_CLASS}
-                                    style={SELECT_ARROW_STYLE}
-                                >
-                                    <option value={1}>Single (1×)</option>
-                                    <option value={1.15}>Compact (1.15×)</option>
-                                    <option value={1.5}>Normal (1.5×)</option>
-                                    <option value={2}>Double (2×)</option>
-                                    <option value={2.5}>Wide (2.5×)</option>
-                                </select>
+                                    onChange={(val) => setLineSpacing(val)}
+                                    options={[
+                                        { value: 1, label: 'Single (1×)' },
+                                        { value: 1.15, label: 'Compact (1.15×)' },
+                                        { value: 1.5, label: 'Normal (1.5×)' },
+                                        { value: 2, label: 'Double (2×)' },
+                                        { value: 2.5, label: 'Wide (2.5×)' }
+                                    ]}
+                                />
                             </div>
 
                             <SliderControl

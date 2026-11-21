@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
@@ -1405,28 +1406,30 @@ export const AudioTrimmer: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2 pt-1">
                             <div className="space-y-1">
                                 <span className="text-[11px] text-zinc-400 block">Channels</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={channelMode}
-                                    onChange={(e) => { setChannelMode(e.target.value as typeof channelMode); setTrimmedUrl(null); }}
-                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-lg px-2 py-1.5 text-xs appearance-none cursor-pointer"
-                                >
-                                    <option value="auto">Original</option>
-                                    <option value="stereo">Stereo</option>
-                                    <option value="mono">Mono</option>
-                                </select>
+                                    onChange={(val) => { setChannelMode(val as typeof channelMode); setTrimmedUrl(null); }}
+                                    options={[
+                                        { value: 'auto', label: 'Original' },
+                                        { value: 'stereo', label: 'Stereo' },
+                                        { value: 'mono', label: 'Mono' }
+                                    ]}
+                                />
                             </div>
                             <div className="space-y-1">
                                 <span className="text-[11px] text-zinc-400 block">Sample Rate</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={sampleRate}
-                                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setTrimmedUrl(null); }}
-                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-lg px-2 py-1.5 text-xs appearance-none cursor-pointer"
-                                >
-                                    <option value="original">Original</option>
-                                    <option value="44100">44100 Hz</option>
-                                    <option value="48000">48000 Hz</option>
-                                    <option value="22050">22050 Hz</option>
-                                </select>
+                                    onChange={(val) => { setSampleRate(val as typeof sampleRate); setTrimmedUrl(null); }}
+                                    options={[
+                                        { value: 'original', label: 'Original' },
+                                        { value: '44100', label: '44100 Hz' },
+                                        { value: '48000', label: '48000 Hz' },
+                                        { value: '22050', label: '22050 Hz' }
+                                    ]}
+                                />
                             </div>
                         </div>
 

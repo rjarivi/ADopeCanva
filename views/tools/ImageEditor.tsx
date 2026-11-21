@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { useIsMobile } from '../../hooks/useIsMobile';
 
 // Types
@@ -1831,18 +1832,12 @@ export const ImageEditor: React.FC = () => {
 
                                         <div>
                                             <span className="text-xs text-zinc-400 block mb-2">Blend Mode</span>
-                                            <div className="relative">
-                                                <select
-                                                    value={activeLayer.blendMode}
-                                                    onChange={(e) => updateLayer(activeLayer.id, { blendMode: e.target.value as GlobalCompositeOperation })}
-                                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg text-xs p-2.5 text-zinc-300 outline-none focus:border-zinc-700 appearance-none cursor-pointer"
-                                                >
-                                                    {BLEND_MODES.map(mode => (
-                                                        <option key={mode} value={mode}>{mode}</option>
-                                                    ))}
-                                                </select>
-                                                {/* Custom Dropdown Arrow could go here */}
-                                            </div>
+                                            <Select
+                                                size="sm"
+                                                value={activeLayer.blendMode}
+                                                onChange={(val) => updateLayer(activeLayer.id, { blendMode: val as GlobalCompositeOperation })}
+                                                options={BLEND_MODES.map(mode => ({ value: mode, label: mode }))}
+                                            />
                                         </div>
 
                                         {activeLayer.type === 'image' && (
@@ -1951,22 +1946,15 @@ export const ImageEditor: React.FC = () => {
                                                     />
                                                 </div>
 
-                                                <select
+                                                <Select
+                                                    size="sm"
                                                     value={activeLayer.fontFamily}
-                                                    onChange={(e) => updateLayer(activeLayer.id, { fontFamily: e.target.value })}
-                                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2.5 text-sm text-zinc-200 outline-none focus:border-zinc-700 cursor-pointer font-medium"
-                                                >
-                                                    {FONTS.map(font => (
-                                                        <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
-                                                    ))}
-                                                    {customFonts.length > 0 && (
-                                                        <optgroup label="Custom Fonts">
-                                                            {customFonts.map(font => (
-                                                                <option key={font} value={font} style={{ fontFamily: font }}>{font}</option>
-                                                            ))}
-                                                        </optgroup>
-                                                    )}
-                                                </select>
+                                                    onChange={(val) => updateLayer(activeLayer.id, { fontFamily: val })}
+                                                    options={[
+                                                        ...FONTS.map(font => ({ value: font, label: font })),
+                                                        ...customFonts.map(font => ({ value: font, label: `${font} (Custom)` }))
+                                                    ]}
+                                                />
 
                                                 {/* Size & Color Mixed Row */}
                                                 <div className="grid grid-cols-2 gap-3 pb-2 border-b border-zinc-800/30">
@@ -2361,16 +2349,18 @@ export const ImageEditor: React.FC = () => {
                         )}
                     </div>
                     <div className="flex items-center gap-2">
-                        <select
-                            value={exportFormat}
-                            onChange={(e) => setExportFormat(e.target.value as 'image/png' | 'image/jpeg' | 'image/webp')}
-                            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl text-xs p-2.5 text-zinc-300 outline-none focus:border-zinc-700 cursor-pointer"
-                            title="Export format"
-                        >
-                            <option value="image/png">PNG</option>
-                            <option value="image/jpeg">JPG</option>
-                            <option value="image/webp">WEBP</option>
-                        </select>
+                        <div className="flex-1">
+                            <Select
+                                size="sm"
+                                value={exportFormat}
+                                onChange={(val) => setExportFormat(val as 'image/png' | 'image/jpeg' | 'image/webp')}
+                                options={[
+                                    { value: 'image/png', label: 'PNG' },
+                                    { value: 'image/jpeg', label: 'JPG' },
+                                    { value: 'image/webp', label: 'WEBP' }
+                                ]}
+                            />
+                        </div>
                         <div className={`flex items-center gap-2 flex-1 ${exportFormat === 'image/png' ? 'opacity-40 pointer-events-none' : ''}`}>
                             <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest whitespace-nowrap">Quality</span>
                             <input

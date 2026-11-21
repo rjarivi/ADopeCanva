@@ -3,6 +3,7 @@ import { ChefHat, Zap, ShieldCheck, Download, RefreshCcw, Play, FileText } from 
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { SectionLabel } from '../../components/EditorControls';
 import { loadRecipes, runRecipe, type Recipe } from '../../utils/recipeRunner';
 import { logToolFailure } from '../../utils/toolHealth';
@@ -91,17 +92,14 @@ const RecipeRunner: React.FC = () => {
 
                     <section className="space-y-2">
                         <SectionLabel>Preset</SectionLabel>
-                        <select
+                        <Select
                             value={recipe?.id ?? ''}
-                            onChange={(e) => { setRecipeId(e.target.value); resetResult(); setError(null); }}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 outline-none cursor-pointer"
-                        >
-                            {recipes.map((r) => (
-                                <option key={r.id} value={r.id}>
-                                    [{r.kind}] {r.title}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => { setRecipeId(val); resetResult(); setError(null); }}
+                            options={recipes.map((r) => ({
+                                value: r.id,
+                                label: `[${r.kind}] ${r.title}`
+                            }))}
+                        />
                         {recipe?.description && (
                             <p className="text-[11px] text-zinc-500 leading-relaxed">{recipe.description}</p>
                         )}

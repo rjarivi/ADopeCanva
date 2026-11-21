@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { Minimize2, Download, RefreshCcw, Zap, AlertCircle, Loader2 } from 'lucide-react';
 import { ToolShell } from '../../components/ToolShell';
@@ -256,27 +257,27 @@ export const GifCompressor: React.FC = () => {
                             <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Fine Controls</div>
                             <div className="space-y-1.5">
                                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Resize Width</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={resizeWidth}
-                                    onChange={(e) => { setResizeWidth(Number(e.target.value)); setResultUrl(null); }}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer appearance-none"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                                >
-                                    <option value={0}>Source Width</option>
-                                    {[160, 240, 360, 480, 640, 800].map(w => <option key={w} value={w}>{w}px</option>)}
-                                </select>
+                                    onChange={(val) => { setResizeWidth(Number(val)); setResultUrl(null); }}
+                                    options={[
+                                        { value: 0, label: 'Source Width' },
+                                        ...[160, 240, 360, 480, 640, 800].map(w => ({ value: w, label: `${w}px` }))
+                                    ]}
+                                />
                             </div>
                             <div className="space-y-1.5">
                                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">FPS</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={fps}
-                                    onChange={(e) => { setFps(Number(e.target.value)); setResultUrl(null); }}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer appearance-none"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                                >
-                                    <option value={0}>Source FPS</option>
-                                    {[5, 8, 10, 12, 15, 20, 24].map(f => <option key={f} value={f}>{f} fps</option>)}
-                                </select>
+                                    onChange={(val) => { setFps(Number(val)); setResultUrl(null); }}
+                                    options={[
+                                        { value: 0, label: 'Source FPS' },
+                                        ...[5, 8, 10, 12, 15, 20, 24].map(f => ({ value: f, label: `${f} fps` }))
+                                    ]}
+                                />
                             </div>
                         </section>
 

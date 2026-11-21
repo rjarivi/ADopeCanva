@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import Papa from 'papaparse';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { SectionLabel } from '../../components/EditorControls';
 import { useToolFile } from '../../hooks/useToolFile';
@@ -275,26 +276,24 @@ export const SpreadsheetTools: React.FC = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">CSV Delimiter</label>
-                                <select
+                                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5">CSV Delimiter</label>
+                                <Select
+                                    size="sm"
                                     value={delimiter}
-                                    onChange={(e) => setDelimiter(e.target.value as CsvDelimiter)}
-                                    className="mt-1.5 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500/50 hover:border-indigo-500/50 transition-colors cursor-pointer"
-                                >
-                                    {DELIMITER_OPTIONS.map(d => <option key={d.label} value={d.value}>{d.label}</option>)}
-                                </select>
+                                    onChange={(val) => setDelimiter(val as CsvDelimiter)}
+                                    options={DELIMITER_OPTIONS}
+                                />
                             </div>
 
                             {sheetNames.length > 1 && (
                                 <div>
-                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Worksheet</label>
-                                    <select
+                                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest block mb-1.5">Worksheet</label>
+                                    <Select
+                                        size="sm"
                                         value={activeSheet}
-                                        onChange={(e) => setActiveSheet(parseInt(e.target.value, 10))}
-                                        className="mt-1.5 w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500/50 hover:border-indigo-500/50 transition-colors cursor-pointer"
-                                    >
-                                        {sheetNames.map((n, i) => <option key={`${n}-${i}`} value={i}>{n}</option>)}
-                                    </select>
+                                        onChange={(val) => setActiveSheet(Number(val))}
+                                        options={sheetNames.map((n, i) => ({ value: i, label: n }))}
+                                    />
                                 </div>
                             )}
                         </div>
@@ -337,16 +336,19 @@ export const SpreadsheetTools: React.FC = () => {
                     {mode === 'excel-to-other' && (
                         <div className="flex items-center gap-3">
                             <label className="text-zinc-400 text-sm">Output Format:</label>
-                            <select 
-                                value={targetFormat} 
-                                onChange={e => setTargetFormat(e.target.value as any)}
-                                className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white text-sm"
-                            >
-                                <option value="csv">CSV</option>
-                                <option value="json">JSON</option>
-                                <option value="html">HTML Table</option>
-                                <option value="txt">Plain Text</option>
-                            </select>
+                            <div className="w-40">
+                                <Select 
+                                    size="sm"
+                                    value={targetFormat} 
+                                    onChange={(val) => setTargetFormat(val as any)}
+                                    options={[
+                                        { value: 'csv', label: 'CSV' },
+                                        { value: 'json', label: 'JSON' },
+                                        { value: 'html', label: 'HTML Table' },
+                                        { value: 'txt', label: 'Plain Text' }
+                                    ]}
+                                />
+                            </div>
                         </div>
                     )}
                     <Button

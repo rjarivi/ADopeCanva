@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { Music, Mic2, Download, CheckCircle, RefreshCcw, Settings2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { ToolShell } from '../../components/ToolShell';
@@ -314,42 +315,39 @@ export const AudioConverter: React.FC = () => {
 
               <div className="space-y-3">
                 <SectionLabel>Quality (Bitrate)</SectionLabel>
-                <select
+                <Select
                   value={bitrate}
-                  onChange={(e) => setBitrate((e.target as HTMLSelectElement).value)}
+                  onChange={(val) => setBitrate(val)}
                   disabled={isProcessing || isDone || format === 'WAV' || format === 'FLAC'}
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 outline-none text-white rounded-xl px-4 py-3 transition-all appearance-none cursor-pointer disabled:opacity-50"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-                >
-                  {BITRATES.map(br => <option key={br} value={br}>{br.replace('k', ' kbps')}</option>)}
-                </select>
+                  options={BITRATES.map(br => ({ value: br, label: br.replace('k', ' kbps') }))}
+                />
                 {(format === 'WAV' || format === 'FLAC') && <p className="text-xs text-zinc-500">Bitrate selection not applicable for lossless formats.</p>}
               </div>
 
               <div className="space-y-3">
                 <SectionLabel>Channels & Sample Rate</SectionLabel>
                 <div className="grid grid-cols-2 gap-2">
-                  <select
+                  <Select
                     value={channelMode}
-                    onChange={(e) => { setChannelMode(e.target.value as typeof channelMode); setIsDone(false); setConvertedUrl(null); }}
+                    onChange={(val) => { setChannelMode(val as typeof channelMode); setIsDone(false); setConvertedUrl(null); }}
                     disabled={isProcessing}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer disabled:opacity-50"
-                  >
-                    <option value="auto">Original Channels</option>
-                    <option value="stereo">Stereo</option>
-                    <option value="mono">Mono</option>
-                  </select>
-                  <select
+                    options={[
+                      { value: 'auto', label: 'Original Channels' },
+                      { value: 'stereo', label: 'Stereo' },
+                      { value: 'mono', label: 'Mono' }
+                    ]}
+                  />
+                  <Select
                     value={sampleRate}
-                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setIsDone(false); setConvertedUrl(null); }}
+                    onChange={(val) => { setSampleRate(val as typeof sampleRate); setIsDone(false); setConvertedUrl(null); }}
                     disabled={isProcessing}
-                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-3 py-2.5 text-sm appearance-none cursor-pointer disabled:opacity-50"
-                  >
-                    <option value="original">Original Sample Rate</option>
-                    <option value="44100">44100 Hz</option>
-                    <option value="48000">48000 Hz</option>
-                    <option value="22050">22050 Hz</option>
-                  </select>
+                    options={[
+                      { value: 'original', label: 'Original Rate' },
+                      { value: '44100', label: '44100 Hz' },
+                      { value: '48000', label: '48000 Hz' },
+                      { value: '22050', label: '22050 Hz' }
+                    ]}
+                  />
                 </div>
               </div>
 

@@ -5,6 +5,7 @@ import {
     ChevronDown, Check
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import Papa from 'papaparse';
 import yaml from 'js-yaml';
 import { js2xml, xml2js } from 'xml-js';
@@ -265,17 +266,20 @@ export const UniversalConverter: React.FC = () => {
                     </div>
                     {inputFormat === 'csv' && (
                         <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 flex items-center gap-3">
-                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Delimiter</label>
-                            <select
-                                value={csvDelimiter === '\t' ? 'tab' : csvDelimiter}
-                                onChange={(e) => setCsvDelimiter((e.target.value === 'tab' ? '\t' : e.target.value) as ',' | ';' | '|' | '\t')}
-                                className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
-                            >
-                                <option value=",">Comma</option>
-                                <option value=";">Semicolon</option>
-                                <option value="tab">Tab</option>
-                                <option value="|">Pipe</option>
-                            </select>
+                            <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest shrink-0">Delimiter</label>
+                            <div className="w-32">
+                                <Select
+                                    size="sm"
+                                    value={csvDelimiter === '\t' ? 'tab' : csvDelimiter}
+                                    onChange={(val) => setCsvDelimiter((val === 'tab' ? '\t' : val) as ',' | ';' | '|' | '\t')}
+                                    options={[
+                                        { value: ',', label: 'Comma (,)' },
+                                        { value: ';', label: 'Semicolon (;)' },
+                                        { value: 'tab', label: 'Tab (\\t)' },
+                                        { value: '|', label: 'Pipe (|)' }
+                                    ]}
+                                />
+                            </div>
                             <label className={`text-[10px] font-bold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 ${csvHeader ? 'text-indigo-400' : 'text-zinc-500'}`}>
                                 <input
                                     type="checkbox"

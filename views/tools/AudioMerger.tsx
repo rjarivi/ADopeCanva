@@ -4,6 +4,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { FileUploader } from '../../components/FileUploader';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
 import {
@@ -715,28 +716,30 @@ export const AudioMerger: React.FC = () => {
                         <div className="grid grid-cols-2 gap-2 pt-2">
                             <div className="space-y-1">
                                 <span className="text-xs text-zinc-400 block">Channels</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={channelLayout}
-                                    onChange={(e) => { setChannelLayout(e.target.value as typeof channelLayout); setMergedUrl(null); }}
+                                    onChange={(val) => { setChannelLayout(val as typeof channelLayout); setMergedUrl(null); }}
                                     disabled={isProcessing}
-                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-2 py-2 text-xs appearance-none cursor-pointer disabled:opacity-50"
-                                >
-                                    <option value="stereo">Stereo (2 ch)</option>
-                                    <option value="mono">Mono (1 ch)</option>
-                                </select>
+                                    options={[
+                                        { value: 'stereo', label: 'Stereo (2 ch)' },
+                                        { value: 'mono', label: 'Mono (1 ch)' }
+                                    ]}
+                                />
                             </div>
                             <div className="space-y-1">
                                 <span className="text-xs text-zinc-400 block">Sample Rate</span>
-                                <select
+                                <Select
+                                    size="sm"
                                     value={sampleRate}
-                                    onChange={(e) => { setSampleRate(e.target.value as typeof sampleRate); setMergedUrl(null); }}
+                                    onChange={(val) => { setSampleRate(val as typeof sampleRate); setMergedUrl(null); }}
                                     disabled={isProcessing}
-                                    className="w-full bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 focus:border-indigo-500 outline-none text-white rounded-xl px-2 py-2 text-xs appearance-none cursor-pointer disabled:opacity-50"
-                                >
-                                    <option value="44100">44100 Hz</option>
-                                    <option value="48000">48000 Hz</option>
-                                    <option value="22050">22050 Hz</option>
-                                </select>
+                                    options={[
+                                        { value: '44100', label: '44100 Hz' },
+                                        { value: '48000', label: '48000 Hz' },
+                                        { value: '22050', label: '22050 Hz' }
+                                    ]}
+                                />
                             </div>
                         </div>
                     </section>

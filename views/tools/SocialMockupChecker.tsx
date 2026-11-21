@@ -6,6 +6,7 @@ import {
     ZoomIn, ZoomOut, Lock, ChevronDown, Repeat
 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { ToolShell } from '../../components/ToolShell';
 import { FileData } from '../../types';
@@ -641,23 +642,17 @@ export const SocialMockupChecker: React.FC = () => {
 
                     {/* OVERLAY SELECTOR DROPDOWN */}
                     <div className="pt-2">
-                        <label className="block text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-3">
+                        <label className="block text-[10px] uppercase font-bold text-zinc-400 tracking-wider mb-2">
                             Overlay Template
                         </label>
-                        <div className="relative">
-                            <select
-                                value={selectedOverlayId}
-                                onChange={(e) => { setSelectedOverlayId(e.target.value); setShowUIOverlay(true); }}
-                                className="w-full appearance-none bg-zinc-950 border border-zinc-800 hover:border-indigo-500/60 focus:border-indigo-500 text-zinc-200 text-xs rounded-xl p-3.5 pr-10 outline-none transition-all cursor-pointer font-semibold shadow-inner"
-                            >
-                                {OVERLAY_PRESETS.map(p => (
-                                    <option key={p.id} value={p.id} className="bg-zinc-900 text-zinc-200 py-2">
-                                        {p.label}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                        </div>
+                        <Select
+                            value={selectedOverlayId}
+                            onChange={(val) => { setSelectedOverlayId(val); setShowUIOverlay(true); }}
+                            options={OVERLAY_PRESETS.map(p => ({
+                                value: p.id,
+                                label: p.label
+                            }))}
+                        />
                     </div>
 
                     {/* OVERLAY TOGGLES */}

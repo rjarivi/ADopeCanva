@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useIsMobile } from '../../hooks/useIsMobile';
 import { useObjectUrlState } from '../../hooks/useObjectUrl';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { ToolShell } from '../../components/ToolShell';
 import { useToolFile } from '../../hooks/useToolFile';
@@ -720,25 +721,27 @@ export const GifEditor: React.FC = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Loop</span>
-                            <select
+                            <Select
+                                size="sm"
                                 value={loopCount}
-                                onChange={(e) => setLoopCount(Number(e.target.value))}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer"
-                            >
-                                <option value={0}>Infinite</option>
-                                {[1, 2, 3, 5].map(n => <option key={n} value={n}>{n} play{n > 1 ? 's' : ''}</option>)}
-                            </select>
+                                onChange={(val) => setLoopCount(Number(val))}
+                                options={[
+                                    { value: 0, label: 'Infinite' },
+                                    ...[1, 2, 3, 5].map(n => ({ value: n, label: `${n} play${n > 1 ? 's' : ''}` }))
+                                ]}
+                            />
                         </div>
                         <div className="space-y-1.5">
                             <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">FPS</span>
-                            <select
+                            <Select
+                                size="sm"
                                 value={gifFps}
-                                onChange={(e) => setGifFps(Number(e.target.value))}
-                                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-2.5 text-white text-xs font-mono outline-none focus:border-indigo-500 cursor-pointer"
-                            >
-                                <option value={0}>Auto</option>
-                                {[5, 10, 12, 15, 20, 24].map(f => <option key={f} value={f}>{f} fps</option>)}
-                            </select>
+                                onChange={(val) => setGifFps(Number(val))}
+                                options={[
+                                    { value: 0, label: 'Auto' },
+                                    ...[5, 10, 12, 15, 20, 24].map(f => ({ value: f, label: `${f} fps` }))
+                                ]}
+                            />
                         </div>
                     </div>
                     <button

@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useCallback } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileData } from '../../types';
 import { FileImage, Download, RefreshCcw, Zap, Layers, Image as ImageIcon, Archive } from 'lucide-react';
 import { SectionLabel, SliderControl } from '../../components/EditorControls';
@@ -279,22 +280,21 @@ export const PdfToJpg: React.FC = () => {
                             )}
 
                             <div className="group">
-                                <div className="flex justify-between items-center mb-2">
+                                <div className="flex justify-between items-center mb-1.5">
                                     <span className="text-xs text-zinc-400">Resolution Scale</span>
                                     <span className="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded">{scale}×</span>
                                 </div>
-                                <select
+                                <Select
                                     value={scale}
-                                    onChange={(e) => setScale(parseFloat(e.target.value))}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 pr-8 text-sm text-zinc-200 focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none appearance-none hover:border-indigo-500/50 transition-colors cursor-pointer"
-                                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-                                >
-                                    <option value={1}>1× (72 DPI)</option>
-                                    <option value={1.5}>1.5× (108 DPI)</option>
-                                    <option value={2}>2× (144 DPI)</option>
-                                    <option value={3}>3× (216 DPI)</option>
-                                    <option value={4}>4× (288 DPI)</option>
-                                </select>
+                                    onChange={(val) => setScale(val)}
+                                    options={[
+                                        { value: 1, label: '1× (72 DPI)' },
+                                        { value: 1.5, label: '1.5× (108 DPI)' },
+                                        { value: 2, label: '2× (144 DPI)' },
+                                        { value: 3, label: '3× (216 DPI)' },
+                                        { value: 4, label: '4× (288 DPI)' }
+                                    ]}
+                                />
                             </div>
                         </section>
 

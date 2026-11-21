@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.5',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Layers,
+                title: 'Design System: Replaced All Browser Default Selects With Custom Dropdowns',
+                description: 'Audited and upgraded every single dropdown across the entire platform (Text to PDF, PDF to JPG, Universal Converter, JSON Formatter, Audio Converter, Audio Merger, Audio Trimmer, Color Tool, GIF Compressor, GIF Editor, Image Editor, Social Mockup Checker, Spreadsheet Tools, Video Converter, Video to GIF, and Recipe Runner). Replaced native OS/browser <select> menus with our bespoke dark minimalist <Select> component featuring smooth chevron rotations, subtle indigo active leaks, keyboard navigation, and click-outside dismissal.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.23.4',
         date: 'Nov 21, 2026',
         items: [

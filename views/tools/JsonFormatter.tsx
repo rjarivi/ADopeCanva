@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 import React, { useState, useMemo } from 'react';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { FileJson, Braces, Copy, Check, Trash2, Wand2, Minimize, Download } from 'lucide-react';
 
 // Extract a friendly "line:column" hint from a JSON.parse error.
@@ -138,15 +139,16 @@ export const JsonFormatter: React.FC = () => {
             <div className="flex-1 bg-surface rounded-2xl border border-zinc-800 p-1 flex flex-col shadow-xl overflow-hidden">
                 {/* Toolbar */}
                 <div className="bg-zinc-900/50 border-b border-zinc-800 px-4 py-2 flex justify-between items-center gap-3">
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                         <span className="text-xs font-mono text-zinc-500 mr-1">JSON Input / Output</span>
-                        <select
-                            value={indent}
-                            onChange={(e) => setIndent(e.target.value)}
-                            className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-200 outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
-                        >
-                            {INDENT_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                        </select>
+                        <div className="w-32">
+                            <Select
+                                size="sm"
+                                value={indent}
+                                onChange={(val) => setIndent(val)}
+                                options={INDENT_OPTIONS}
+                            />
+                        </div>
                         <label className={`flex items-center gap-1.5 cursor-pointer select-none border rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${sortKeys ? 'bg-indigo-500/10 border-indigo-500/40 text-indigo-400' : 'border-zinc-800 text-zinc-500 hover:text-zinc-300'}`}>
                             <input
                                 type="checkbox"
