@@ -165,6 +165,30 @@ export const PdfToJpg: React.FC = () => {
         setProgress(0);
     };
 
+    if (!file) {
+        return (
+            <ToolShell
+                icon={FileImage}
+                title="PDF to JPG"
+                description="Convert PDF pages to high-quality JPG images."
+                features={[
+                    { icon: Zap, label: 'Fast Convert', desc: 'Instant processing' },
+                    { icon: Layers, label: 'All Pages', desc: 'Batch conversion' },
+                    { icon: ImageIcon, label: 'High Quality', desc: 'Adjustable DPI' },
+                    { icon: Archive, label: 'ZIP Download', desc: 'All at once' },
+                ]}
+                file={file}
+                accept=".pdf"
+                uploadLabel="Add PDF"
+                uploadDescription="Select a PDF to convert to images"
+                onFileSelect={handleFileSelect}
+                error={error}
+            >
+                <></>
+            </ToolShell>
+        );
+    }
+
     return (
         <ToolShell
             icon={FileImage}

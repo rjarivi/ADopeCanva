@@ -205,6 +205,30 @@ export const FileToMarkdown: React.FC = () => {
     const ext = file?.file.name.split('.').pop()?.toLowerCase() ?? '';
     const fmt = FORMAT_LABELS[ext];
 
+    if (!file) {
+        return (
+            <ToolShell
+                icon={FileText}
+                title="File to Markdown"
+                description="Convert PDFs, DOCX, CSV, HTML, and more into clean Markdown — all in-browser."
+                features={[
+                    { icon: FileText, label: 'PDF / DOCX', desc: 'Extract content' },
+                    { icon: FileJson, label: 'CSV / JSON', desc: 'Tables & data' },
+                    { icon: FileCode, label: 'HTML / XML', desc: 'Strip tags' },
+                    { icon: Download, label: 'Clean .md', desc: 'Download instantly' },
+                ]}
+                file={file}
+                accept={ACCEPTED}
+                uploadLabel="Drop any document"
+                uploadDescription="PDF, DOCX, CSV, JSON, YAML, XML, HTML, TXT, MD"
+                onFileSelect={handleFileSelect}
+                error={error}
+            >
+                <></>
+            </ToolShell>
+        );
+    }
+
     return (
         <ToolShell
             icon={FileText}

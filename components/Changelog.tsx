@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.3',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Bug,
+                title: 'Fix: Document Tools Initial Render Null File Guard',
+                description: "Fixed a rendering crash across File to Markdown, PDF Watermark, and PDF to JPG where tool workspaces evaluated 'file.file.name' before a file was uploaded. Wrapped landing view in an empty file guard so the upload landing screen and feature grid render cleanly without crashing.",
+                type: 'fix'
+            }
+        ]
+    },
+    {
         version: '1.23.2',
         date: 'Nov 21, 2026',
         items: [

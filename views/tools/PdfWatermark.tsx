@@ -339,6 +339,30 @@ export const PdfWatermark: React.FC = () => {
     setLoadError(null);
   };
 
+  if (!file) {
+    return (
+      <ToolShell
+        icon={Stamp}
+        title="PDF Watermark"
+        description="Stamp confidential watermarks, custom branding, and page numbers onto any PDF document."
+        features={[
+          { icon: Stamp, label: 'Custom Watermarks', desc: 'CONFIDENTIAL, DRAFT & More' },
+          { icon: Hash, label: 'Page Numbers', desc: 'Custom Headers & Footers' },
+          { icon: Eye, label: 'Live Page Preview', desc: 'Interactive Visual Check' },
+          { icon: ShieldCheck, label: '100% Client-Side', desc: 'No Cloud Uploads' },
+        ]}
+        file={file}
+        accept=".pdf,application/pdf"
+        uploadLabel="Drop PDF Document Here"
+        uploadDescription="Supports multi-page PDF documents of any size"
+        onFileSelect={handleFileSelect}
+        error={loadError}
+      >
+        <></>
+      </ToolShell>
+    );
+  }
+
   return (
     <ToolShell
       icon={Stamp}
