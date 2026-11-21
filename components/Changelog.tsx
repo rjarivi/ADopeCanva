@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.2',
+        date: 'Nov 21, 2026',
+        items: [
+            {
+                icon: Scissors,
+                title: 'High-Precision Trimmer Handles & Interactive Filmstrip Upgrade',
+                description: 'Completely overhauled video trimming UX across Quick Video Editor and Video Trimmer: replaced clumsy, blocked range sliders with native Pointer Capture handles featuring wide 20px solid grip bars, white center pills, extended 36px hit targets for effortless selection at 0% and 100% video boundaries, draggable selection window body sliding, quick preset chips (Full Video, First 15s/30s, Last 30s), and Set Current [In]/[Out] steppers.',
+                type: 'feature'
+            }
+        ]
+    },
+    {
         version: '1.23.1',
         date: 'Nov 21, 2026',
         items: [

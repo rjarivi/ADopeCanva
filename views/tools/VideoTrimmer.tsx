@@ -375,13 +375,13 @@ export const VideoTrimmer: React.FC = () => {
         const startX = (startTime / dur) * rect.width;
         const endX = (endTime / dur) * rect.width;
 
-        const handleWidth = 16;
+        const handleWidth = 20;
 
         const startDist = Math.abs(x - startX);
         const endDist = Math.abs(x - endX);
-        if (startDist <= endDist && x >= startX - 8 && x <= startX + handleWidth + 8) {
+        if (startDist <= endDist && x >= startX - 16 && x <= startX + handleWidth + 16) {
             setDragType('start');
-        } else if (x >= endX - handleWidth - 8 && x <= endX + 8) {
+        } else if (x >= endX - handleWidth - 16 && x <= endX + 16) {
             setDragType('end');
         } else if (x > startX && x < endX) {
             if (e.clientY - rect.top <= 16) {
@@ -867,20 +867,32 @@ export const VideoTrimmer: React.FC = () => {
                         className="absolute top-0 bottom-0 border-t-2 border-b-2 border-indigo-500 pointer-events-none z-20"
                         style={{ left: `${startPerc}%`, width: `${endPerc - startPerc}%` }}
                     >
-                        {/* Left Handle [In] - Always inside selection box */}
+                        {/* Left Handle [In] - Thick, Prominent Solid Handle */}
                         <div
-                            className="absolute top-0 bottom-0 left-0 w-3.5 bg-indigo-500 rounded-l flex items-center justify-center cursor-col-resize pointer-events-auto shadow-md"
+                            onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setDragType('start');
+                                timelineRef.current?.setPointerCapture(e.pointerId);
+                            }}
+                            className="absolute top-0 bottom-0 left-0 w-5 sm:w-6 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-md flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-colors"
                             title="Drag to trim start"
                         >
-                            <div className="h-7 w-0.5 bg-white rounded-full shadow-sm" />
+                            <div className="h-7 w-1 bg-white rounded-full shadow-sm pointer-events-none" />
+                            <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
                         </div>
 
-                        {/* Right Handle [Out] - Always inside selection box */}
+                        {/* Right Handle [Out] - Thick, Prominent Solid Handle */}
                         <div
-                            className="absolute top-0 bottom-0 right-0 w-3.5 bg-indigo-500 rounded-r flex items-center justify-center cursor-col-resize pointer-events-auto shadow-md"
+                            onPointerDown={(e) => {
+                                e.stopPropagation();
+                                setDragType('end');
+                                timelineRef.current?.setPointerCapture(e.pointerId);
+                            }}
+                            className="absolute top-0 bottom-0 right-0 w-5 sm:w-6 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-md flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/40 select-none touch-none transition-colors"
                             title="Drag to trim end"
                         >
-                            <div className="h-7 w-0.5 bg-white rounded-full shadow-sm" />
+                            <div className="h-7 w-1 bg-white rounded-full shadow-sm pointer-events-none" />
+                            <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
                         </div>
                     </div>
 

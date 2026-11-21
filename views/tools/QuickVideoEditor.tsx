@@ -136,6 +136,10 @@ export const QuickVideoEditor: React.FC = () => {
     const [trimMode, setTrimMode] = useState(false);
     const [pendingStart, setPendingStart] = useState('00:00:00');
     const [pendingEnd, setPendingEnd] = useState('00:00:00');
+    const trimTimelineRef = useRef<HTMLDivElement>(null);
+    const [trimDragType, setTrimDragType] = useState<'start' | 'end' | 'body' | null>(null);
+    const trimDragStartPosRef = useRef<{ clientX: number; initialStart: number; initialEnd: number }>({ clientX: 0, initialStart: 0, initialEnd: 0 });
+    const [trimHoverTime, setTrimHoverTime] = useState<number | null>(null);
 
     // Canvas (aspect ratio)
     const [aspectRatio, setAspectRatio] = useState('original');
@@ -497,6 +501,113 @@ export const QuickVideoEditor: React.FC = () => {
         setCurrentTime(s);
         setTrimMode(false);
     };
+
+    const handleTrimPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (!selectedClip || !selectedClip.duration) return;
+        const timeline = trimTimelineRef.current;
+        if (!timeline) return;
+
+        timeline.setPointerCapture(e.pointerId);
+        const rect = timeline.getBoundingClientRect();
+        const clientX = e.clientX;
+        const x = Math.max(0, Math.min(rect.width, clientX - rect.left));
+        const dur = selectedClip.duration;
+        const curStart = Math.max(0, Math.min(dur, parseTimecode(pendingStart)));
+        const curEnd = Math.max(curStart + 0.05, Math.min(dur, parseTimecode(pendingEnd)));
+
+        const startX = (curStart / dur) * rect.width;
+        const endX = (curEnd / dur) * rect.width;
+
+        const HIT_THRESHOLD = 18;
+        const distToStart = Math.abs(x - startX);
+        const distToEnd = Math.abs(x - endX);
+
+        if (distToStart <= HIT_THRESHOLD && distToStart <= distToEnd) {
+            setTrimDragType('start');
+        } else if (distToEnd <= HIT_THRESHOLD) {
+            setTrimDragType('end');
+        } else if (x > startX && x < endX) {
+            setTrimDragType('body');
+            trimDragStartPosRef.current = {
+                clientX,
+                initialStart: curStart,
+                initialEnd: curEnd,
+            };
+        } else {
+            if (x < startX) {
+                const newStart = Math.max(0, (x / rect.width) * dur);
+                setPendingStart(fmtTimecode(newStart));
+                if (videoRef.current) videoRef.current.currentTime = newStart;
+                setCurrentTime(newStart);
+                setTrimDragType('start');
+            } else {
+                const newEnd = Math.min(dur, (x / rect.width) * dur);
+                setPendingEnd(fmtTimecode(newEnd));
+                if (videoRef.current) videoRef.current.currentTime = newEnd;
+                setCurrentTime(newEnd);
+                setTrimDragType('end');
+            }
+        }
+    }, [selectedClip, pendingStart, pendingEnd]);
+
+    const handleTrimPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (!selectedClip || !selectedClip.duration) return;
+        const timeline = trimTimelineRef.current;
+        if (!timeline) return;
+
+        const rect = timeline.getBoundingClientRect();
+        const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+        const dur = selectedClip.duration;
+        const hoveredSec = (x / rect.width) * dur;
+        setTrimHoverTime(hoveredSec);
+
+        if (!trimDragType) return;
+
+        const curStart = parseTimecode(pendingStart);
+        const curEnd = parseTimecode(pendingEnd);
+
+        if (trimDragType === 'start') {
+            const newStart = Math.max(0, Math.min(hoveredSec, curEnd - 0.08));
+            setPendingStart(fmtTimecode(newStart));
+            if (videoRef.current) videoRef.current.currentTime = newStart;
+            setCurrentTime(newStart);
+        } else if (trimDragType === 'end') {
+            const newEnd = Math.min(dur, Math.max(hoveredSec, curStart + 0.08));
+            setPendingEnd(fmtTimecode(newEnd));
+            if (videoRef.current) videoRef.current.currentTime = newEnd;
+            setCurrentTime(newEnd);
+        } else if (trimDragType === 'body') {
+            const deltaX = e.clientX - trimDragStartPosRef.current.clientX;
+            const deltaSec = (deltaX / rect.width) * dur;
+            const length = trimDragStartPosRef.current.initialEnd - trimDragStartPosRef.current.initialStart;
+
+            let newStart = trimDragStartPosRef.current.initialStart + deltaSec;
+            let newEnd = trimDragStartPosRef.current.initialEnd + deltaSec;
+
+            if (newStart < 0) {
+                newStart = 0;
+                newEnd = length;
+            }
+            if (newEnd > dur) {
+                newEnd = dur;
+                newStart = Math.max(0, dur - length);
+            }
+
+            setPendingStart(fmtTimecode(newStart));
+            setPendingEnd(fmtTimecode(newEnd));
+            if (videoRef.current) videoRef.current.currentTime = newStart;
+            setCurrentTime(newStart);
+        }
+    }, [selectedClip, trimDragType, pendingStart, pendingEnd]);
+
+    const handleTrimPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+        if (trimTimelineRef.current && trimTimelineRef.current.hasPointerCapture(e.pointerId)) {
+            try {
+                trimTimelineRef.current.releasePointerCapture(e.pointerId);
+            } catch (_) {}
+        }
+        setTrimDragType(null);
+    }, []);
 
     // ── Playback ──
     const togglePlay = useCallback(() => {
@@ -950,34 +1061,132 @@ export const QuickVideoEditor: React.FC = () => {
                             <h2 className="font-bold text-sm text-white">Trim video</h2>
                         </div>
 
-                        <div className="flex-1 p-5 space-y-5">
-                            <div className="h-px bg-zinc-800" />
-                            <div>
-                                <p className="text-xs text-zinc-500 mb-2">Start Time</p>
-                                <input
-                                    type="text"
-                                    value={pendingStart}
-                                    onChange={e => setPendingStart(e.target.value)}
-                                    onBlur={() => {
-                                        if (videoRef.current) videoRef.current.currentTime = parseTimecode(pendingStart);
-                                    }}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                                    placeholder="00:00:00"
-                                />
+                        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+                            {/* Selected clip duration card */}
+                            <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Scissors size={14} className="text-indigo-400" />
+                                    <span className="text-xs text-zinc-400 font-semibold">Trim Length</span>
+                                </div>
+                                <span className="text-xs font-mono font-bold text-indigo-300">
+                                    {fmtDuration(Math.max(0, parseTimecode(pendingEnd) - parseTimecode(pendingStart)))}
+                                </span>
                             </div>
-                            <div>
-                                <p className="text-xs text-zinc-500 mb-2">End Time</p>
-                                <input
-                                    type="text"
-                                    value={pendingEnd}
-                                    onChange={e => setPendingEnd(e.target.value)}
-                                    onBlur={() => {
-                                        if (videoRef.current) videoRef.current.currentTime = parseTimecode(pendingEnd);
-                                    }}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-indigo-500 transition-colors"
-                                    placeholder="00:00:00"
-                                />
+
+                            {/* Boundary steppers */}
+                            <div className="space-y-3">
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Start Time [In]</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPendingStart(fmtTimecode(currentTime))}
+                                            className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20"
+                                            title="Set start to current playhead"
+                                        >
+                                            Set Current
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={pendingStart}
+                                        onChange={e => setPendingStart(e.target.value)}
+                                        onBlur={() => {
+                                            if (videoRef.current) videoRef.current.currentTime = parseTimecode(pendingStart);
+                                        }}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="00:00:00.000"
+                                    />
+                                </div>
+
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">End Time [Out]</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPendingEnd(fmtTimecode(currentTime))}
+                                            className="text-[9px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20"
+                                            title="Set end to current playhead"
+                                        >
+                                            Set Current
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={pendingEnd}
+                                        onChange={e => setPendingEnd(e.target.value)}
+                                        onBlur={() => {
+                                            if (videoRef.current) videoRef.current.currentTime = parseTimecode(pendingEnd);
+                                        }}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                        placeholder="00:00:00.000"
+                                    />
+                                </div>
                             </div>
+
+                            {/* Quick Presets */}
+                            {selectedClip && (
+                                <div>
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">
+                                        Quick Presets
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPendingStart(fmtTimecode(0));
+                                                setPendingEnd(fmtTimecode(selectedClip.duration));
+                                                if (videoRef.current) videoRef.current.currentTime = 0;
+                                                setCurrentTime(0);
+                                            }}
+                                            className="px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-all"
+                                        >
+                                            <div className="text-[10px] font-bold text-zinc-200">Full Video</div>
+                                            <div className="text-[9px] text-zinc-500">Reset 0 → End</div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPendingStart(fmtTimecode(0));
+                                                setPendingEnd(fmtTimecode(Math.min(15, selectedClip.duration)));
+                                                if (videoRef.current) videoRef.current.currentTime = 0;
+                                                setCurrentTime(0);
+                                            }}
+                                            className="px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-all"
+                                        >
+                                            <div className="text-[10px] font-bold text-zinc-200">First 15s</div>
+                                            <div className="text-[9px] text-zinc-500">Story / Reel</div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPendingStart(fmtTimecode(0));
+                                                setPendingEnd(fmtTimecode(Math.min(30, selectedClip.duration)));
+                                                if (videoRef.current) videoRef.current.currentTime = 0;
+                                                setCurrentTime(0);
+                                            }}
+                                            className="px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-all"
+                                        >
+                                            <div className="text-[10px] font-bold text-zinc-200">First 30s</div>
+                                            <div className="text-[9px] text-zinc-500">Shorts / TikTok</div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const s = Math.max(0, selectedClip.duration - 30);
+                                                setPendingStart(fmtTimecode(s));
+                                                setPendingEnd(fmtTimecode(selectedClip.duration));
+                                                if (videoRef.current) videoRef.current.currentTime = s;
+                                                setCurrentTime(s);
+                                            }}
+                                            className="px-2.5 py-2 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-left transition-all"
+                                        >
+                                            <div className="text-[10px] font-bold text-zinc-200">Last 30s</div>
+                                            <div className="text-[9px] text-zinc-500">Outro / Ending</div>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="p-4 border-t border-zinc-800 flex gap-2 shrink-0">
@@ -1634,14 +1843,21 @@ export const QuickVideoEditor: React.FC = () => {
                     {trimMode ? (
                         /* ── Trim Timeline ── */
                         <div className="p-4 space-y-2">
-                            <div className="relative h-16 w-full bg-zinc-900 rounded-lg border border-zinc-800 select-none overflow-visible">
+                            <div
+                                ref={trimTimelineRef}
+                                onPointerDown={handleTrimPointerDown}
+                                onPointerMove={handleTrimPointerMove}
+                                onPointerUp={handleTrimPointerUp}
+                                onPointerLeave={() => setTrimHoverTime(null)}
+                                className="relative h-20 w-full bg-zinc-950 rounded-xl border border-zinc-800 shadow-inner select-none touch-none cursor-crosshair overflow-hidden group"
+                            >
                                 {/* Thumbnails */}
-                                <div className="absolute inset-0 flex rounded-lg overflow-hidden opacity-60">
+                                <div className="absolute inset-0 flex opacity-75">
                                     {selectedClip?.thumbnails.map((t, i) => (
-                                        <img key={i} src={t} className="h-full flex-1 object-cover pointer-events-none" alt="" />
+                                        <img key={i} src={t} className="h-full flex-1 object-cover pointer-events-none select-none" alt="" />
                                     ))}
                                     {!selectedClip?.thumbnails.length && (
-                                        <div className="w-full h-full flex items-center justify-center text-zinc-700 text-[10px] font-bold uppercase tracking-widest">
+                                        <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs font-mono">
                                             Loading frames...
                                         </div>
                                     )}
@@ -1649,44 +1865,99 @@ export const QuickVideoEditor: React.FC = () => {
 
                                 {/* Overlay: dim + active window + handles */}
                                 {selectedClip && (() => {
-                                    const sp = (parseTimecode(pendingStart) / selectedClip.duration) * 100;
-                                    const ep = (parseTimecode(pendingEnd) / selectedClip.duration) * 100;
+                                    const dur = selectedClip.duration || 1;
+                                    const sVal = parseTimecode(pendingStart);
+                                    const eVal = parseTimecode(pendingEnd);
+                                    const sp = Math.max(0, Math.min(100, (sVal / dur) * 100));
+                                    const ep = Math.max(0, Math.min(100, (eVal / dur) * 100));
+                                    const playheadPerc = Math.max(0, Math.min(100, (currentTime / dur) * 100));
+
                                     return (
                                         <>
-                                            <div className="absolute inset-y-0 left-0 bg-black/70 rounded-l-lg pointer-events-none" style={{ width: `${sp}%` }} />
-                                            <div className="absolute inset-y-0 right-0 bg-black/70 rounded-r-lg pointer-events-none" style={{ width: `${100 - ep}%` }} />
-                                            <div className="absolute inset-y-0 border-y-2 border-indigo-500 pointer-events-none" style={{ left: `${sp}%`, width: `${ep - sp}%` }} />
-
-                                            {/* Start handle */}
-                                            <div className="absolute inset-y-0 w-3 bg-indigo-500 rounded-l-md z-10 flex items-center justify-center pointer-events-none" style={{ left: `${sp}%` }}>
-                                                <div className="w-px h-6 bg-white/60 rounded-full" />
-                                            </div>
-                                            {/* End handle */}
-                                            <div className="absolute inset-y-0 w-3 bg-indigo-500 rounded-r-md z-10 flex items-center justify-center pointer-events-none" style={{ left: `${ep}%`, transform: 'translateX(-100%)' }}>
-                                                <div className="w-px h-6 bg-white/60 rounded-full" />
-                                            </div>
-
-                                            {/* Draggable range inputs */}
-                                            <input
-                                                type="range" min="0" max={selectedClip.duration || 3600} step="0.02"
-                                                value={parseTimecode(pendingStart)}
-                                                onChange={e => setPendingStart(fmtTimecode(parseFloat(e.target.value)))}
-                                                className="absolute inset-0 w-full h-full opacity-0 z-30 appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-16 [&::-webkit-slider-thumb]:cursor-col-resize [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-16 [&::-moz-range-thumb]:cursor-col-resize"
+                                            {/* Dimmed Out Outer Regions */}
+                                            <div
+                                                className="absolute inset-y-0 left-0 bg-black/75 backdrop-blur-[1px] pointer-events-none"
+                                                style={{ width: `${sp}%` }}
                                             />
-                                            <input
-                                                type="range" min="0" max={selectedClip.duration || 3600} step="0.02"
-                                                value={parseTimecode(pendingEnd)}
-                                                onChange={e => setPendingEnd(fmtTimecode(parseFloat(e.target.value)))}
-                                                className="absolute inset-0 w-full h-full opacity-0 z-30 appearance-none pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-16 [&::-webkit-slider-thumb]:cursor-col-resize [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-16 [&::-moz-range-thumb]:cursor-col-resize"
+                                            <div
+                                                className="absolute inset-y-0 right-0 bg-black/75 backdrop-blur-[1px] pointer-events-none"
+                                                style={{ width: `${100 - ep}%` }}
                                             />
+
+                                            {/* Active Trim Window Box with Prominent Top and Bottom Border */}
+                                            <div
+                                                className={`absolute inset-y-0 border-t-2 border-b-2 border-indigo-500 z-20 pointer-events-none ${
+                                                    trimDragType === 'body' ? 'bg-indigo-500/15' : ''
+                                                }`}
+                                                style={{ left: `${sp}%`, width: `${Math.max(0, ep - sp)}%` }}
+                                            >
+                                                {/* Top drag bar indicator to slide whole window */}
+                                                <div className="absolute top-0 left-0 right-0 h-4 flex items-center justify-center pointer-events-none opacity-40 group-hover:opacity-90 transition-opacity">
+                                                    <div className="w-10 h-1 bg-white/70 rounded-full shadow" />
+                                                </div>
+
+                                                {/* Left Handle [In] - Thick, Prominent, Easy to Grab */}
+                                                <div
+                                                    onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        setTrimDragType('start');
+                                                        trimTimelineRef.current?.setPointerCapture(e.pointerId);
+                                                    }}
+                                                    className="absolute top-0 bottom-0 left-0 w-5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-l-md z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/50 select-none touch-none transition-colors"
+                                                    title="Drag to trim start"
+                                                >
+                                                    {/* Vertical grip bar */}
+                                                    <div className="w-1 h-7 bg-white rounded-full shadow pointer-events-none" />
+                                                    {/* Extended hit area: 36px wide so clicking near edge always grabs */}
+                                                    <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                </div>
+
+                                                {/* Right Handle [Out] - Thick, Prominent, Easy to Grab */}
+                                                <div
+                                                    onPointerDown={(e) => {
+                                                        e.stopPropagation();
+                                                        setTrimDragType('end');
+                                                        trimTimelineRef.current?.setPointerCapture(e.pointerId);
+                                                    }}
+                                                    className="absolute top-0 bottom-0 right-0 w-5 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-400 rounded-r-md z-30 flex items-center justify-center cursor-ew-resize pointer-events-auto shadow-xl shadow-indigo-600/50 select-none touch-none transition-colors"
+                                                    title="Drag to trim end"
+                                                >
+                                                    {/* Vertical grip bar */}
+                                                    <div className="w-1 h-7 bg-white rounded-full shadow pointer-events-none" />
+                                                    {/* Extended hit area: 36px wide so clicking near edge always grabs */}
+                                                    <div className="absolute -inset-x-2.5 inset-y-0 cursor-ew-resize pointer-events-auto" />
+                                                </div>
+                                            </div>
+
+                                            {/* Red Playhead Cursor */}
+                                            <div
+                                                className="absolute inset-y-0 w-0.5 bg-red-500 pointer-events-none z-30 shadow-md"
+                                                style={{ left: `${playheadPerc}%` }}
+                                            >
+                                                <div className="w-2.5 h-2.5 bg-red-500 rounded-full -translate-x-[4px] -translate-y-1 shadow" />
+                                            </div>
+
+                                            {/* Hover Time Tooltip */}
+                                            {trimHoverTime !== null && !trimDragType && (
+                                                <div
+                                                    className="absolute top-1 pointer-events-none -translate-x-1/2 bg-black/90 border border-zinc-700 text-white text-[10px] font-mono px-1.5 py-0.5 rounded shadow-xl z-40"
+                                                    style={{ left: `${(trimHoverTime / dur) * 100}%` }}
+                                                >
+                                                    {fmtTimecode(trimHoverTime)}
+                                                </div>
+                                            )}
                                         </>
                                     );
                                 })()}
                             </div>
-                            <div className="flex justify-between text-[10px] font-mono text-zinc-600 px-0.5">
-                                <span>{pendingStart}</span>
-                                <span className="text-indigo-400">{fmtDuration(Math.max(0, parseTimecode(pendingEnd) - parseTimecode(pendingStart)))} selected</span>
-                                <span>{pendingEnd}</span>
+
+                            {/* Sub-Timeline Status Strip */}
+                            <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 px-1 mt-1">
+                                <span>START: <span className="text-zinc-200 font-bold">{pendingStart}</span></span>
+                                <span className="text-indigo-400 font-bold tracking-wider">
+                                    {fmtDuration(Math.max(0, parseTimecode(pendingEnd) - parseTimecode(pendingStart)))} SELECTED
+                                </span>
+                                <span>END: <span className="text-zinc-200 font-bold">{pendingEnd}</span></span>
                             </div>
                         </div>
                     ) : (
