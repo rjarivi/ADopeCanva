@@ -27,7 +27,7 @@ export interface Recipe {
     };
 }
 
-const recipeModules = import.meta.glob('../../recipes/*.json', { eager: true }) as Record<string, { default: Recipe }>;
+const recipeModules = import.meta.glob('../recipes/*.json', { eager: true }) as Record<string, { default: Recipe }>;
 
 /** All valid recipes, sorted by title. Skips schema.json and malformed files. */
 export function loadRecipes(): Recipe[] {

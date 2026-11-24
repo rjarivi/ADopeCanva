@@ -403,7 +403,7 @@ export const ImageCropper: React.FC = () => {
         if (!croppedImage) return;
         const link = document.createElement('a');
         link.href = croppedImage;
-        link.download = `cropped-${file?.file.name.replace(/\.[^.]+$/, '') || 'image'}.png`;
+        link.download = `cropped-${(file?.file.name ?? 'image').replace(/\.[^.]+$/, '')}.png`;
         link.click();
     };
 

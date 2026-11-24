@@ -30,11 +30,13 @@ const PROTECTED = [
     'utils/pdfWorker.ts',
     'utils/toolHealth.ts',
     'public/sitemap.xml', // generated — edit the generator, not the output
+    'public/_headers',
 ];
 
 const PROTECTED_PREFIXES = [
     'views/', // top-level views are shell… (see exception below)
     'hooks/',
+    'components/',
     'contexts/',
     'scripts/',
     '.github/',

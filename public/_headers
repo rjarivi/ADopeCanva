@@ -1,3 +1,12 @@
 /*
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: credentialless
+
+# Opaque-origin sandbox (iframe without allow-same-origin) loads these as
+# cross-origin module scripts (Origin: null). Without ACAO the bundle never boots.
+/assets/*
+  Access-Control-Allow-Origin: *
+
+# frame-ancestors is ignored in <meta> CSP. Enforce it on the response.
+/sandbox.html
+  Content-Security-Policy: frame-ancestors 'self'

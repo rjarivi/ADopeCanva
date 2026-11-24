@@ -14,6 +14,18 @@ interface ChangeEntry {
 
 const CHANGES: ChangeEntry[] = [
     {
+        version: '1.23.7',
+        date: 'Nov 24, 2026',
+        items: [
+            {
+                icon: ShieldCheck,
+                title: 'CI & Security Hardening: Offline Checkerboard & Tool Audit Passes',
+                description: 'Eliminated external transparenttextures.com asset dependencies across Background Remover, Image Compressor, Magic Image Editor, and Image Upscaler in favor of offline CSS checkerboards, satisfying strict CSP audit requirements. Hardened null-handling during file exports and aligned bundle budget thresholds for Hyperframes Studio.',
+                type: 'fix'
+            }
+        ]
+    },
+    {
         version: '1.23.6',
         date: 'Nov 21, 2026',
         items: [

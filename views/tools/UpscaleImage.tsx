@@ -442,7 +442,7 @@ export const UpscaleImage: React.FC = () => {
                     style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
 
                 <div className={`relative shadow-2xl transition-all duration-500 ease-out border border-zinc-800/50 bg-black/40 rounded-2xl overflow-hidden ${isMobile ? 'w-full h-full' : 'w-full h-full max-h-[800px]'}`}>
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] flex items-center justify-center p-4">
+                    <div className="relative w-full h-full rounded-2xl overflow-hidden bg-checkerboard flex items-center justify-center p-4">
                         {resultImage ? (
                             <div className="relative w-full h-full group">
                                 <img src={resultImage} alt="Upscaled" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />

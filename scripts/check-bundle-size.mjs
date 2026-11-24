@@ -11,10 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 
 const DIST = join(fileURLToPath(new URL('..', import.meta.url)), 'dist/assets');
-// Current baseline ≈ 2.2 MB gzip (7.4 MB raw main chunk). Deliberate grows
+// Current baseline ≈ 3.9 MB gzip after Hyperframes Studio addition (~1.3 MB gz). Deliberate grows
 // update these numbers in the same PR — silent growth fails CI.
-const WARN_BYTES = 2_400_000;
-const FAIL_BYTES = 2_700_000;
+const WARN_BYTES = 4_200_000;
+const FAIL_BYTES = 4_500_000;
 
 let total = 0;
 const rows = [];
